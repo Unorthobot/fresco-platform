@@ -1,0 +1,211 @@
+// FRESCO Platform - Database Schema
+// "Clarity lives in Workspaces. Intelligence lives in Toolkits. Understanding lives in the Archive."
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  workspaces    Workspace[]
+  sessions      ToolkitSession[]
+  
+  @@map("users")
+}
+
+// ============================================
+// WORKSPACES - Project containers for thinking
+// ============================================
+
+model Workspace {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  tags          String[]  @default([])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions      ToolkitSession[]
+  
+  @@index([userId])
+  @@map("workspaces")
+}
+
+// ============================================
+// TOOLKIT SESSIONS - Individual thinking sessions
+// ============================================
+
+model ToolkitSession {
+  id              String    @id @default(cuid())
+  
+  // Toolkit type: insight_stack, pov_generator, mental_model_mapper,
+  //               flow_board, experiment_brief, strategy_sketchbook,
+  //               ux_scorecard, persuasion_canvas, performance_grid
+  toolkitType     String
+  
+  // Toolkit category: investigate, innovate, validate
+  category        String
+  
+  // Thinking lens used: critical, systems, design, product, 
+  //                     analytical, first_principles, strategic, futures,
+  //                     scientific, ethical, economic, narrative,
+  //                     behavioral, lateral, computational, philosophical
+  thinkingLens    String    @default("automatic")
+  
+  // Session title (auto-generated or user-defined)
+  title           String?
+  
+  // Session state
+  status          String    @default("draft") // draft, in_progress, completed
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Nested content
+  steps           SessionStep[]
+  insights        Insight[]
+  sentenceOfTruth SentenceOfTruth?
+  necessaryMoves  NecessaryMove[]
+  
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([toolkitType])
+  @@map("toolkit_sessions")
+}
+
+// ============================================
+// SESSION STEPS - Individual steps within a toolkit
+// ============================================
+
+model SessionStep {
+  id              String    @id @default(cuid())
+  
+  // Step number (1-7)
+  stepNumber      Int
+  
+  // Step label (e.g., "CONTEXT", "OBSERVATIONS", "PATTERNS")
+  label           String
+  
+  // The prompt shown to the user
+  prompt          String
+  
+  // User's response
+  response        String?   @db.Text
+  
+  // Lens-specific hint shown
+  lensHint        String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  sessionId       String
+  session         ToolkitSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@unique([sessionId, stepNumber])
+  @@index([sessionId])
+  @@map("session_steps")
+}
+
+// ============================================
+// INSIGHTS - Generated insights from sessions
+// ============================================
+
+model Insight {
+  id              String    @id @default(cuid())
+  
+  // The insight text
+  content         String    @db.Text
+  
+  // Source step number (which step generated this insight)
+  sourceStep      Int?
+  
+  // AI-generated or user-created
+  isAiGenerated   Boolean   @default(false)
+  
+  createdAt       DateTime  @default(now())
+  
+  // Relations
+  sessionId       String
+  session         ToolkitSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+  @@map("insights")
+}
+
+// ============================================
+// SENTENCE OF TRUTH - The distilled insight
+// ============================================
+
+model SentenceOfTruth {
+  id              String    @id @default(cuid())
+  
+  // The sentence itself
+  content         String    @db.Text
+  
+  // Is it locked (finalized)?
+  isLocked        Boolean   @default(false)
+  
+  // AI-generated or user-written
+  isAiGenerated   Boolean   @default(false)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  sessionId       String    @unique
+  session         ToolkitSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@map("sentences_of_truth")
+}
+
+// ============================================
+// NECESSARY MOVES - Action items from sessions
+// ============================================
+
+model NecessaryMove {
+  id              String    @id @default(cuid())
+  
+  // Move order (1-5)
+  orderNum        Int
+  
+  // The move text
+  content         String
+  
+  // Is it completed?
+  isCompleted     Boolean   @default(false)
+  
+  createdAt       DateTime  @default(now())
+  
+  // Relations
+  sessionId       String
+  session         ToolkitSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+  @@map("necessary_moves")
+}

@@ -1,0 +1,1283 @@
+/* FRESCO Platform - Global Styles */
+/* Design language matching frescolab.io */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   ROOT & VARIABLES
+   ============================================ */
+
+:root {
+  /* Light mode (default) */
+  --fresco-black: #1a1a1a;
+  --fresco-graphite: #2d2d2d;
+  --fresco-graphite-soft: #4a4a4a;
+  --fresco-graphite-mid: #6b6b6b;
+  --fresco-graphite-light: #8a8a8a;
+  --fresco-white: #ffffff;
+  --fresco-off-white: #fafafa;
+  --fresco-light-gray: #f5f5f5;
+  --fresco-warm-gray: #f0f0f0;
+  --fresco-border: #e5e5e5;
+  --fresco-border-light: #ebebeb;
+  --fresco-nav-width: 220px;
+  --fresco-output-width: 340px;
+  
+  /* Grid background - smaller size */
+  --fresco-grid-color: rgba(0, 0, 0, 0.03);
+  --fresco-grid-size: 12px;
+}
+
+/* Dark mode - fully inverted with good contrast */
+[data-theme="dark"] {
+  --fresco-black: #ffffff;
+  --fresco-graphite: #e8e8e8;
+  --fresco-graphite-soft: #c8c8c8;
+  --fresco-graphite-mid: #a8a8a8;
+  --fresco-graphite-light: #888888;
+  --fresco-white: #121212;
+  --fresco-off-white: #161616;
+  --fresco-light-gray: #1e1e1e;
+  --fresco-warm-gray: #252525;
+  --fresco-border: #333333;
+  --fresco-border-light: #2a2a2a;
+  --fresco-grid-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Dark mode specific overrides for better legibility */
+[data-theme="dark"] body {
+  background-color: var(--fresco-white);
+  color: var(--fresco-black);
+}
+
+[data-theme="dark"] .fresco-card {
+  background-color: var(--fresco-off-white);
+  border-color: var(--fresco-border);
+}
+
+[data-theme="dark"] .fresco-input,
+[data-theme="dark"] .fresco-input-lg {
+  background-color: var(--fresco-light-gray);
+  border-color: var(--fresco-border);
+  color: var(--fresco-black);
+}
+
+[data-theme="dark"] .fresco-btn {
+  border-color: var(--fresco-black);
+  color: var(--fresco-black);
+}
+
+[data-theme="dark"] .fresco-btn:hover {
+  background-color: var(--fresco-black);
+  color: var(--fresco-white);
+}
+
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-fresco-white {
+  background-color: var(--fresco-white) !important;
+}
+
+[data-theme="dark"] .text-gray-900,
+[data-theme="dark"] .text-black {
+  color: var(--fresco-black) !important;
+}
+
+[data-theme="dark"] .border-gray-200,
+[data-theme="dark"] .border-gray-300 {
+  border-color: var(--fresco-border) !important;
+}
+
+/* Icon inversion - original (black) in light mode, inverted (white) in dark mode */
+.icon-theme {
+  filter: invert(0);
+  transition: filter 0.2s ease;
+}
+
+[data-theme="dark"] .icon-theme {
+  filter: invert(1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--fresco-white);
+  color: var(--fresco-black);
+  line-height: 1.6;
+}
+
+/* ============================================
+   DRAFTING GRID BACKGROUND
+   ============================================ */
+
+.fresco-grid-bg {
+  background-color: var(--fresco-white);
+  background-image: 
+    linear-gradient(var(--fresco-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--fresco-grid-color) 1px, transparent 1px);
+  background-size: var(--fresco-grid-size) var(--fresco-grid-size);
+}
+
+.fresco-grid-bg-subtle {
+  background-color: var(--fresco-white);
+  background-image: 
+    linear-gradient(var(--fresco-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--fresco-grid-color) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Dot grid variant */
+.fresco-dot-grid-bg {
+  background-color: var(--fresco-white);
+  background-image: radial-gradient(var(--fresco-grid-color) 1px, transparent 1px);
+  background-size: var(--fresco-grid-size) var(--fresco-grid-size);
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--fresco-black);
+}
+
+h1 { font-size: 40px; line-height: 1.2; letter-spacing: -0.03em; }
+h2 { font-size: 32px; line-height: 1.25; }
+h3 { font-size: 24px; line-height: 1.3; }
+
+p { color: var(--fresco-graphite-mid); }
+
+.fresco-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fresco-graphite-light);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.fresco-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fresco-black);
+  background-color: transparent;
+  border: 1px solid var(--fresco-black);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.fresco-btn:hover {
+  background-color: var(--fresco-black);
+  color: var(--fresco-white);
+}
+
+.fresco-btn:focus-visible {
+  outline: 2px solid var(--fresco-black);
+  outline-offset: 2px;
+}
+
+.fresco-btn-primary {
+  background-color: var(--fresco-black);
+  color: var(--fresco-white);
+  border-color: var(--fresco-black);
+}
+
+.fresco-btn-primary:hover {
+  background-color: var(--fresco-graphite);
+  border-color: var(--fresco-graphite);
+}
+
+.fresco-btn-ghost {
+  border-color: transparent;
+  color: var(--fresco-graphite-mid);
+}
+
+.fresco-btn-ghost:hover {
+  background-color: var(--fresco-light-gray);
+  color: var(--fresco-black);
+}
+
+.fresco-btn-sm {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+.fresco-btn-lg {
+  height: 52px;
+  padding: 0 32px;
+  font-size: 15px;
+}
+
+/* Danger button variant */
+.fresco-btn-danger {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.fresco-btn-danger:hover {
+  background-color: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+/* Dark mode button adjustments */
+[data-theme="dark"] .fresco-btn-danger {
+  border-color: #f87171;
+  color: #f87171;
+}
+
+[data-theme="dark"] .fresco-btn-danger:hover {
+  background-color: #f87171;
+  color: #1a1a1a;
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+
+.fresco-card {
+  background-color: var(--fresco-white);
+  border: 1px solid var(--fresco-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.fresco-card-hover {
+  background-color: var(--fresco-white);
+  border: 1px solid var(--fresco-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.fresco-card-hover:hover {
+  border-color: var(--fresco-graphite-light);
+}
+
+.fresco-card-dark {
+  background-color: var(--fresco-black);
+  color: var(--fresco-white);
+  border: none;
+  border-radius: 12px;
+}
+
+.fresco-card-gray {
+  background-color: var(--fresco-light-gray);
+  border: none;
+  border-radius: 12px;
+}
+
+/* ============================================
+   INPUTS
+   ============================================ */
+
+.fresco-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--fresco-black);
+  background-color: var(--fresco-white);
+  border: 1px solid var(--fresco-border);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  resize: none;
+}
+
+.fresco-input::placeholder { color: var(--fresco-graphite-light); }
+.fresco-input:focus { border-color: var(--fresco-black); }
+
+.fresco-input-lg {
+  width: 100%;
+  padding: 20px;
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.6;
+  color: var(--fresco-black);
+  background-color: var(--fresco-light-gray);
+  border: none;
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.2s ease;
+  resize: none;
+}
+
+.fresco-input-lg::placeholder { color: var(--fresco-graphite-light); }
+.fresco-input-lg:focus {
+  background-color: var(--fresco-off-white);
+  box-shadow: inset 0 0 0 1px var(--fresco-border);
+}
+
+/* ============================================
+   STEP COMPONENTS
+   ============================================ */
+
+.fresco-step { margin-bottom: 48px; }
+
+.fresco-step-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fresco-graphite-light);
+  margin-bottom: 12px;
+}
+
+/* ============================================
+   SECTION BACKGROUNDS
+   ============================================ */
+
+.fresco-section-light { background-color: var(--fresco-white); }
+.fresco-section-gray { background-color: var(--fresco-light-gray); }
+
+.fresco-section-dark {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.fresco-section-dark h1,
+.fresco-section-dark h2,
+.fresco-section-dark h3 { color: #ffffff; }
+.fresco-section-dark p { color: rgba(255, 255, 255, 0.7); }
+
+/* ============================================
+   NAVIGATION
+   ============================================ */
+
+.fresco-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--fresco-graphite-mid);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.fresco-nav-item:hover {
+  color: var(--fresco-black);
+  background-color: var(--fresco-light-gray);
+}
+
+.fresco-nav-item.active {
+  color: var(--fresco-black);
+  background-color: var(--fresco-light-gray);
+  font-weight: 500;
+}
+
+/* ============================================
+   TOOLKIT PHASE ICONS
+   ============================================ */
+
+.fresco-phase-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fresco-border);
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+/* ============================================
+   WEATHER WIDGET
+   ============================================ */
+
+.fresco-weather-widget {
+  background: linear-gradient(135deg, var(--fresco-light-gray) 0%, var(--fresco-white) 100%);
+  border: 1px solid var(--fresco-border);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--fresco-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fresco-graphite-light); }
+
+/* ============================================
+   SELECTION
+   ============================================ */
+
+::selection {
+  background-color: var(--fresco-black);
+  color: var(--fresco-white);
+}
+
+/* ============================================
+   LOGO
+   ============================================ */
+
+.fresco-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--fresco-black);
+  letter-spacing: -0.02em;
+}
+
+.fresco-logo-mark {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1.5px solid var(--fresco-black);
+  border-radius: 4px;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+.fresco-hover:hover { background-color: var(--fresco-light-gray); }
+
+.fresco-divider {
+  height: 1px;
+  background-color: var(--fresco-border);
+  margin: 24px 0;
+}
+
+.fresco-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--fresco-graphite-soft);
+  background-color: var(--fresco-light-gray);
+  border-radius: 6px;
+}
+
+.fresco-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fresco-black);
+  text-decoration: none;
+  transition: gap 0.2s ease;
+}
+
+.fresco-link:hover { gap: 10px; }
+.fresco-link::after { content: "→"; }
+
+/* Profile picture upload */
+.fresco-avatar-upload {
+  position: relative;
+  cursor: pointer;
+}
+
+.fresco-avatar-upload:hover .fresco-avatar-overlay {
+  opacity: 1;
+}
+
+.fresco-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* ============================================
+   DARK MODE COMPREHENSIVE OVERRIDES
+   ============================================ */
+
+[data-theme="dark"] body {
+  background-color: var(--fresco-white);
+  color: var(--fresco-black);
+}
+
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-fresco-white {
+  background-color: var(--fresco-white) !important;
+}
+
+[data-theme="dark"] .text-gray-900,
+[data-theme="dark"] .text-black {
+  color: var(--fresco-black) !important;
+}
+
+[data-theme="dark"] .text-gray-500,
+[data-theme="dark"] .text-gray-600 {
+  color: var(--fresco-graphite-mid) !important;
+}
+
+[data-theme="dark"] .border-gray-200,
+[data-theme="dark"] .border-gray-300 {
+  border-color: var(--fresco-border) !important;
+}
+
+/* Dark mode nav */
+[data-theme="dark"] nav {
+  background-color: var(--fresco-white);
+  border-color: var(--fresco-border-light);
+}
+
+/* Dark mode cards */
+[data-theme="dark"] .fresco-card {
+  background-color: var(--fresco-off-white);
+  border-color: var(--fresco-border);
+}
+
+/* Dark mode inputs */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea {
+  background-color: var(--fresco-light-gray);
+  color: var(--fresco-black);
+  border-color: var(--fresco-border);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--fresco-graphite-light);
+}
+
+/* Dark mode buttons */
+[data-theme="dark"] .fresco-btn {
+  background-color: var(--fresco-black);
+  color: var(--fresco-white);
+  border-color: var(--fresco-black);
+}
+
+[data-theme="dark"] .fresco-btn:hover {
+  background-color: var(--fresco-graphite);
+  border-color: var(--fresco-graphite);
+}
+
+/* Dark mode export button styling */
+[data-theme="dark"] button.border-fresco-black {
+  border-color: var(--fresco-black);
+  color: var(--fresco-black);
+}
+
+[data-theme="dark"] button.border-fresco-black:hover {
+  background-color: var(--fresco-black);
+  color: var(--fresco-white);
+}
+
+/* Dark mode modal */
+[data-theme="dark"] .shadow-fresco-lg {
+  background-color: var(--fresco-off-white);
+}
+
+/* Dark mode dropdown */
+[data-theme="dark"] .fresco-dropdown {
+  background-color: var(--fresco-off-white);
+  border-color: var(--fresco-border);
+}
+
+/* Ensure all text colors work in dark mode */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: var(--fresco-black);
+}
+
+[data-theme="dark"] p {
+  color: var(--fresco-graphite-soft);
+}
+
+[data-theme="dark"] .text-fresco-black {
+  color: var(--fresco-black) !important;
+}
+
+[data-theme="dark"] .text-fresco-graphite-soft {
+  color: var(--fresco-graphite-soft) !important;
+}
+
+[data-theme="dark"] .text-fresco-graphite-mid {
+  color: var(--fresco-graphite-mid) !important;
+}
+
+[data-theme="dark"] .text-fresco-graphite-light {
+  color: var(--fresco-graphite-light) !important;
+}
+
+[data-theme="dark"] .bg-fresco-light-gray {
+  background-color: var(--fresco-light-gray) !important;
+}
+
+[data-theme="dark"] .bg-fresco-off-white {
+  background-color: var(--fresco-off-white) !important;
+}
+
+[data-theme="dark"] .border-fresco-border {
+  border-color: var(--fresco-border) !important;
+}
+
+[data-theme="dark"] .border-fresco-border-light {
+  border-color: var(--fresco-border-light) !important;
+}
+
+/* ============================================
+   MOBILE RESPONSIVENESS
+   ============================================ */
+
+/* Mobile-first: Hide nav rail on small screens */
+@media (max-width: 768px) {
+  :root {
+    --fresco-nav-width: 0px;
+  }
+  
+  /* Main content takes full width */
+  .ml-\[220px\] {
+    margin-left: 0 !important;
+  }
+  
+  /* Output panel becomes full-width overlay on mobile */
+  .w-\[360px\] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Padding adjustments */
+  .px-12 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .py-12 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+  
+  /* Grid layout stacking */
+  .grid-cols-12 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .col-span-8,
+  .col-span-4 {
+    grid-column: span 1 !important;
+  }
+  
+  /* Homepage cards stack */
+  .grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .px-12 {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Mobile nav toggle button */
+.mobile-nav-toggle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-nav-toggle {
+    display: flex;
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 60;
+    width: 48px;
+    height: 48px;
+    background: var(--fresco-black);
+    color: var(--fresco-white);
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================ */
+
+/* Focus visible styles */
+*:focus-visible {
+  outline: 2px solid var(--fresco-black);
+  outline-offset: 2px;
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  padding: 1rem;
+  background: var(--fresco-black);
+  color: var(--fresco-white);
+  z-index: 1000;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --fresco-border: #000000;
+    --fresco-border-light: #333333;
+  }
+}
+
+/* ============================================
+   MOBILE RESPONSIVENESS
+   ============================================ */
+
+@media (max-width: 767px) {
+  .md\:ml-\[220px\] {
+    margin-left: 0 !important;
+  }
+  
+  .md\:block {
+    display: none !important;
+  }
+  
+  .px-12 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .py-12 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+  
+  .grid-cols-12 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .col-span-8, .col-span-4 {
+    grid-column: span 1 !important;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Output panel full width on mobile */
+  .w-\[360px\] {
+    width: 100vw !important;
+    position: fixed !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    z-index: 50 !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .px-12 {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Hide scrollbar utility */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  padding: 1rem 1.5rem;
+  background: var(--fresco-black);
+  color: var(--fresco-white);
+  z-index: 1000;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Focus visible */
+*:focus-visible {
+  outline: 2px solid var(--fresco-black);
+  outline-offset: 2px;
+}
+
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--fresco-black);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   ENHANCED TYPOGRAPHY
+   ============================================ */
+
+/* Variable font weights for better hierarchy */
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* Improved reading rhythm for AI content */
+.prose-ai {
+  font-size: 15px;
+  line-height: 1.75;
+  letter-spacing: -0.01em;
+}
+
+/* Pull quote style for Sentences of Truth */
+.pull-quote {
+  font-size: clamp(18px, 4vw, 28px);
+  font-weight: 300;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================
+   CARD DEPTH & SHADOWS
+   ============================================ */
+
+.card-elevated {
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 8px rgba(0, 0, 0, 0.04),
+    0 8px 16px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-elevated:hover {
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 8px 16px rgba(0, 0, 0, 0.06),
+    0 16px 32px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+/* Subtle left accent for insight cards */
+.insight-accent {
+  position: relative;
+}
+
+.insight-accent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1rem;
+  bottom: 1rem;
+  width: 3px;
+  background: var(--fresco-light-gray);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.insight-accent:hover::before {
+  background: var(--fresco-graphite-light);
+}
+
+/* ============================================
+   ANIMATIONS & MICRO-INTERACTIONS
+   ============================================ */
+
+/* Subtle pulse for generating state */
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+/* Float animation for empty state illustrations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Fade in up animation */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  animation: fade-in-up 0.4s ease-out backwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+
+/* ============================================
+   GRADIENT UTILITIES
+   ============================================ */
+
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-from), var(--tw-gradient-to));
+}
+
+.bg-gradient-subtle {
+  background: linear-gradient(135deg, var(--fresco-white) 0%, var(--fresco-off-white) 100%);
+}
+
+/* Text truncation */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================
+   DARK MODE COMPREHENSIVE FIXES
+   ============================================ */
+
+/* Fix text colors in dark mode */
+[data-theme="dark"] .text-fresco-black {
+  color: var(--fresco-black) !important;
+}
+
+[data-theme="dark"] .text-fresco-graphite {
+  color: var(--fresco-graphite) !important;
+}
+
+[data-theme="dark"] .text-fresco-graphite-soft {
+  color: var(--fresco-graphite-soft) !important;
+}
+
+[data-theme="dark"] .text-fresco-graphite-mid {
+  color: var(--fresco-graphite-mid) !important;
+}
+
+[data-theme="dark"] .text-fresco-graphite-light {
+  color: var(--fresco-graphite-light) !important;
+}
+
+/* Fix background colors in dark mode */
+[data-theme="dark"] .bg-fresco-light-gray {
+  background-color: var(--fresco-light-gray) !important;
+}
+
+[data-theme="dark"] .bg-fresco-warm-gray {
+  background-color: var(--fresco-warm-gray) !important;
+}
+
+[data-theme="dark"] .bg-fresco-off-white {
+  background-color: var(--fresco-off-white) !important;
+}
+
+/* Fix border colors in dark mode */
+[data-theme="dark"] .border-fresco-border {
+  border-color: var(--fresco-border) !important;
+}
+
+[data-theme="dark"] .border-fresco-border-light {
+  border-color: var(--fresco-border-light) !important;
+}
+
+/* Insight cards in dark mode */
+[data-theme="dark"] .insight-accent::before {
+  background: var(--fresco-border);
+}
+
+[data-theme="dark"] .insight-accent:hover::before {
+  background: var(--fresco-graphite-light);
+}
+
+/* Card elevated in dark mode */
+[data-theme="dark"] .card-elevated {
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .card-elevated:hover {
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 8px 16px rgba(0, 0, 0, 0.2),
+    0 16px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* Sentence of Truth display - ensure it looks good in both modes */
+[data-theme="dark"] .bg-gradient-to-br.from-fresco-black {
+  background: linear-gradient(to bottom right, #1a1a1a, #2a2a2a, #1a1a1a) !important;
+}
+
+/* View tabs in dark mode */
+[data-theme="dark"] .bg-fresco-light-gray.rounded-xl {
+  background-color: var(--fresco-light-gray);
+}
+
+/* Journey map connector lines */
+[data-theme="dark"] .border-l-2.border-fresco-border {
+  border-color: var(--fresco-border);
+}
+
+/* Empty state backgrounds */
+[data-theme="dark"] .border-dashed.border-fresco-border {
+  border-color: var(--fresco-border);
+}
+
+/* Modal overlays */
+[data-theme="dark"] .bg-black\/40,
+[data-theme="dark"] .bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* Timeline dots */
+[data-theme="dark"] .bg-fresco-border {
+  background-color: var(--fresco-border);
+}
+
+/* Input fields */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: var(--fresco-light-gray);
+  color: var(--fresco-black);
+  border-color: var(--fresco-border);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--fresco-graphite-mid);
+}
+
+/* Focus states in dark mode */
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus {
+  border-color: var(--fresco-graphite-light);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--fresco-border);
+}
+
+/* Scrollbar in dark mode */
+[data-theme="dark"] ::-webkit-scrollbar {
+  background: var(--fresco-off-white);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--fresco-border);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--fresco-graphite-light);
+}
+
+/* Ambient background in dark mode - make it more subtle */
+[data-theme="dark"] .bg-gradient-radial {
+  opacity: 0.5;
+}
+
+/* Toast notifications in dark mode */
+[data-theme="dark"] .bg-white.rounded-xl.shadow-lg {
+  background-color: var(--fresco-off-white);
+  border: 1px solid var(--fresco-border);
+}
+
+/* Fix icon themed class for all icons */
+[data-theme="dark"] .icon-themed {
+  filter: invert(1);
+}
+
+/* ============================================
+   FOCUS UTILITIES
+   ============================================ */
+
+/* Standard focus ring for interactive elements */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--fresco-black);
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] .focus-ring:focus-visible {
+  outline-color: var(--fresco-white);
+}
+
+/* Remove default focus outlines, rely on custom */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ============================================
+   TRANSITION UTILITIES
+   ============================================ */
+
+/* Standard transition for all interactive elements */
+.transition-standard {
+  transition: all 0.2s ease;
+}
+
+/* Micro-interaction for clickable cards */
+.interactive-card {
+  transition: all 0.2s ease;
+}
+
+.interactive-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.interactive-card:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+/* Consistent skeleton loading animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--fresco-light-gray) 25%,
+    var(--fresco-warm-gray) 50%,
+    var(--fresco-light-gray) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--fresco-light-gray) 25%,
+    var(--fresco-border) 50%,
+    var(--fresco-light-gray) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Pulse animation for generating states */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.pulse-loading {
+  animation: pulse-subtle 1.5s ease-in-out infinite;
+}
