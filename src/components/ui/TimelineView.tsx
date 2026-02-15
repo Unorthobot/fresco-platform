@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Sparkles, ChevronRight } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
-import { TOOLKITS, type Session } from '@/types';
+import { TOOLKITS } from '@/types';
+type Session = any;
 
 interface TimelineViewProps {
   sessions: Session[];
