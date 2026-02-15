@@ -346,7 +346,7 @@ export function InsightStack({ sessionId, workspaceId, onBack }: InsightStackPro
     setSentenceOfTruth(sessionId, suggestion);
   };
   
-  const getLensHint = (step: typeof toolkit.steps[0]) => {
+  const getLensHint = (stepNumber: number) => {
     const lens = session?.thinkingLens || 'automatic';
     if (lens === 'automatic') return null;
     const hints: Record<string, Record<number, string>> = {
@@ -435,7 +435,7 @@ export function InsightStack({ sessionId, workspaceId, onBack }: InsightStackPro
         5: 'What is the moral of this story?' 
       },
     };
-    return hints[lens]?.[step.stepNumber];
+    return hints[lens]?.[stepNumber];
   };
   
   // Export functions
@@ -572,7 +572,7 @@ export function InsightStack({ sessionId, workspaceId, onBack }: InsightStackPro
                   </div>
                 )}
                 
-                {getLensHint(step) && <p className="mt-3 text-fresco-sm text-fresco-graphite-light italic">💡 {getLensHint(step)}</p>}
+                {getLensHint(step.stepNumber) && <p className="mt-3 text-fresco-sm text-fresco-graphite-light italic">💡 {getLensHint(step.stepNumber)}</p>}
               </motion.div>
             ))}
           </div>
