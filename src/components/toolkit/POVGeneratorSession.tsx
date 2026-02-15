@@ -584,7 +584,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
             content: stepResponses[step.stepNumber] || ''
           })),
           insights: aiContent.insights,
-          sentenceOfTruth: aiContent.sentenceOfTruth || povStatement,
+          sentenceOfTruth: aiContent.sentenceOfTruth || povStatement || "",
           necessaryMoves: aiContent.necessaryMoves,
         }}
       />
