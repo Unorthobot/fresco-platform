@@ -23,7 +23,7 @@ export function ConnectedInsights({ sessions, onSessionClick, className }: Conne
           type: 'insight' as const,
           content: insight,
           session,
-          toolkit: TOOLKITS[session.toolkitType]
+          toolkit: TOOLKITS[session.toolkitType as keyof typeof TOOLKITS]
         }));
         
         if (session.sentenceOfTruth?.content) {
@@ -31,7 +31,7 @@ export function ConnectedInsights({ sessions, onSessionClick, className }: Conne
             type: 'truth' as const,
             content: session.sentenceOfTruth.content,
             session,
-            toolkit: TOOLKITS[session.toolkitType]
+            toolkit: TOOLKITS[session.toolkitType as keyof typeof TOOLKITS]
           });
         }
         
