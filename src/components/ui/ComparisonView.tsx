@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeftRight, X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TOOLKITS, type Session } from '@/types';
+import { TOOLKITS } from '@/types';
 
+type Session = any;
 interface ComparisonViewProps {
   sessions: Session[];
   onClose?: () => void;
