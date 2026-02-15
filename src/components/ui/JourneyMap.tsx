@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Check, ChevronRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TOOLKITS, type ToolkitType, type ToolkitCategory, type Session } from '@/types';
+import { TOOLKITS, type ToolkitType, type ToolkitCategory } from '@/types';
+type Session = any;
 
 interface JourneyMapProps {
   sessions: Session[];
