@@ -52,7 +52,7 @@ export function ConnectedInsights({ sessions, onSessionClick, className }: Conne
       
       allInsights.slice(i + 1).forEach((other, j) => {
         const otherWords = other.content.toLowerCase();
-        const matchingWord = significantWords.find(w => otherWords.includes(w));
+        const matchingWord = significantWords.find((w: string) => otherWords.includes(w));
         if (matchingWord && insight.session.id !== other.session.id) {
           conn.push({ from: i, to: i + j + 1, keyword: matchingWord });
         }
