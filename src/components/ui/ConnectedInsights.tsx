@@ -45,7 +45,7 @@ export function ConnectedInsights({ sessions, onSessionClick, className }: Conne
     
     allInsights.forEach((insight, i) => {
       const words = insight.content.toLowerCase().split(/\s+/);
-      const significantWords = words.filter(w => 
+      const significantWords = words.filter((w: string) => 
         w.length > 5 && 
         !['about', 'there', 'their', 'which', 'would', 'could', 'should'].includes(w)
       );
