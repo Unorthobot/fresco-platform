@@ -102,7 +102,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
   useEffect(() => {
     if (session?.steps) {
       const responses: Record<number, string> = {};
-      session.steps.forEach((step) => { responses[step.stepNumber] = step.content; });
+      session.steps.forEach((step) => { responses[step.stepNumber] = step.content || ""; });
       setStepResponses(responses);
     }
     if (session?.sentenceOfTruth?.content) {

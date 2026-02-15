@@ -88,7 +88,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
     if (session?.steps) {
       const responses: Record<number, string> = {};
       session.steps.forEach((step) => { 
-        responses[step.stepNumber] = step.content;
+        responses[step.stepNumber] = step.content || "";
       });
       setStepResponses(responses);
     }
