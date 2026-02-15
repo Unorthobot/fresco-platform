@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Link2, ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TOOLKITS, type Session } from '@/types';
+import { TOOLKITS } from '@/types';
+type Session = any;
 
 interface ConnectedInsightsProps {
   sessions: Session[];
