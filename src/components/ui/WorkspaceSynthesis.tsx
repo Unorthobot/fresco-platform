@@ -37,7 +37,7 @@ export function WorkspaceSynthesis({ sessions, workspaceTitle, className }: Work
       
       // Gather insights
       if (session.aiOutputs?.insights) {
-        session.aiOutputs.insights.forEach(insight => {
+        session.aiOutputs.insights.forEach((insight: any) => {
           insights.push({ toolkit: toolkitName, content: insight });
         });
       }
