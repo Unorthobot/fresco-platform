@@ -118,7 +118,7 @@ export function ComparisonView({ sessions, onClose, className }: ComparisonViewP
                   </div>
                   {session.aiOutputs?.insights?.length ? (
                     <ul className="space-y-2">
-                      {session.aiOutputs.insights.slice(0, 3).map((insight, i) => (
+                      {session.aiOutputs.insights.slice(0, 3).map((insight: any, i: number) => (
                         <li key={i} className="text-fresco-sm text-fresco-graphite-soft flex items-start gap-2">
                           <span className="text-fresco-graphite-light">•</span>
                           <span className="line-clamp-2">{insight}</span>
@@ -144,7 +144,7 @@ export function ComparisonView({ sessions, onClose, className }: ComparisonViewP
                       Actions ({session.aiOutputs.necessaryMoves.length})
                     </div>
                     <ul className="space-y-1">
-                      {session.aiOutputs.necessaryMoves.slice(0, 2).map((move, i) => (
+                      {session.aiOutputs.necessaryMoves.slice(0, 2).map((move: any, i: number) => (
                         <li key={i} className="text-fresco-xs text-fresco-graphite-mid">
                           → {move.content}
                         </li>
