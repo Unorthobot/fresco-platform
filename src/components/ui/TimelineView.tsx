@@ -70,7 +70,7 @@ export function TimelineView({ sessions, onSessionClick, className }: TimelineVi
           {/* Sessions for this date */}
           <div className="ml-4 pl-4 border-l-2 border-fresco-border space-y-3">
             {group.sessions.map((session, sessionIndex) => {
-              const toolkit = TOOLKITS[session.toolkitType];
+              const toolkit = TOOLKITS[session.toolkitType as keyof typeof TOOLKITS];
               const hasTruth = !!session.sentenceOfTruth?.content;
               const time = new Date(session.createdAt).toLocaleTimeString('en-GB', {
                 hour: '2-digit',
