@@ -638,8 +638,6 @@ export function InsightStack({ sessionId, workspaceId, onBack }: InsightStackPro
               isLocked={session.sentenceOfTruth?.isLocked || false}
               onChange={handleSentenceChange}
               onToggleLock={handleToggleLock}
-              suggestions={aiContent.sentenceOfTruth && aiContent.sentenceOfTruth !== manualSentence ? [aiContent.sentenceOfTruth] : []}
-              onUseSuggestion={handleUseSuggestion}
             />
           </div>
           
