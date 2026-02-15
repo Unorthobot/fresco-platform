@@ -68,7 +68,7 @@ export function ComparisonView({ sessions, onClose, className }: ComparisonViewP
             <option value="">Select session...</option>
             {sessions.map(session => (
               <option key={session.id} value={session.id}>
-                {TOOLKITS[session.toolkitType].name}
+                {TOOLKITS[session.toolkitType as keyof typeof TOOLKITS].name}
               </option>
             ))}
           </select>
