@@ -19,7 +19,7 @@ export function ConnectedInsights({ sessions, onSessionClick, className }: Conne
     return sessions
       .filter(s => s.aiOutputs?.insights?.length || s.sentenceOfTruth?.content)
       .flatMap(session => {
-        const insights = (session.aiOutputs?.insights || []).map(insight => ({
+        const insights = (session.aiOutputs?.insights || []).map((insight: any) => ({
           type: 'insight' as const,
           content: insight,
           session,
