@@ -289,7 +289,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
   };
   
   // Lens hints
-  const getLensHint = (step: typeof toolkit.steps[0]) => {
+  const getLensHint = (step: any) => {
     const lens = session?.thinkingLens || 'automatic';
     if (lens === 'automatic') return null;
     return step.lensHints?.[lens] || null;
