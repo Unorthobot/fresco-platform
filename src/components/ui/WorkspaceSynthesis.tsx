@@ -4,7 +4,8 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Loader2, Quote, Lightbulb, Target, ArrowRight, RefreshCw, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TOOLKITS, type Session } from '@/types';
+import { TOOLKITS } from '@/types';
+type Session = any;
 
 interface WorkspaceSynthesisProps {
   sessions: Session[];
