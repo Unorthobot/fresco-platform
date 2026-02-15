@@ -19,7 +19,7 @@ interface ToolkitRouterProps {
   sessionId: string;
   workspaceId: string;
   onBack?: () => void;
-  onStartToolkit?: (toolkitType: ToolkitType) => void;
+  onStartToolkit?: (toolkitType: string) => void;
 }
 
 export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit }: ToolkitRouterProps) {
