@@ -42,7 +42,7 @@ export function WorkspaceSynthesis({ sessions, workspaceTitle, className }: Work
         });
       }
       if (session.insights) {
-        session.insights.forEach(i => {
+        session.insights.forEach((i: any) => {
           if (i.content) insights.push({ toolkit: toolkitName, content: i.content });
         });
       }
