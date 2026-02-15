@@ -33,7 +33,7 @@ export function WorkspaceSynthesis({ sessions, workspaceTitle, className }: Work
     const moves: { toolkit: string; content: string }[] = [];
 
     sessions.forEach(session => {
-      const toolkitName = TOOLKITS[session.toolkitType]?.name || session.toolkitType;
+      const toolkitName = TOOLKITS[session.toolkitType as keyof typeof TOOLKITS]?.name || session.toolkitType;
       
       // Gather insights
       if (session.aiOutputs?.insights) {
