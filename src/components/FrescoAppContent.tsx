@@ -134,13 +134,13 @@ export default function FrescoAppContent() {
     setCurrentView('workspace');
   };
   
-  const handleStartToolkit = (toolkitType: ToolkitType) => {
+  const handleStartToolkit = (toolkitType: string) => {
     let workspaceId = activeWorkspaceId;
     if (!workspaceId) {
       const workspace = createWorkspace('New Workspace', 'Created for a new thinking session.');
       workspaceId = workspace.id;
     }
-    const session = createSession(workspaceId, toolkitType);
+    const session = createSession(workspaceId, toolkitType as ToolkitType);
     handleNavigateToSession(session.id, workspaceId);
   };
   
