@@ -37,7 +37,7 @@ export function JourneyMap({ sessions, onSessionClick, onToolkitStart, className
     const map: Record<ToolkitType, Session[]> = {} as any;
     HOUSES.flatMap(h => h.toolkits).forEach(t => map[t] = []);
     sessions.forEach(s => {
-      if (map[s.toolkitType]) map[s.toolkitType].push(s);
+      if (map[s.toolkitType as ToolkitType]) map[s.toolkitType as ToolkitType].push(s);
     });
     return map;
   }, [sessions]);
