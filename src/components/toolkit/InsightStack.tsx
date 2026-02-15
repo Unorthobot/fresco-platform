@@ -539,7 +539,7 @@ export function InsightStack({ sessionId, workspaceId, onBack }: InsightStackPro
                       <Upload className="w-4 h-4" />
                     </button>
                     <input
-                      ref={el => fileInputRefs.current[step.stepNumber] = el}
+                      ref={(el) => { fileInputRefs.current[step.stepNumber] = el; }}
                       type="file"
                       multiple
                       accept=".txt,.md,.csv,.json,.pdf,image/*"
