@@ -30,7 +30,7 @@ export function ShareableInsightModal({ insight, source, author, isOpen, onClose
     
     // Use html2canvas if available, otherwise fallback to copy
     try {
-      const html2canvas = (await import('html2canvas')).default;
+      const html2canvas = (await import('html2canvas' as any)).default;
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
         backgroundColor: null,
