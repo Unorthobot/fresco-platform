@@ -14,7 +14,7 @@ interface ExportOptions {
 
 export async function generatePDFReport(options: ExportOptions): Promise<Blob> {
   const { session, workspaceTitle, includeSteps = true, includeInsights = true, includeTruth = true, includeActions = true } = options;
-  const toolkit = TOOLKITS[session.toolkitType];
+  const toolkit = TOOLKITS[session.toolkitType as keyof typeof TOOLKITS];
   
   // Generate HTML content for PDF
   const htmlContent = `
