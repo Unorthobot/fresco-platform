@@ -57,7 +57,7 @@ export function WorkspaceSynthesis({ sessions, workspaceTitle, className }: Work
       
       // Gather necessary moves
       if (session.aiOutputs?.necessaryMoves) {
-        session.aiOutputs.necessaryMoves.forEach(move => {
+        session.aiOutputs.necessaryMoves.forEach((move: any) => {
           moves.push({ toolkit: toolkitName, content: move });
         });
       }
