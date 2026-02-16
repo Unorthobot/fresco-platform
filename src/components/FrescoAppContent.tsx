@@ -189,7 +189,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           
-          {currentView === 'workspace' && (
+          {currentView === 'workspace' && activeWorkspaceId && (
             <motion.div
               key="workspace"
               initial={{ opacity: 0 }}
@@ -206,7 +206,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           
-          {currentView === 'session' && (
+          {currentView === 'session' && activeWorkspaceId && currentSession && (
             <motion.div
               key="session"
               initial={{ opacity: 0 }}
@@ -259,6 +259,23 @@ export default function FrescoAppContent() {
               transition={{ duration: 0.2 }}
             >
               <AccountPage />
+            </motion.div>
+          )}
+        {/* Fallback to home if nothing matches */}
+          {currentView !== 'home' && currentView !== 'archive' && currentView !== 'settings' && currentView !== 'account' && !activeWorkspaceId && (
+            <motion.div
+              key="fallback-home"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <HomeDashboard
+                onNavigateToWorkspace={handleNavigateToWorkspace}
+                onNavigateToSession={handleNavigateToSession}
+                onCreateWorkspace={handleCreateWorkspace}
+                onStartToolkit={handleStartToolkit}
+              />
             </motion.div>
           )}
         </AnimatePresence>
