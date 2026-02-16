@@ -196,7 +196,7 @@ export async function generatePDFReport(options: ExportOptions): Promise<Blob> {
         <div class="section">
           <h2 class="section-title">Key Insights</h2>
           <ul class="insight-list">
-            ${session.aiOutputs.insights.map((insight, i) => `
+            ${session.aiOutputs.insights.map((insight: any, i: number) => `
               <li class="insight-item">
                 <span class="insight-number">${i + 1}</span>
                 <span class="insight-text">${insight}</span>
