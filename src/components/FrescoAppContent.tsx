@@ -72,7 +72,7 @@ export default function FrescoAppContent() {
   
   // Handle deleted workspace - navigate back to home
   useEffect(() => {
-    if (activeWorkspaceId && !currentWorkspace) {
+    if ((currentView === 'workspace' || currentView === 'session') && !activeWorkspaceId) {
       // Workspace was deleted, navigate back to home
       setActiveSession(null);
       setActiveWorkspace(null);
