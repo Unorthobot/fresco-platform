@@ -173,6 +173,8 @@ export const useFrescoStore = create<FrescoState>()(
           workspaces: state.workspaces.filter((w) => w.id !== id),
           sessions: state.sessions.filter((s) => s.workspaceId !== id),
           activeWorkspaceId: state.activeWorkspaceId === id ? null : state.activeWorkspaceId,
+          activeSessionId: state.activeWorkspaceId === id ? null : state.activeSessionId,
+          activeSection: state.activeWorkspaceId === id ? "home" : state.activeSection,
         }));
       },
       
@@ -218,6 +220,7 @@ export const useFrescoStore = create<FrescoState>()(
         set((state) => ({
           sessions: state.sessions.filter((s) => s.id !== id),
           activeSessionId: state.activeSessionId === id ? null : state.activeSessionId,
+          activeSection: state.activeSessionId === id ? "home" : state.activeSection,
         }));
       },
       
