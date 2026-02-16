@@ -189,7 +189,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           
-          {currentView === 'workspace' && activeWorkspaceId && (
+          {currentView === 'workspace' && (
             <motion.div
               key="workspace"
               initial={{ opacity: 0 }}
@@ -206,7 +206,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           
-          {currentView === 'session' && currentSession && activeWorkspaceId && (
+          {currentView === 'session' && (
             <motion.div
               key="session"
               initial={{ opacity: 0 }}
