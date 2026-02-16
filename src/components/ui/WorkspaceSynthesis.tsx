@@ -62,7 +62,7 @@ export function WorkspaceSynthesis({ sessions, workspaceTitle, className }: Work
         });
       }
       if (session.necessaryMoves) {
-        session.necessaryMoves.forEach(m => {
+        session.necessaryMoves.forEach((m: any) => {
           if (m.content) moves.push({ toolkit: toolkitName, content: m.content });
         });
       }
