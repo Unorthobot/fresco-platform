@@ -218,7 +218,7 @@ export async function generatePDFReport(options: ExportOptions): Promise<Blob> {
       ${includeSteps && session.steps?.length ? `
         <div class="section">
           <h2 class="section-title">Input Summary</h2>
-          ${session.steps.filter(s => s.content).map(step => `
+          ${session.steps.filter((s: any) => s.content).map((step: any) => `
             <div class="step-item">
               <div class="step-label">${step.label}</div>
               <div class="step-content">${step.content}</div>
