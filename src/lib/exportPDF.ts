@@ -209,7 +209,7 @@ export async function generatePDFReport(options: ExportOptions): Promise<Blob> {
       ${includeActions && session.aiOutputs?.necessaryMoves?.length ? `
         <div class="section">
           <h2 class="section-title">Necessary Moves</h2>
-          ${session.aiOutputs.necessaryMoves.map(move => `
+          ${session.aiOutputs.necessaryMoves.map((move: any) => `
             <div class="action-item">→ ${move}</div>
           `).join('')}
         </div>
