@@ -1,6 +1,7 @@
 'use client';
 
-import { TOOLKITS, type Session } from '@/types';
+import { TOOLKITS } from '@/types';
+type Session = any;
 
 interface ExportOptions {
   session: Session;
