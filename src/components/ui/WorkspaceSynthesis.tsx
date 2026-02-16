@@ -132,7 +132,7 @@ export function WorkspaceSynthesis({ sessions, workspaceTitle, className }: Work
   };
 
   const generateProjectSummary = (data: typeof workspaceData) => {
-    const toolkitsUsed = [...new Set(sessions.map(s => TOOLKITS[s.toolkitType]?.name))].filter(Boolean);
+    const toolkitsUsed = [...new Set(sessions.map((s: any) => TOOLKITS[s.toolkitType as keyof typeof TOOLKITS]?.name))].filter(Boolean);
     return `This workspace explored ${toolkitsUsed.length} thinking dimension${toolkitsUsed.length !== 1 ? 's' : ''} (${toolkitsUsed.join(', ')}), generating ${data.insights.length} insight${data.insights.length !== 1 ? 's' : ''} and ${data.truths.length} core truth${data.truths.length !== 1 ? 's' : ''}.`;
   };
 
