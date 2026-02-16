@@ -448,9 +448,9 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                       "{session.sentenceOfTruth.content}"
                                     </p>
                                   )}
-                                  {session.aiOutputs?.insights?.length > 0 && (
+                                  {session.insights?.length > 0 && (
                                     <p className="text-fresco-xs text-fresco-graphite-light mt-2">
-                                      {session.aiOutputs.insights.length} insights
+                                      {session.insights.length} insights
                                     </p>
                                   )}
                                 </div>
