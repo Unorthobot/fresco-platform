@@ -2,14 +2,16 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { User, CreditCard, Calendar, LogOut, Check, Crown, Zap, Camera, Upload, Users } from 'lucide-react';
+import { User, CreditCard, Calendar, LogOut, Check, Crown, Zap, Camera, Upload, Users, Loader2 } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
+import { redirectToCheckout, PRICING_PLANS } from '@/lib/stripe';
 
 export function AccountPage() {
   const { user, sessions, workspaces, setUser } = useFrescoStore();
   const [saved, setSaved] = useState(false);
   const [name, setName] = useState(user?.name || 'Demo User');
   const [email, setEmail] = useState(user?.email || 'demo@fresco.app');
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
@@ -33,6 +35,27 @@ export function AccountPage() {
         });
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpgrade = async (planKey: 'pro' | 'studio') => {
+    const priceId = planKey === 'pro' 
+      ? (process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || PRICING_PLANS.pro.priceId)
+      : (process.env.NEXT_PUBLIC_STRIPE_STUDIO_PRICE_ID || PRICING_PLANS.studio.priceId);
+    
+    if (!priceId) {
+      alert('Payment system not configured');
+      return;
+    }
+
+    setLoadingPlan(planKey);
+    try {
+      await redirectToCheckout(priceId, email);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Failed to start checkout. Please try again.');
+    } finally {
+      setLoadingPlan(null);
     }
   };
 
@@ -136,7 +159,7 @@ export function AccountPage() {
                     <p className="text-fresco-sm text-fresco-graphite-mid dark:text-gray-400">For individuals exploring structured thinking</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-fresco-2xl font-medium text-fresco-black dark:text-white">R0</span>
+                    <span className="text-fresco-2xl font-medium text-fresco-black dark:text-white">$0</span>
                     <span className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">/month</span>
                   </div>
                 </div>
@@ -190,7 +213,7 @@ export function AccountPage() {
                     <p className="text-fresco-sm text-fresco-graphite-mid dark:text-gray-400">For serious thinkers, strategists, and builders</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-fresco-2xl font-medium text-fresco-black dark:text-white">R299</span>
+                    <span className="text-fresco-2xl font-medium text-fresco-black dark:text-white">$29</span>
                     <span className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">/month</span>
                   </div>
                 </div>
@@ -239,8 +262,19 @@ export function AccountPage() {
                   <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500 italic flex-1 pr-4">
                     "For people who don't just want answers — they want better questions, faster clarity, and confidence before execution."
                   </p>
-                  <button className="fresco-btn fresco-btn-primary fresco-btn-sm flex-shrink-0">
-                    Upgrade to Pro
+                  <button 
+                    onClick={() => handleUpgrade('pro')}
+                    disabled={loadingPlan !== null}
+                    className="fresco-btn fresco-btn-primary fresco-btn-sm flex-shrink-0 flex items-center gap-2"
+                  >
+                    {loadingPlan === 'pro' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      'Upgrade to Pro'
+                    )}
                   </button>
                 </div>
               </div>
@@ -256,14 +290,14 @@ export function AccountPage() {
                     <p className="text-fresco-sm text-fresco-graphite-mid dark:text-gray-400">For teams that need shared clarity before shared execution</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-fresco-2xl font-medium text-fresco-black dark:text-white">R1,495</span>
+                    <span className="text-fresco-2xl font-medium text-fresco-black dark:text-white">$79</span>
                     <span className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">/month</span>
                     <p className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500">up to 5 users</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-2 mb-3 p-2 bg-violet-100/50 dark:bg-violet-900/30 rounded-lg">
-                  <span className="text-fresco-xs text-violet-700 dark:text-violet-300">+R299/user/month for additional seats</span>
+                  <span className="text-fresco-xs text-violet-700 dark:text-violet-300">+$15/user/month for additional seats</span>
                 </div>
                 
                 <p className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500 mb-3">Everything in Pro, plus:</p>
@@ -318,8 +352,19 @@ export function AccountPage() {
                   <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500 italic flex-1 pr-4">
                     "Because misalignment is expensive — and clarity is a team sport."
                   </p>
-                  <button className="fresco-btn fresco-btn-sm flex-shrink-0 bg-violet-600 border-violet-600 text-white hover:bg-violet-700 hover:border-violet-700 transition-colors">
-                    Contact Sales
+                  <button 
+                    onClick={() => handleUpgrade('studio')}
+                    disabled={loadingPlan !== null}
+                    className="fresco-btn fresco-btn-sm flex-shrink-0 bg-violet-600 border-violet-600 text-white hover:bg-violet-700 hover:border-violet-700 transition-colors flex items-center gap-2"
+                  >
+                    {loadingPlan === 'studio' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      'Upgrade to Studio'
+                    )}
                   </button>
                 </div>
               </div>
