@@ -40,8 +40,8 @@ export function AccountPage() {
 
   const handleUpgrade = async (planKey: 'pro' | 'studio') => {
     const priceId = planKey === 'pro' 
-      ? (process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || PRICING_PLANS.pro.priceId)
-      : (process.env.NEXT_PUBLIC_STRIPE_STUDIO_PRICE_ID || PRICING_PLANS.studio.priceId);
+      ? (process.env.'price_1T1muDDxdMzzMWBlKFBbR4jK')
+      : (process.env.'price_1T1mvMDxdMzzMWBlnhUI3Sjn');
     
     if (!priceId) {
       alert('Payment system not configured');
