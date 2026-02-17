@@ -27,6 +27,11 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit }
   const session = sessions.find((s) => s.id === sessionId);
   
   if (!session) {
+    // Session was deleted, trigger onBack
+    if (onBack) {
+      onBack();
+      return null;
+    }
     return (
       <div className="flex items-center justify-center h-96">
         <p className="text-fresco-graphite-light">Session not found</p>
