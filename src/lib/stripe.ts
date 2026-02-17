@@ -42,7 +42,7 @@ export const PRICING_PLANS = {
   studio: {
     name: 'Studio',
     price: 79,
-    priceId: 'price_1T1mvMDxdMzzMWBlnhUI3Sjn',
+    priceId: 'price_1T1mvMDxdMzzMWBlnhUl3Sjn',
     description: 'For teams and organizations',
     features: [
       'Everything in Pro',

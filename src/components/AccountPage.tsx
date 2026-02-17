@@ -16,7 +16,7 @@ export function AccountPage() {
   
   const PRICE_IDS = {
     pro: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || 'price_1T1muDDxdMzzMWBlKFBbR4jK',
-    studio: process.env.NEXT_PUBLIC_STRIPE_STUDIO_PRICE_ID || 'price_1T1mvMDxdMzzMWBlnhUI3Sjn',
+    studio: process.env.NEXT_PUBLIC_STRIPE_STUDIO_PRICE_ID || 'price_1T1mvMDxdMzzMWBlnhUl3Sjn',
   };
   
   const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
@@ -44,7 +44,7 @@ export function AccountPage() {
   };
 
   const handleUpgrade = async (planKey: 'pro' | 'studio') => {
-    const priceId = planKey === 'pro' ? 'price_1T1muDDxdMzzMWBlKFBbR4jK' : 'price_1T1mvMDxdMzzMWBlnhUI3Sjn';
+    const priceId = planKey === 'pro' ? 'price_1T1muDDxdMzzMWBlKFBbR4jK' : 'price_1T1mvMDxdMzzMWBlnhUl3Sjn';
     
     if (!priceId) {
       alert('Payment system not configured');
