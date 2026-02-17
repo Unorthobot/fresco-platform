@@ -2,9 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { User, CreditCard, Calendar, LogOut, Check, Crown, Zap, Camera, Upload, Users, Loader2 } from 'lucide-react';
+import { User, CreditCard, Calendar, LogOut, Check, Crown, Zap, Camera, Users, Loader2 } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
-import { redirectToCheckout, PRICING_PLANS } from '@/lib/stripe';
+import { redirectToCheckout } from '@/lib/stripe';
 
 export function AccountPage() {
   const { user, sessions, workspaces, setUser } = useFrescoStore();
@@ -13,6 +13,11 @@ export function AccountPage() {
   const [email, setEmail] = useState(user?.email || 'demo@fresco.app');
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const PRICE_IDS = {
+    pro: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || 'price_1T1muDDxdMzzMWBlKFBbR4jK',
+    studio: process.env.NEXT_PUBLIC_STRIPE_STUDIO_PRICE_ID || 'price_1T1mvMDxdMzzMWBlnhUI3Sjn',
+  };
   
   const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
   
@@ -39,9 +44,7 @@ export function AccountPage() {
   };
 
   const handleUpgrade = async (planKey: 'pro' | 'studio') => {
-    const priceId = planKey === 'pro' 
-      ? (process.env.'price_1T1muDDxdMzzMWBlKFBbR4jK')
-      : (process.env.'price_1T1mvMDxdMzzMWBlnhUI3Sjn');
+    const priceId = PRICE_IDS[planKey];
     
     if (!priceId) {
       alert('Payment system not configured');
@@ -84,7 +87,6 @@ export function AccountPage() {
               <User className="w-5 h-5" />Profile
             </h2>
             <div className="flex items-start gap-6 mb-6">
-              {/* Profile Picture */}
               <div className="relative">
                 <input
                   type="file"
@@ -145,61 +147,37 @@ export function AccountPage() {
             
             <div className="space-y-6">
               {/* Free Tier - Current */}
-              <div className="relative p-6 border-2 border-fresco-black dark:border-white rounded-2xl bg-fresco-white dark:bg-fresco-black">
+              <div className="relative p-6 border-2 border-fresco-black rounded-2xl bg-fresco-white">
                 <div className="absolute -top-3 left-6">
-                  <span className="px-3 py-1 bg-fresco-black dark:bg-white text-white dark:text-fresco-black text-fresco-xs font-medium rounded-full uppercase tracking-wider">Current Plan</span>
+                  <span className="px-3 py-1 bg-fresco-black text-white text-fresco-xs font-medium rounded-full uppercase tracking-wider">Current Plan</span>
                 </div>
                 
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <Zap className="w-5 h-5 text-fresco-black dark:text-white" />
-                      <span className="text-fresco-lg font-medium text-fresco-black dark:text-white">Free</span>
+                      <Zap className="w-5 h-5 text-fresco-black" />
+                      <span className="text-fresco-lg font-medium text-fresco-black">Free</span>
                     </div>
-                    <p className="text-fresco-sm text-fresco-graphite-mid dark:text-gray-400">For individuals exploring structured thinking</p>
+                    <p className="text-fresco-sm text-fresco-graphite-mid">For individuals exploring structured thinking</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-fresco-2xl font-medium text-fresco-black dark:text-white">$0</span>
-                    <span className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">/month</span>
+                    <span className="text-fresco-2xl font-medium text-fresco-black">$0</span>
+                    <span className="text-fresco-sm text-fresco-graphite-light">/month</span>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <span>Access to all 9 toolkits</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <span>All 16 thinking modes</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <span>Up to 3 active workspaces</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <span>Basic AI-assisted prompts</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <span>Manual artefact creation</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <span>Export to text / markdown</span>
-                  </div>
-                </div>
-                
-                <div className="pt-4 border-t border-fresco-border-light dark:border-gray-700">
-                  <p className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500 italic">
-                    "Everything you need to think clearly — with limits designed to help you decide if Fresco deserves a permanent place in your workflow."
-                  </p>
+                  {['Access to all 9 toolkits', 'All 16 thinking modes', 'Up to 3 active workspaces', 'Basic AI-assisted prompts', 'Manual artefact creation', 'Export to text / markdown'].map((feature) => (
+                    <div key={feature} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft">
+                      <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <span>{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
               
               {/* Pro Tier */}
-              <div className="relative p-6 border border-fresco-border dark:border-amber-900/50 rounded-2xl bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30 hover:border-fresco-graphite-light dark:hover:border-amber-700 transition-colors">
+              <div className="relative p-6 border border-fresco-border rounded-2xl bg-gradient-to-br from-amber-50/50 to-orange-50/50 hover:border-fresco-graphite-light transition-colors">
                 <div className="absolute -top-3 left-6">
                   <span className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-fresco-xs font-medium rounded-full uppercase tracking-wider">Recommended</span>
                 </div>
@@ -207,60 +185,31 @@ export function AccountPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <Crown className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                      <span className="text-fresco-lg font-medium text-fresco-black dark:text-white">Pro</span>
+                      <Crown className="w-5 h-5 text-amber-600" />
+                      <span className="text-fresco-lg font-medium text-fresco-black">Pro</span>
                     </div>
-                    <p className="text-fresco-sm text-fresco-graphite-mid dark:text-gray-400">For serious thinkers, strategists, and builders</p>
+                    <p className="text-fresco-sm text-fresco-graphite-mid">For serious thinkers, strategists, and builders</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-fresco-2xl font-medium text-fresco-black dark:text-white">$29</span>
-                    <span className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">/month</span>
+                    <span className="text-fresco-2xl font-medium text-fresco-black">$29</span>
+                    <span className="text-fresco-sm text-fresco-graphite-light">/month</span>
                   </div>
                 </div>
                 
-                <p className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500 mb-3">Everything in Free, plus:</p>
+                <p className="text-fresco-xs text-fresco-graphite-light mb-3">Everything in Free, plus:</p>
                 
                 <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                    <span>Unlimited workspaces</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                    <span>Workspace history tracking</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                    <span>Advanced AI synthesis (cross-toolkit reasoning, pattern detection)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                    <span>Priority model access</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                    <span>AI-generated clarity snapshots</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                    <span>Early access to new features</span>
-                  </div>
+                  {['Unlimited workspaces', 'Workspace history tracking', 'Advanced AI synthesis', 'Priority model access', 'AI-generated clarity snapshots', 'Early access to new features'].map((feature) => (
+                    <div key={feature} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft">
+                      <Check className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span>{feature}</span>
+                    </div>
+                  ))}
                 </div>
                 
-                <div className="flex items-center gap-4 mb-4">
-                  <span className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500 uppercase tracking-wider">Built for:</span>
-                  <div className="flex flex-wrap gap-2">
-                    {['Strategists', 'Designers', 'Researchers', 'Founders'].map(role => (
-                      <span key={role} className="px-2 py-0.5 bg-white/80 dark:bg-white/10 text-fresco-xs text-fresco-graphite-mid dark:text-gray-300 rounded">
-                        {role}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between pt-4 border-t border-amber-200/50 dark:border-amber-800/30">
-                  <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500 italic flex-1 pr-4">
-                    "For people who don't just want answers — they want better questions, faster clarity, and confidence before execution."
+                <div className="flex items-center justify-between pt-4 border-t border-amber-200/50">
+                  <p className="text-fresco-sm text-fresco-graphite-light italic flex-1 pr-4">
+                    "For people who don't just want answers — they want better questions."
                   </p>
                   <button 
                     onClick={() => handleUpgrade('pro')}
@@ -280,76 +229,35 @@ export function AccountPage() {
               </div>
               
               {/* Studio/Team Tier */}
-              <div className="relative p-6 border border-fresco-border dark:border-violet-900/50 rounded-2xl bg-gradient-to-br from-violet-50/30 to-indigo-50/30 dark:from-violet-950/30 dark:to-indigo-950/30 hover:border-fresco-graphite-light dark:hover:border-violet-700 transition-colors">
+              <div className="relative p-6 border border-fresco-border rounded-2xl bg-gradient-to-br from-violet-50/30 to-indigo-50/30 hover:border-fresco-graphite-light transition-colors">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <Users className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                      <span className="text-fresco-lg font-medium text-fresco-black dark:text-white">Studio / Team</span>
+                      <Users className="w-5 h-5 text-violet-600" />
+                      <span className="text-fresco-lg font-medium text-fresco-black">Studio / Team</span>
                     </div>
-                    <p className="text-fresco-sm text-fresco-graphite-mid dark:text-gray-400">For teams that need shared clarity before shared execution</p>
+                    <p className="text-fresco-sm text-fresco-graphite-mid">For teams that need shared clarity</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-fresco-2xl font-medium text-fresco-black dark:text-white">$79</span>
-                    <span className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">/month</span>
-                    <p className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500">up to 5 users</p>
+                    <span className="text-fresco-2xl font-medium text-fresco-black">$79</span>
+                    <span className="text-fresco-sm text-fresco-graphite-light">/month</span>
+                    <p className="text-fresco-xs text-fresco-graphite-light">up to 5 users</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 mb-3 p-2 bg-violet-100/50 dark:bg-violet-900/30 rounded-lg">
-                  <span className="text-fresco-xs text-violet-700 dark:text-violet-300">+$15/user/month for additional seats</span>
-                </div>
-                
-                <p className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500 mb-3">Everything in Pro, plus:</p>
+                <p className="text-fresco-xs text-fresco-graphite-light mb-3">Everything in Pro, plus:</p>
                 
                 <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                    <span>Shared team workspaces</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                    <span>Collaborative thinking sessions</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                    <span>Role-based access control</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                    <span>Team-level clarity artefacts</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                    <span>Decision logs & rationale tracking</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                    <span>Alignment snapshots</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                    <span>Priority support</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft dark:text-gray-300">
-                    <Check className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                    <span>Onboarding guidance</span>
-                  </div>
+                  {['Shared team workspaces', 'Collaborative thinking sessions', 'Role-based access control', 'Team-level clarity artefacts', 'Decision logs & rationale tracking', 'Priority support'].map((feature) => (
+                    <div key={feature} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-soft">
+                      <Check className="w-4 h-4 text-violet-600 flex-shrink-0" />
+                      <span>{feature}</span>
+                    </div>
+                  ))}
                 </div>
                 
-                <div className="flex items-center gap-4 mb-4">
-                  <span className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500 uppercase tracking-wider">Built for:</span>
-                  <div className="flex flex-wrap gap-2">
-                    {['Product teams', 'Strategy teams', 'Agencies', 'Leadership'].map(role => (
-                      <span key={role} className="px-2 py-0.5 bg-white/80 dark:bg-white/10 text-fresco-xs text-fresco-graphite-mid dark:text-gray-300 rounded">
-                        {role}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between pt-4 border-t border-violet-200/50 dark:border-violet-800/30">
-                  <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500 italic flex-1 pr-4">
+                <div className="flex items-center justify-between pt-4 border-t border-violet-200/50">
+                  <p className="text-fresco-sm text-fresco-graphite-light italic flex-1 pr-4">
                     "Because misalignment is expensive — and clarity is a team sport."
                   </p>
                   <button 
