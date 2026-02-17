@@ -44,7 +44,7 @@ export function AccountPage() {
   };
 
   const handleUpgrade = async (planKey: 'pro' | 'studio') => {
-    const priceId = PRICE_IDS[planKey];
+    const priceId = planKey === 'pro' ? 'price_1T1muDDxdMzzMWBlKFBbR4jK' : 'price_1T1mvMDxdMzzMWBlnhUI3Sjn';
     
     if (!priceId) {
       alert('Payment system not configured');

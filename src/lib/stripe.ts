@@ -25,7 +25,7 @@ export const PRICING_PLANS = {
   pro: {
     name: 'Pro',
     price: 29,
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || 'price_1T1muDDxdMzzMWBlKFBbR4jK',
+    priceId: 'price_1T1muDDxdMzzMWBlKFBbR4jK',
     description: 'For professionals and power users',
     features: [
       'Unlimited workspaces',
@@ -35,14 +35,14 @@ export const PRICING_PLANS = {
       'Custom templates',
     ],
     limits: {
-      workspaces: -1, // unlimited
-      aiGenerations: -1, // unlimited
+      workspaces: -1,
+      aiGenerations: -1,
     },
   },
   studio: {
     name: 'Studio',
     price: 79,
-    priceId: process.env.NEXT_PUBLIC_STRIPE_STUDIO_PRICE_ID || 'price_1T1mvMDxdMzzMWBlnhUI3Sjn',
+    priceId: 'price_1T1mvMDxdMzzMWBlnhUI3Sjn',
     description: 'For teams and organizations',
     features: [
       'Everything in Pro',
@@ -63,6 +63,8 @@ export const PRICING_PLANS = {
 export type PlanType = keyof typeof PRICING_PLANS;
 
 export async function redirectToCheckout(priceId: string, userEmail?: string) {
+  console.log('Starting checkout with priceId:', priceId);
+  
   try {
     const response = await fetch('/api/stripe/checkout', {
       method: 'POST',
@@ -75,14 +77,17 @@ export async function redirectToCheckout(priceId: string, userEmail?: string) {
       }),
     });
 
-    const { url, error } = await response.json();
+    const data = await response.json();
+    console.log('Checkout response:', data);
 
-    if (error) {
-      throw new Error(error);
+    if (data.error) {
+      throw new Error(data.error);
     }
 
-    if (url) {
-      window.location.href = url;
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      throw new Error('No checkout URL returned');
     }
   } catch (error) {
     console.error('Error redirecting to checkout:', error);
