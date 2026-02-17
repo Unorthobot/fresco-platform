@@ -38,6 +38,13 @@ export default function FrescoAppContent() {
   const currentSession = activeSessionId ? sessions.find(s => s.id === activeSessionId) : null;
   const currentWorkspace = activeWorkspaceId ? workspaces.find(w => w.id === activeWorkspaceId) : null;
   
+  // Compute effective view - ensures we never show a blank screen
+  const effectiveView = (() => {
+    if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
+    if (currentView === 'session' && (!activeWorkspaceId || !currentSession)) return 'home';
+    return currentView;
+  })();
+  
   // Update view based on active state
   useEffect(() => {
     if (activeSection === 'archive') {
@@ -172,7 +179,7 @@ export default function FrescoAppContent() {
       
       <main id="main-content" className="md:ml-[220px] min-h-screen">
         <AnimatePresence mode="wait">
-          {currentView === 'home' && (
+          {effectiveView === 'home' && (
             <motion.div
               key="home"
               initial={{ opacity: 0 }}
@@ -189,7 +196,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           
-          {currentView === 'workspace' && activeWorkspaceId && (
+          {effectiveView === 'workspace' && activeWorkspaceId && (
             <motion.div
               key="workspace"
               initial={{ opacity: 0 }}
@@ -206,7 +213,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           
-          {currentView === 'session' && activeWorkspaceId && currentSession && (
+          {effectiveView === 'session' && activeWorkspaceId && currentSession && (
             <motion.div
               key="session"
               initial={{ opacity: 0 }}
@@ -224,7 +231,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           
-          {currentView === 'archive' && (
+          {effectiveView === 'archive' && (
             <motion.div
               key="archive"
               initial={{ opacity: 0 }}
@@ -238,7 +245,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           
-          {currentView === 'settings' && (
+          {effectiveView === 'settings' && (
             <motion.div
               key="settings"
               initial={{ opacity: 0 }}
@@ -250,7 +257,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           
-          {currentView === 'account' && (
+          {effectiveView === 'account' && (
             <motion.div
               key="account"
               initial={{ opacity: 0 }}
@@ -262,7 +269,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
         {/* Fallback to home if nothing matches */}
-          {currentView !== 'home' && currentView !== 'archive' && currentView !== 'settings' && currentView !== 'account' && !activeWorkspaceId && (
+          {effectiveView !== 'home' && effectiveView !== 'archive' && effectiveView !== 'settings' && effectiveView !== 'account' && !activeWorkspaceId && (
             <motion.div
               key="fallback-home"
               initial={{ opacity: 0 }}
