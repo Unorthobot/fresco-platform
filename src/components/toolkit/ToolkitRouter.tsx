@@ -3,6 +3,7 @@
 // FRESCO Toolkit Router
 // Routes to the appropriate toolkit session component based on toolkit type
 
+import { useEffect } from 'react';
 import { useFrescoStore } from '@/lib/store';
 import type { ToolkitType } from '@/types';
 import { InsightStackSession } from './InsightStackSession';
@@ -23,20 +24,22 @@ interface ToolkitRouterProps {
 }
 
 export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit }: ToolkitRouterProps) {
-  const { sessions } = useFrescoStore();
+  const { sessions, workspaces, setActiveSession, setActiveWorkspace, setActiveSection } = useFrescoStore();
   const session = sessions.find((s) => s.id === sessionId);
+  const workspace = workspaces.find((w) => w.id === workspaceId);
   
-  if (!session) {
-    // Session was deleted, trigger onBack
-    if (onBack) {
-      onBack();
-      return null;
+  // Handle deleted session or workspace - navigate back to home
+  useEffect(() => {
+    if (!session || !workspace) {
+      // Clear active state and go home
+      setActiveSession(null);
+      setActiveWorkspace(null);
+      setActiveSection('home');
     }
-    return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-fresco-graphite-light">Session not found</p>
-      </div>
-    );
+  }, [session, workspace, setActiveSession, setActiveWorkspace, setActiveSection]);
+  
+  if (!session || !workspace) {
+    return null;
   }
   
   // Route to specialized toolkit components
@@ -69,6 +72,10 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit }
       return <PerformanceGridSession sessionId={sessionId} workspaceId={workspaceId} onBack={onBack} onStartToolkit={onStartToolkit} />;
     
     default:
-      return <InsightStackSession sessionId={sessionId} workspaceId={workspaceId} onBack={onBack} onStartToolkit={onStartToolkit} />;
+      return (
+        <div className="flex items-center justify-center h-96">
+          <p className="text-fresco-graphite-light">Unknown toolkit type: {session.toolkitType}</p>
+        </div>
+      );
   }
 }
