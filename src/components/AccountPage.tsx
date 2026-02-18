@@ -22,7 +22,15 @@ export function AccountPage() {
   const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
   
   const handleSaveChanges = () => {
-    setUser({ id: user?.id || 'demo', name, email, profileImage: user?.profileImage });
+    setUser({
+      id: user?.id || 'demo', 
+      name, 
+      email, 
+      profileImage: user?.profileImage,
+      subscription: user?.subscription || 'free',
+      aiGenerationsThisMonth: user?.aiGenerationsThisMonth || 0,
+      aiGenerationsResetDate: user?.aiGenerationsResetDate || new Date().toISOString().slice(0, 7),
+    });
     showSaved();
   };
 
@@ -32,11 +40,14 @@ export function AccountPage() {
       const reader = new FileReader();
       reader.onload = (event) => {
         const imageData = event.target?.result as string;
-        setUser({ 
+        setUser({
           id: user?.id || 'demo', 
           name: user?.name || name, 
           email: user?.email || email, 
-          profileImage: imageData 
+          profileImage: imageData,
+          subscription: user?.subscription || 'free',
+          aiGenerationsThisMonth: user?.aiGenerationsThisMonth || 0,
+          aiGenerationsResetDate: user?.aiGenerationsResetDate || new Date().toISOString().slice(0, 7),
         });
       };
       reader.readAsDataURL(file);

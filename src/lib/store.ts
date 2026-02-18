@@ -20,10 +20,21 @@ import { generateId } from '@/lib/utils';
 // STORE TYPES
 // ============================================
 
+// Subscription types
+type SubscriptionTier = 'free' | 'pro' | 'studio';
+
+interface UsageLimits {
+  workspaces: number;
+  aiGenerationsPerMonth: number;
+}
+
 interface FrescoState {
   // User
   user: {
     id: string;
+    subscription: SubscriptionTier;
+    aiGenerationsThisMonth: number;
+    aiGenerationsResetDate: string;
     email: string;
     name: string;
     profileImage?: string;
@@ -87,6 +98,13 @@ interface FrescoState {
   // Actions - Navigation
   setActiveSection: (section: FrescoState['activeSection']) => void;
   
+  
+  // Actions - Usage Limits
+  canCreateWorkspace: () => boolean;
+  canUseAI: () => boolean;
+  incrementAIUsage: () => void;
+  getUsageLimits: () => UsageLimits;
+  
   // Getters
   getWorkspace: (id: string) => Workspace | undefined;
   getSession: (id: string) => ToolkitSession | undefined;
@@ -119,6 +137,9 @@ export const useFrescoStore = create<FrescoState>()(
       // Initial State
       user: {
         id: 'demo-user',
+        subscription: 'free' as const,
+        aiGenerationsThisMonth: 0,
+        aiGenerationsResetDate: new Date().toISOString().slice(0, 7),
         email: 'demo@fresco.app',
         name: 'Demo User',
       },
@@ -411,7 +432,55 @@ export const useFrescoStore = create<FrescoState>()(
       // Navigation Actions
       setActiveSection: (section) => set({ activeSection: section }),
       
-      // Getters
+      // Actions - Usage Limits
+      canCreateWorkspace: () => {
+        const state = get();
+        const limits = { free: 3, pro: -1, studio: -1 };
+        const tier = state.user?.subscription || 'free';
+        const limit = limits[tier];
+        if (limit === -1) return true;
+        return state.workspaces.length < limit;
+      },
+      
+      canUseAI: () => {
+        const state = get();
+        const limits = { free: 10, pro: -1, studio: -1 };
+        const tier = state.user?.subscription || 'free';
+        const limit = limits[tier];
+        if (limit === -1) return true;
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const userMonth = state.user?.aiGenerationsResetDate || '';
+        if (currentMonth !== userMonth) return true;
+        return (state.user?.aiGenerationsThisMonth || 0) < limit;
+      },
+      
+      incrementAIUsage: () => {
+        set((state) => {
+          const currentMonth = new Date().toISOString().slice(0, 7);
+          const userMonth = state.user?.aiGenerationsResetDate || '';
+          const resetCount = currentMonth !== userMonth;
+          return {
+            user: state.user ? {
+              ...state.user,
+              aiGenerationsThisMonth: resetCount ? 1 : (state.user.aiGenerationsThisMonth || 0) + 1,
+              aiGenerationsResetDate: currentMonth,
+            } : state.user,
+          };
+        });
+      },
+      
+      getUsageLimits: () => {
+        const state = get();
+        const tier = state.user?.subscription || 'free';
+        const limits = {
+          free: { workspaces: 3, aiGenerationsPerMonth: 10 },
+          pro: { workspaces: -1, aiGenerationsPerMonth: -1 },
+          studio: { workspaces: -1, aiGenerationsPerMonth: -1 },
+        };
+        return limits[tier];
+      },
+
+      
       getWorkspace: (id) => get().workspaces.find((w) => w.id === id),
       
       getSession: (id) => get().sessions.find((s) => s.id === id),

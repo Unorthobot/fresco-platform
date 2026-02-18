@@ -32,6 +32,8 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
     setActiveWorkspace,
     setActiveSession,
     createWorkspace,
+    canCreateWorkspace,
+    getUsageLimits,
     deleteWorkspace,
     user,
   } = useFrescoStore();
@@ -53,6 +55,11 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   }, [handleKeyDown]);
   
   const handleCreateWorkspace = () => {
+    if (!canCreateWorkspace()) {
+      const limits = getUsageLimits();
+      alert(`You've reached the limit of ${limits.workspaces} workspaces on the free plan. Upgrade to Pro for unlimited workspaces!`);
+      return;
+    }
     const workspace = createWorkspace('New Workspace', 'A new thinking space');
     setActiveWorkspace(workspace.id);
     setActiveSession(null);

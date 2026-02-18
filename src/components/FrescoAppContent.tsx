@@ -29,6 +29,8 @@ export default function FrescoAppContent() {
     setActiveWorkspace,
     setActiveSession,
     createWorkspace,
+    canCreateWorkspace,
+    getUsageLimits,
     createSession,
     sessions,
     workspaces,
@@ -134,6 +136,11 @@ export default function FrescoAppContent() {
   };
   
   const handleCreateWorkspace = () => {
+    if (!canCreateWorkspace()) {
+      const limits = getUsageLimits();
+      alert(`You have reached the limit of ${limits.workspaces} workspaces on the free plan. Upgrade to Pro for unlimited workspaces!`);
+      return;
+    }
     const workspace = createWorkspace('New Workspace', 'A new thinking space for clarity.');
     setActiveWorkspace(workspace.id);
     setActiveSession(null);
@@ -144,6 +151,11 @@ export default function FrescoAppContent() {
   const handleStartToolkit = (toolkitType: string) => {
     let workspaceId = activeWorkspaceId;
     if (!workspaceId) {
+      if (!canCreateWorkspace()) {
+        const limits = getUsageLimits();
+        alert(`You have reached the limit of ${limits.workspaces} workspaces on the free plan. Upgrade to Pro for unlimited workspaces!`);
+        return;
+      }
       const workspace = createWorkspace('New Workspace', 'Created for a new thinking session.');
       workspaceId = workspace.id;
     }
