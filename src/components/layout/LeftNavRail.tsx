@@ -18,6 +18,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useFrescoStore, useWorkspaces, useActiveWorkspace } from '@/lib/store';
 import type { Workspace } from '@/types';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
+import { UsageIndicator } from '@/components/ui/UsageIndicator';
 
 interface LeftNavRailProps {
   onNavigate?: (section: string) => void;
@@ -41,6 +43,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   const [showWorkspaces, setShowWorkspaces] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [hoveredWorkspace, setHoveredWorkspace] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   // Escape key to close modal
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -57,7 +60,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   const handleCreateWorkspace = () => {
     if (!canCreateWorkspace()) {
       const limits = getUsageLimits();
-      alert(`You've reached the limit of ${limits.workspaces} workspaces on the free plan. Upgrade to Pro for unlimited workspaces!`);
+      setShowUpgradeModal(true);
       return;
     }
     const workspace = createWorkspace('New Workspace', 'A new thinking space');
@@ -238,6 +241,9 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
             <span>Account</span>
           </button>
         </div>
+      
+        {/* Usage Indicator */}
+        <UsageIndicator />
       </nav>
       
       {/* Delete Confirmation Modal */}
@@ -291,6 +297,15 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="workspaces"
+        currentUsage={workspaces.length}
+        limit={getUsageLimits().workspaces}
+      />
     </>
   );
 }

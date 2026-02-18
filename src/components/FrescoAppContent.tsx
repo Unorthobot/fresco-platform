@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useFrescoStore } from '@/lib/store';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { LeftNavRail } from '@/components/layout/LeftNavRail';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { HomeDashboard } from '@/components/HomeDashboard';
@@ -19,6 +20,7 @@ type View = 'home' | 'workspace' | 'session' | 'archive' | 'settings' | 'account
 
 export default function FrescoAppContent() {
   const [currentView, setCurrentView] = useState<View>('home');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
   
   const {
@@ -137,8 +139,8 @@ export default function FrescoAppContent() {
   
   const handleCreateWorkspace = () => {
     if (!canCreateWorkspace()) {
-      const limits = getUsageLimits();
-      alert(`You have reached the limit of ${limits.workspaces} workspaces on the free plan. Upgrade to Pro for unlimited workspaces!`);
+      setShowUpgradeModal(true);
+      setShowUpgradeModal(true);
       return;
     }
     const workspace = createWorkspace('New Workspace', 'A new thinking space for clarity.');
@@ -152,8 +154,8 @@ export default function FrescoAppContent() {
     let workspaceId = activeWorkspaceId;
     if (!workspaceId) {
       if (!canCreateWorkspace()) {
-        const limits = getUsageLimits();
-        alert(`You have reached the limit of ${limits.workspaces} workspaces on the free plan. Upgrade to Pro for unlimited workspaces!`);
+        setShowUpgradeModal(true);
+        setShowUpgradeModal(true);
         return;
       }
       const workspace = createWorkspace('New Workspace', 'Created for a new thinking session.');
@@ -302,6 +304,15 @@ export default function FrescoAppContent() {
       
       {/* Onboarding for first-time users */}
       {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="workspaces"
+        currentUsage={workspaces.length}
+        limit={getUsageLimits().workspaces}
+      />
     </div>
   );
 }
