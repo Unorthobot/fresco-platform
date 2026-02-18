@@ -68,7 +68,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
       setActiveSection('home');
     }
     // Then delete the workspace
-    deleteWorkspace(workspaceId);
+    setTimeout(() => deleteWorkspace(workspaceId), 50);
     setDeleteConfirm(null);
     // Force navigation to home
     onNavigate?.('home');
