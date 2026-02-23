@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { cn, debounce, formatRelativeTime } from '@/lib/utils';
 import { useFrescoStore } from '@/lib/store';
+import { useAIGeneration } from '@/lib/useAIGeneration';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { TOOLKITS, type ThinkingModeId } from '@/types';
 import { ThinkingLensSelector } from '@/components/ui/ThinkingLensSelector';
 import { ThinkingLensHint } from '@/components/ui/ThinkingLensHint';
@@ -78,6 +80,9 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
     getWorkspaceSessions,
   } = useFrescoStore();
   const { showToast } = useToast();
+  
+  // AI generation with limits
+  const { canGenerate, incrementUsage, showUpgradeModal, setShowUpgradeModal, currentUsage, limit } = useAIGeneration();
   
   const session = sessions.find((s) => s.id === sessionId);
   const workspace = workspaces.find((w) => w.id === workspaceId);
@@ -208,6 +213,10 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
 
   // Generate AI content
   const generateContent = async () => {
+    if (!canGenerate) {
+      setShowUpgradeModal(true);
+      return;
+    }
     if (isGenerating) return;
     setIsGenerating(true);
     try {
@@ -233,6 +242,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
         }),
       });
       if (response.ok) {
+        incrementUsage();
         const data = await response.json();
         setAiContent(data);
         saveAIOutputs(sessionId, data);

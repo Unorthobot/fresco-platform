@@ -102,7 +102,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
   const { showToast } = useToast();
   
   // AI generation with limits
-  const { canGenerate, generate: generateWithLimits, showUpgradeModal, setShowUpgradeModal, currentUsage, limit } = useAIGeneration();
+  const { canGenerate, incrementUsage, showUpgradeModal, setShowUpgradeModal, currentUsage, limit } = useAIGeneration();
   
   const session = sessions.find((s) => s.id === sessionId);
   const workspace = workspaces.find((w) => w.id === workspaceId);
@@ -280,6 +280,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
       });
       
       if (response.ok) {
+        incrementUsage(); // Track AI generation usage
         const data = await response.json();
         setAiContent(data);
         
