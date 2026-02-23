@@ -36,6 +36,8 @@ import {
 } from 'lucide-react';
 import { cn, debounce, formatRelativeTime } from '@/lib/utils';
 import { useFrescoStore } from '@/lib/store';
+import { useAIGeneration } from '@/lib/useAIGeneration';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { TOOLKITS, type ThinkingModeId } from '@/types';
 import { ThinkingLensSelector } from '@/components/ui/ThinkingLensSelector';
 import { SentenceOfTruth } from '@/components/ui/SentenceOfTruth';
@@ -98,6 +100,9 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
   
   // Toast notifications
   const { showToast } = useToast();
+  
+  // AI generation with limits
+  const { canGenerate, generate: generateWithLimits, showUpgradeModal, setShowUpgradeModal, currentUsage, limit } = useAIGeneration();
   
   const session = sessions.find((s) => s.id === sessionId);
   const workspace = workspaces.find((w) => w.id === workspaceId);
@@ -245,6 +250,11 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
 
   // Generate AI content
   const generateContent = async () => {
+    // Check AI generation limits
+    if (!canGenerate) {
+      setShowUpgradeModal(true);
+      return;
+    }
     if (isGenerating) return;
     setIsGenerating(true);
     try {
@@ -1045,6 +1055,15 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
           showToast(`Switched to ${lens} lens for deeper exploration`, 'info');
           generateContent();
         }}
+      />
+
+      {/* Upgrade Modal for AI Limits */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="ai_generations"
+        currentUsage={currentUsage}
+        limit={limit}
       />
     </div>
   );
