@@ -714,6 +714,15 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
           }
         }}
       />
+
+      {/* Upgrade Modal for AI Limits */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="ai_generations"
+        currentUsage={currentUsage}
+        limit={limit}
+      />
     </div>
   );
 }

@@ -800,6 +800,24 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
           }
         }}
       />
+
+      {/* Upgrade Modal for AI Limits */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="ai_generations"
+        currentUsage={currentUsage}
+        limit={limit}
+      />
+
+      {/* Upgrade Modal for AI Limits */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="ai_generations"
+        currentUsage={currentUsage}
+        limit={limit}
+      />
     </div>
   );
 }

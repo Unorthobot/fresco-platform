@@ -671,6 +671,15 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
           }
         }}
       />
+
+      {/* Upgrade Modal for AI Limits */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="ai_generations"
+        currentUsage={currentUsage}
+        limit={limit}
+      />
     </div>
   );
 }

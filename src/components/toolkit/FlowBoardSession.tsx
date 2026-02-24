@@ -624,6 +624,24 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
           }
         }}
       />
+
+      {/* Upgrade Modal for AI Limits */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="ai_generations"
+        currentUsage={currentUsage}
+        limit={limit}
+      />
+
+      {/* Upgrade Modal for AI Limits */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="ai_generations"
+        currentUsage={currentUsage}
+        limit={limit}
+      />
     </div>
   );
 }
