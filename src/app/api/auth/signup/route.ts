@@ -19,8 +19,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email address" },
+        { status: 400 }
+      );
+    }
+
     try {
-      const user = registerUser(email, name || email.split("@")[0], password);
+      const user = await registerUser(email, name || email.split("@")[0], password);
       return NextResponse.json({ user });
     } catch (error: any) {
       return NextResponse.json(
