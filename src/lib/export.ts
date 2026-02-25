@@ -122,3 +122,235 @@ export function generateFilename(toolkitType: ToolkitType, extension: string = '
   const name = toolkit.name.toLowerCase().replace(/\s+/g, '-');
   return `fresco-${name}-${date}.${extension}`;
 }
+
+// PDF Export using jsPDF
+export async function downloadPDF(data: ExportData, filename: string): Promise<void> {
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF();
+  
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const maxWidth = pageWidth - margin * 2;
+  let y = 20;
+  
+  const addText = (text: string, fontSize: number = 12, isBold: boolean = false) => {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+    const lines = doc.splitTextToSize(text, maxWidth);
+    
+    lines.forEach((line: string) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(line, margin, y);
+      y += fontSize * 0.5;
+    });
+    y += 5;
+  };
+  
+  const addSection = (title: string) => {
+    y += 5;
+    if (y > 260) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setDrawColor(200);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+    addText(title, 14, true);
+  };
+
+  // Title
+  addText(`${data.toolkitName}`, 20, true);
+  addText(data.workspaceTitle, 16);
+  y += 5;
+  
+  // Metadata
+  addText(`Thinking Lens: ${data.thinkingLens || 'Automatic'}`, 10);
+  addText(`Date: ${data.date}`, 10);
+  addText(`Toolkit: ${data.toolkitName}`, 10);
+  
+  // Steps
+  data.steps.forEach((step, index) => {
+    addSection(`${index + 1}. ${step.label}`);
+    if (step.content) {
+      addText(step.content, 11);
+    } else {
+      addText('(Not filled)', 11);
+    }
+  });
+  
+  // Insights
+  if (data.insights.length > 0) {
+    addSection('Key Insights');
+    data.insights.forEach((insight, i) => {
+      addText(`${i + 1}. ${insight}`, 11);
+    });
+  }
+  
+  // Sentence of Truth
+  if (data.sentenceOfTruth) {
+    addSection('Sentence of Truth');
+    doc.setFont('helvetica', 'italic');
+    addText(`"${data.sentenceOfTruth}"`, 12);
+    doc.setFont('helvetica', 'normal');
+  }
+  
+  // Necessary Moves
+  if (data.necessaryMoves.length > 0) {
+    addSection('Necessary Moves');
+    data.necessaryMoves.forEach((move, i) => {
+      addText(`${i + 1}. ${move}`, 11);
+    });
+  }
+  
+  // Footer
+  y = 280;
+  doc.setFontSize(8);
+  doc.setTextColor(150);
+  doc.text('Exported from FRESCO • frescolab.io', margin, y);
+  
+  doc.save(filename);
+}
+
+// DOCX Export using docx library
+export async function downloadDOCX(data: ExportData, filename: string): Promise<void> {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, BorderStyle } = await import('docx');
+  
+  const children: any[] = [];
+  
+  // Title
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: data.toolkitName, bold: true, size: 48 })],
+      heading: HeadingLevel.TITLE,
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: data.workspaceTitle, size: 32 })],
+    }),
+    new Paragraph({ children: [] }), // Spacer
+  );
+  
+  // Metadata
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ text: 'Thinking Lens: ', bold: true }),
+        new TextRun({ text: data.thinkingLens || 'Automatic' }),
+      ],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: 'Date: ', bold: true }),
+        new TextRun({ text: data.date }),
+      ],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: 'Toolkit: ', bold: true }),
+        new TextRun({ text: data.toolkitName }),
+      ],
+    }),
+    new Paragraph({ children: [] }), // Spacer
+  );
+  
+  // Steps
+  data.steps.forEach((step, index) => {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: `${index + 1}. ${step.label}`, bold: true, size: 28 })],
+        heading: HeadingLevel.HEADING_2,
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: step.content || '(Not filled)' })],
+      }),
+      new Paragraph({ children: [] }), // Spacer
+    );
+  });
+  
+  // Insights
+  if (data.insights.length > 0) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Key Insights', bold: true, size: 28 })],
+        heading: HeadingLevel.HEADING_2,
+      })
+    );
+    data.insights.forEach((insight, i) => {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: `${i + 1}. ${insight}` })],
+          bullet: { level: 0 },
+        })
+      );
+    });
+    children.push(new Paragraph({ children: [] }));
+  }
+  
+  // Sentence of Truth
+  if (data.sentenceOfTruth) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Sentence of Truth', bold: true, size: 28 })],
+        heading: HeadingLevel.HEADING_2,
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: `"${data.sentenceOfTruth}"`, italics: true })],
+        border: {
+          left: { style: BorderStyle.SINGLE, size: 12, color: 'CCCCCC' },
+        },
+        indent: { left: 720 },
+      }),
+      new Paragraph({ children: [] }),
+    );
+  }
+  
+  // Necessary Moves
+  if (data.necessaryMoves.length > 0) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Necessary Moves', bold: true, size: 28 })],
+        heading: HeadingLevel.HEADING_2,
+      })
+    );
+    data.necessaryMoves.forEach((move, i) => {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: `${i + 1}. ${move}` })],
+          bullet: { level: 0 },
+        })
+      );
+    });
+    children.push(new Paragraph({ children: [] }));
+  }
+  
+  // Footer
+  children.push(
+    new Paragraph({ children: [] }),
+    new Paragraph({
+      children: [
+        new TextRun({ 
+          text: 'Exported from FRESCO • frescolab.io', 
+          size: 18, 
+          color: '999999' 
+        })
+      ],
+    })
+  );
+  
+  const doc = new Document({
+    sections: [{
+      properties: {},
+      children,
+    }],
+  });
+  
+  const blob = await Packer.toBlob(doc);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

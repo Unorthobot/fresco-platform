@@ -5,15 +5,18 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, FileText, FileDown, Check, FileJson, Mail, Send, Printer } from 'lucide-react';
+import { X, Copy, FileText, FileDown, Check, FileJson, Mail, Send, Printer, Crown, FileType } from 'lucide-react';
 import { 
   generateMarkdown, 
   copyToClipboard, 
   downloadMarkdown, 
   downloadJSON,
+  downloadPDF,
+  downloadDOCX,
   generateFilename,
   type ExportData 
 } from '@/lib/export';
+import { useFrescoStore } from '@/lib/store';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -27,7 +30,11 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [emailTo, setEmailTo] = useState('');
   const [emailSubject, setEmailSubject] = useState(`FRESCO ${data.toolkitName} - ${data.workspaceTitle}`);
+  const [isExporting, setIsExporting] = useState(false);
   const printFrameRef = useRef<HTMLIFrameElement | null>(null);
+  
+  const { user } = useFrescoStore();
+  const isPro = user?.subscription === 'pro' || user?.subscription === 'studio';
 
   const handleCopy = async () => {
     const content = generateMarkdown(data);
@@ -43,6 +50,46 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
     downloadJSON(data, filename);
     setStatus('Downloaded!');
     setTimeout(() => setStatus(null), 2000);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!isPro) {
+      setStatus('Upgrade to Pro for PDF export');
+      setTimeout(() => setStatus(null), 3000);
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const filename = generateFilename(data.toolkitType, 'pdf');
+      await downloadPDF(data, filename);
+      setStatus('PDF downloaded!');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      setStatus('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setTimeout(() => setStatus(null), 2000);
+    }
+  };
+
+  const handleDownloadDOCX = async () => {
+    if (!isPro) {
+      setStatus('Upgrade to Pro for DOCX export');
+      setTimeout(() => setStatus(null), 3000);
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const filename = generateFilename(data.toolkitType, 'docx');
+      await downloadDOCX(data, filename);
+      setStatus('DOCX downloaded!');
+    } catch (error) {
+      console.error('DOCX export error:', error);
+      setStatus('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setTimeout(() => setStatus(null), 2000);
+    }
   };
 
   // Generate HTML for printing/PDF
@@ -102,271 +149,327 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
     return `
       <!DOCTYPE html>
       <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${data.toolkitName} - ${data.workspaceTitle}</title>
-        <style>
-          @media print {
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px;
-            color: #111827;
-          }
-        </style>
-      </head>
-      <body>
-        <div style="margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #111827;">
-          <h1 style="font-size: 24px; font-weight: 700; color: #111827; margin: 0 0 8px 0;">
-            ${data.toolkitName}
-          </h1>
-          <p style="font-size: 14px; color: #6b7280; margin: 0;">
-            ${data.workspaceTitle} • ${data.date} • Thinking Lens: ${data.thinkingLens}
-          </p>
-        </div>
-
-        <div style="margin-bottom: 32px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #111827; margin-bottom: 16px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">
-            Session Content
-          </h2>
+        <head>
+          <title>${data.toolkitName} - ${data.workspaceTitle}</title>
+          <style>
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 40px;
+              color: #111827;
+            }
+          </style>
+        </head>
+        <body>
+          <div style="margin-bottom: 32px; border-bottom: 2px solid #111827; padding-bottom: 16px;">
+            <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 8px 0;">${data.toolkitName}</h1>
+            <p style="font-size: 18px; color: #6b7280; margin: 0;">${data.workspaceTitle}</p>
+          </div>
+          
+          <div style="margin-bottom: 24px; font-size: 12px; color: #6b7280;">
+            <p style="margin: 4px 0;"><strong>Thinking Lens:</strong> ${data.thinkingLens || 'Automatic'}</p>
+            <p style="margin: 4px 0;"><strong>Date:</strong> ${data.date}</p>
+          </div>
+          
           ${stepsHTML}
-        </div>
-
-        ${insightsHTML}
-        ${sentenceHTML}
-        ${movesHTML}
-
-        <div style="margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af;">
-          Exported from FRESCO • frescolab.io
-        </div>
-      </body>
+          ${insightsHTML}
+          ${sentenceHTML}
+          ${movesHTML}
+          
+          <div style="margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af;">
+            Exported from FRESCO • frescolab.io
+          </div>
+        </body>
       </html>
     `;
   };
 
   const handlePrint = () => {
-    const printContent = generatePrintHTML();
+    const html = generatePrintHTML();
     
-    // Create a hidden iframe for printing
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
+    // Create or reuse iframe
+    let iframe = printFrameRef.current;
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      printFrameRef.current = iframe;
+    }
     
-    const iframeDoc = iframe.contentWindow?.document;
-    if (iframeDoc) {
-      iframeDoc.open();
-      iframeDoc.write(printContent);
-      iframeDoc.close();
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(html);
+      doc.close();
       
       // Wait for content to load then print
-      iframe.contentWindow?.focus();
       setTimeout(() => {
-        iframe.contentWindow?.print();
-        // Remove iframe after printing
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 1000);
+        iframe?.contentWindow?.print();
       }, 250);
     }
-    
-    setStatus('Opening print dialog...');
-    setTimeout(() => setStatus(null), 2000);
   };
 
-  const handleEmail = () => {
-    if (!emailTo) {
-      setStatus('Please enter an email address');
-      setTimeout(() => setStatus(null), 2000);
-      return;
-    }
-    
+  const handleSendEmail = () => {
     const content = generateMarkdown(data);
-    const subject = encodeURIComponent(emailSubject);
-    const body = encodeURIComponent(content);
-    
-    // Open mailto link
-    window.location.href = `mailto:${emailTo}?subject=${subject}&body=${body}`;
-    
-    setStatus('Opening email client...');
-    setTimeout(() => {
-      setStatus(null);
-      setShowEmailForm(false);
-      onClose();
-    }, 1500);
+    const mailtoUrl = `mailto:${emailTo}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(content)}`;
+    window.location.href = mailtoUrl;
+    setShowEmailForm(false);
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }} 
-          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" 
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={onClose}
         >
-          <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }} 
-            animate={{ scale: 1, opacity: 1 }} 
-            exit={{ scale: 0.95, opacity: 0 }} 
-            onClick={(e) => e.stopPropagation()} 
-            className="bg-fresco-white dark:bg-gray-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl"
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          />
+          
+          {/* Modal */}
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            transition={{ type: "spring", duration: 0.5 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
           >
-            <div className="flex items-center justify-between mb-6">
-              <div>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-fresco-border-light dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-fresco-light-gray dark:bg-gray-800 rounded-lg">
+                  <FileText className="w-5 h-5 text-fresco-black dark:text-white" />
+                </div>
                 <h3 className="text-fresco-lg font-medium text-fresco-black dark:text-white">Export Session</h3>
-                <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500 mt-1">{data.toolkitName}</p>
               </div>
-              <button 
-                onClick={onClose} 
-                className="p-2 text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white hover:bg-fresco-light-gray dark:hover:bg-gray-800 rounded-lg transition-colors"
+              <button
+                onClick={onClose}
+                className="p-2 text-fresco-graphite-light hover:text-fresco-black dark:text-gray-500 dark:hover:text-white rounded-lg hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            {/* Status message */}
-            <AnimatePresence>
-              {status && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mb-4 p-3 bg-fresco-light-gray dark:bg-gray-800 text-fresco-black dark:text-white rounded-lg text-fresco-sm flex items-center gap-2"
-                >
-                  <Check className="w-4 h-4" />
-                  {status}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
-            {/* Email Form */}
-            <AnimatePresence>
-              {showEmailForm && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mb-4 p-4 bg-fresco-light-gray dark:bg-gray-800 rounded-xl overflow-hidden"
-                >
-                  <div className="space-y-3">
+            {/* Content */}
+            <div className="p-6">
+              {/* Status message */}
+              <AnimatePresence>
+                {status && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2"
+                  >
+                    <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <span className="text-sm text-green-700 dark:text-green-300">{status}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {/* Email form */}
+              <AnimatePresence>
+                {showEmailForm && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mb-4 space-y-3"
+                  >
+                    <button 
+                      onClick={() => setShowEmailForm(false)}
+                      className="text-fresco-sm text-fresco-graphite-light hover:text-fresco-black dark:text-gray-400 dark:hover:text-white"
+                    >
+                      ← Back to options
+                    </button>
                     <div>
-                      <label className="text-fresco-xs font-medium text-fresco-graphite-mid dark:text-gray-400 block mb-1">To</label>
+                      <label className="block text-fresco-sm font-medium text-fresco-graphite-mid dark:text-gray-300 mb-1">To</label>
                       <input
                         type="email"
                         value={emailTo}
                         onChange={(e) => setEmailTo(e.target.value)}
-                        placeholder="recipient@example.com"
-                        className="w-full p-3 bg-white dark:bg-gray-800 rounded-lg text-fresco-sm text-fresco-black dark:text-white border border-fresco-border dark:border-gray-600 focus:ring-2 focus:ring-fresco-black dark:focus:ring-white focus:border-fresco-black dark:focus:border-white outline-none"
+                        placeholder="email@example.com"
+                        className="w-full px-3 py-2 border border-fresco-border dark:border-gray-600 rounded-lg text-fresco-base dark:bg-gray-800 dark:text-white focus:outline-none focus:border-fresco-black dark:focus:border-white"
                       />
                     </div>
                     <div>
-                      <label className="text-fresco-xs font-medium text-fresco-graphite-mid dark:text-gray-400 block mb-1">Subject</label>
+                      <label className="block text-fresco-sm font-medium text-fresco-graphite-mid dark:text-gray-300 mb-1">Subject</label>
                       <input
                         type="text"
                         value={emailSubject}
                         onChange={(e) => setEmailSubject(e.target.value)}
-                        className="w-full p-3 bg-white dark:bg-gray-800 rounded-lg text-fresco-sm text-fresco-black dark:text-white border border-fresco-border dark:border-gray-600 focus:ring-2 focus:ring-fresco-black dark:focus:ring-white focus:border-fresco-black dark:focus:border-white outline-none"
+                        className="w-full px-3 py-2 border border-fresco-border dark:border-gray-600 rounded-lg text-fresco-base dark:bg-gray-800 dark:text-white focus:outline-none focus:border-fresco-black dark:focus:border-white"
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex justify-end gap-2">
                       <button
                         onClick={() => setShowEmailForm(false)}
-                        className="flex-1 p-3 text-fresco-sm text-fresco-graphite-mid dark:text-gray-400 hover:bg-fresco-light-gray dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        className="px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black dark:text-gray-400 dark:hover:text-white"
                       >
                         Cancel
                       </button>
                       <button
-                        onClick={handleEmail}
-                        className="fresco-btn fresco-btn-primary flex-1"
+                        onClick={handleSendEmail}
+                        disabled={!emailTo}
+                        className="px-4 py-2 bg-fresco-black dark:bg-white text-white dark:text-black rounded-lg text-fresco-sm font-medium hover:bg-fresco-graphite-dark dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <Send className="w-4 h-4" />
                         Send
                       </button>
                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {/* Export options */}
+              {!showEmailForm && (
+                <div className="space-y-3">
+                  {/* Pro Export Options */}
+                  <div className="mb-4">
+                    <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <Crown className="w-3 h-3 text-amber-500" />
+                      Pro Export Formats
+                    </p>
+                    
+                    <button 
+                      onClick={handleDownloadPDF}
+                      disabled={isExporting}
+                      className={`w-full flex items-center gap-4 p-4 border-2 rounded-xl transition-all group ${
+                        isPro 
+                          ? 'border-fresco-border dark:border-gray-600 hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800' 
+                          : 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                        isPro 
+                          ? 'bg-fresco-light-gray dark:bg-gray-700 group-hover:bg-white dark:group-hover:bg-gray-600' 
+                          : 'bg-amber-100 dark:bg-amber-900/30'
+                      }`}>
+                        <FileDown className={`w-5 h-5 ${isPro ? 'text-fresco-graphite-mid dark:text-gray-300' : 'text-amber-600 dark:text-amber-400'}`} />
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="text-fresco-base font-medium text-fresco-black dark:text-white flex items-center gap-2">
+                          Download PDF
+                          {!isPro && <span className="text-xs px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded">PRO</span>}
+                        </p>
+                        <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">
+                          {isPro ? 'Professional PDF document' : 'Upgrade to Pro for PDF export'}
+                        </p>
+                      </div>
+                    </button>
+                    
+                    <button 
+                      onClick={handleDownloadDOCX}
+                      disabled={isExporting}
+                      className={`w-full flex items-center gap-4 p-4 border-2 rounded-xl transition-all group mt-2 ${
+                        isPro 
+                          ? 'border-fresco-border dark:border-gray-600 hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800' 
+                          : 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                        isPro 
+                          ? 'bg-fresco-light-gray dark:bg-gray-700 group-hover:bg-white dark:group-hover:bg-gray-600' 
+                          : 'bg-amber-100 dark:bg-amber-900/30'
+                      }`}>
+                        <FileType className={`w-5 h-5 ${isPro ? 'text-fresco-graphite-mid dark:text-gray-300' : 'text-amber-600 dark:text-amber-400'}`} />
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="text-fresco-base font-medium text-fresco-black dark:text-white flex items-center gap-2">
+                          Download DOCX
+                          {!isPro && <span className="text-xs px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded">PRO</span>}
+                        </p>
+                        <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">
+                          {isPro ? 'Editable Word document' : 'Upgrade to Pro for DOCX export'}
+                        </p>
+                      </div>
+                    </button>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
-            {/* Export options */}
-            {!showEmailForm && (
-              <div className="space-y-3">
-                <button 
-                  onClick={() => setShowEmailForm(true)} 
-                  className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
-                    <Mail className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
-                  </div>
-                  <div className="text-left flex-1">
-                    <p className="text-fresco-base font-medium text-fresco-black dark:text-white">Send via Email</p>
-                    <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">Email session summary</p>
-                  </div>
-                </button>
-                
-                <button 
-                  onClick={handleCopy} 
-                  className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
-                    <Copy className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
-                  </div>
-                  <div className="text-left flex-1">
-                    <p className="text-fresco-base font-medium text-fresco-black dark:text-white">Copy to Clipboard</p>
-                    <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">Copy as formatted text</p>
-                  </div>
-                </button>
-                
-                {includeJSON && (
+                  
+                  {/* Free Export Options */}
+                  <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wider mb-2">Free Export Options</p>
+                  
                   <button 
-                    onClick={handleDownloadJSON} 
+                    onClick={() => setShowEmailForm(true)} 
                     className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
                   >
                     <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
-                      <FileJson className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
+                      <Mail className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
                     </div>
                     <div className="text-left flex-1">
-                      <p className="text-fresco-base font-medium text-fresco-black dark:text-white">Download JSON</p>
-                      <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">Save raw data</p>
+                      <p className="text-fresco-base font-medium text-fresco-black dark:text-white">Send via Email</p>
+                      <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">Email session summary</p>
                     </div>
                   </button>
-                )}
-                
-                <button 
-                  onClick={handlePrint} 
-                  className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
-                    <FileDown className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
-                  </div>
-                  <div className="text-left flex-1">
-                    <p className="text-fresco-base font-medium text-fresco-black dark:text-white">Print / Save as PDF</p>
-                    <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">Open print dialog</p>
-                  </div>
-                </button>
-              </div>
-            )}
-            
-            {/* Preview */}
-            {!showEmailForm && (
-              <div className="mt-6 pt-4 border-t border-fresco-border-light dark:border-gray-700">
-                <p className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500 mb-2">Preview</p>
-                <div className="p-3 bg-fresco-light-gray dark:bg-gray-800 rounded-lg max-h-32 overflow-y-auto">
-                  <p className="text-fresco-xs text-fresco-graphite-mid dark:text-gray-400 font-mono whitespace-pre-wrap">
-                    {generateMarkdown(data).slice(0, 300)}...
-                  </p>
+                  
+                  <button 
+                    onClick={handleCopy} 
+                    className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
+                      <Copy className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="text-fresco-base font-medium text-fresco-black dark:text-white">Copy to Clipboard</p>
+                      <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">Copy as formatted text</p>
+                    </div>
+                  </button>
+                  
+                  {includeJSON && (
+                    <button 
+                      onClick={handleDownloadJSON} 
+                      className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
+                        <FileJson className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="text-fresco-base font-medium text-fresco-black dark:text-white">Download JSON</p>
+                        <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">Save raw data</p>
+                      </div>
+                    </button>
+                  )}
+                  
+                  <button 
+                    onClick={handlePrint} 
+                    className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
+                      <Printer className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="text-fresco-base font-medium text-fresco-black dark:text-white">Print / Save as PDF</p>
+                      <p className="text-fresco-sm text-fresco-graphite-light dark:text-gray-500">Open print dialog</p>
+                    </div>
+                  </button>
                 </div>
-              </div>
-            )}
+              )}
+              
+              {/* Preview */}
+              {!showEmailForm && (
+                <div className="mt-6 pt-4 border-t border-fresco-border-light dark:border-gray-700">
+                  <p className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500 mb-2">Preview</p>
+                  <div className="p-3 bg-fresco-light-gray dark:bg-gray-800 rounded-lg max-h-32 overflow-y-auto">
+                    <p className="text-fresco-xs text-fresco-graphite-mid dark:text-gray-400 font-mono whitespace-pre-wrap">
+                      {generateMarkdown(data).slice(0, 300)}...
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </motion.div>
         </motion.div>
       )}
