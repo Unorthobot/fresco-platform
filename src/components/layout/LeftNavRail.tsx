@@ -1,5 +1,8 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+
 // FRESCO Left Navigation Rail - Matching frescolab.io design
 
 import { useState, useEffect, useCallback } from 'react';
@@ -26,6 +29,9 @@ interface LeftNavRailProps {
 }
 
 export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const isAuthenticated = status === "authenticated";
   const workspaces = useWorkspaces();
   const activeWorkspace = useActiveWorkspace();
   const {
@@ -229,17 +235,27 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
             <span>Settings</span>
           </button>
           
-          <button
-            onClick={() => handleNavClick('account')}
-            className={cn('fresco-nav-item', isActive('account') && 'active')}
-          >
-            {user?.profileImage ? (
-              <img src={user.profileImage} alt="Profile" className="w-[18px] h-[18px] rounded-full object-cover" />
-            ) : (
+          {isAuthenticated ? (
+            <button
+              onClick={() => handleNavClick('account')}
+              className={cn('fresco-nav-item', isActive('account') && 'active')}
+            >
+              {session?.user?.image || user?.profileImage ? (
+                <img src={session?.user?.image || user?.profileImage} alt="Profile" className="w-[18px] h-[18px] rounded-full object-cover" />
+              ) : (
+                <User className="w-[18px] h-[18px]" />
+              )}
+              <span>{session?.user?.name?.split(' ')[0] || 'Account'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push('/login')}
+              className="fresco-nav-item text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+            >
               <User className="w-[18px] h-[18px]" />
-            )}
-            <span>Account</span>
-          </button>
+              <span>Sign In</span>
+            </button>
+          )}
         </div>
       
         {/* Usage Indicator */}
