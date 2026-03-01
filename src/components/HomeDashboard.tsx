@@ -1,5 +1,7 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Plus, Clock, MapPin, Cloud, Sun, CloudRain, Folder, Lightbulb, Timer, Layout, GitBranch } from 'lucide-react';
@@ -126,7 +128,8 @@ export function HomeDashboard({
     }
   };
 
-  const firstName = user?.name?.split(' ')[0] || 'there';
+  const { data: session } = useSession();
+  const firstName = session?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || 'there';
 
   return (
     <div className="min-h-screen fresco-grid-bg-subtle relative">
