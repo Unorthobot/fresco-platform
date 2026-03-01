@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { registerUser } from "@/lib/auth";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,15 +28,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    try {
-      const user = await registerUser(email, name || email.split("@")[0], password);
-      return NextResponse.json({ user });
-    } catch (error: any) {
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
       return NextResponse.json(
-        { error: error.message || "User already exists" },
+        { error: "An account with this email already exists" },
         { status: 400 }
       );
     }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        name: name || email.split("@")[0],
+        email,
+        password: hashedPassword,
+        subscription: "free",
+        aiGenerationsThisMonth: 0,
+        aiGenerationsResetDate: new Date().toISOString().slice(0, 7),
+      },
+    });
+
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (error: any) {
     console.error("Signup error:", error);
     return NextResponse.json(
