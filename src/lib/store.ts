@@ -102,6 +102,8 @@ interface FrescoState {
   // Actions - Usage Limits
   canCreateWorkspace: () => boolean;
   canUseAI: () => boolean;
+  canUseToolkit: (toolkitType: string) => boolean;
+  canExport: () => boolean;
   incrementAIUsage: () => void;
   getUsageLimits: () => UsageLimits;
   
@@ -469,6 +471,20 @@ export const useFrescoStore = create<FrescoState>()(
         });
       },
       
+      canUseToolkit: (toolkitType: string) => {
+        const state = get();
+        const tier = state.user?.subscription || 'free';
+        const freeToolkits = ['insight_stack', 'flow_board', 'ux_scorecard'];
+        if (tier === 'free') return freeToolkits.includes(toolkitType);
+        return true;
+      },
+
+      canExport: () => {
+        const state = get();
+        const tier = state.user?.subscription || 'free';
+        return tier === 'pro' || tier === 'studio';
+      },
+
       getUsageLimits: () => {
         const state = get();
         const tier = state.user?.subscription || 'free';

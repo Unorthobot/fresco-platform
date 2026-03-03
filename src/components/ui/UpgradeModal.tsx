@@ -8,7 +8,7 @@ import { useState } from 'react';
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  reason: 'workspaces' | 'ai_generations';
+  reason: 'workspaces' | 'ai_generations' | 'toolkits';
   currentUsage: number;
   limit: number;
 }
@@ -29,6 +29,12 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
   };
 
   const content = {
+    toolkits: {
+      icon: Crown,
+      title: "This toolkit is Pro only",
+      description: "Upgrade to Pro to unlock all 9 thinking toolkits.",
+      benefit: "Get unlimited access to every toolkit, exports, and more.",
+    },
     workspaces: {
       icon: Sparkles,
       title: "You've hit your workspace limit",

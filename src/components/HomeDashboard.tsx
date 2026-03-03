@@ -46,10 +46,11 @@ export function HomeDashboard({
   onCreateWorkspace,
   onStartToolkit,
 }: HomeDashboardProps) {
-  const { user, sessions, getRecentSessions } = useFrescoStore();
+  const { user, sessions, getRecentSessions, canUseToolkit } = useFrescoStore();
   const workspaces = useWorkspaces();
   
   const [mounted, setMounted] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [location, setLocation] = useState<string>('');
@@ -285,7 +286,7 @@ export function HomeDashboard({
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.insight_stack}</p>
                 </button>
                 <button 
-                  onClick={() => onStartToolkit?.('pov_generator')} 
+                  onClick={() => canUseToolkit('pov_generator') ? onStartToolkit?.('pov_generator') : setShowUpgradeModal(true)} 
                   className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
@@ -295,7 +296,7 @@ export function HomeDashboard({
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.pov_generator}</p>
                 </button>
                 <button 
-                  onClick={() => onStartToolkit?.('mental_model_mapper')} 
+                  onClick={() => canUseToolkit('mental_model_mapper') ? onStartToolkit?.('mental_model_mapper') : setShowUpgradeModal(true)} 
                   className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
@@ -326,7 +327,7 @@ export function HomeDashboard({
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.flow_board}</p>
                 </button>
                 <button 
-                  onClick={() => onStartToolkit?.('experiment_brief')} 
+                  onClick={() => canUseToolkit('experiment_brief') ? onStartToolkit?.('experiment_brief') : setShowUpgradeModal(true)} 
                   className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
@@ -336,7 +337,7 @@ export function HomeDashboard({
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.experiment_brief}</p>
                 </button>
                 <button 
-                  onClick={() => onStartToolkit?.('strategy_sketchbook')} 
+                  onClick={() => canUseToolkit('strategy_sketchbook') ? onStartToolkit?.('strategy_sketchbook') : setShowUpgradeModal(true)} 
                   className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
@@ -367,7 +368,7 @@ export function HomeDashboard({
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.ux_scorecard}</p>
                 </button>
                 <button 
-                  onClick={() => onStartToolkit?.('persuasion_canvas')} 
+                  onClick={() => canUseToolkit('persuasion_canvas') ? onStartToolkit?.('persuasion_canvas') : setShowUpgradeModal(true)} 
                   className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
@@ -377,7 +378,7 @@ export function HomeDashboard({
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.persuasion_canvas}</p>
                 </button>
                 <button 
-                  onClick={() => onStartToolkit?.('performance_grid')} 
+                  onClick={() => canUseToolkit('performance_grid') ? onStartToolkit?.('performance_grid') : setShowUpgradeModal(true)} 
                   className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
@@ -392,5 +393,12 @@ export function HomeDashboard({
         </div>
       </div>
     </div>
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="toolkits"
+        currentUsage={0}
+        limit={0}
+      />
   );
 }
