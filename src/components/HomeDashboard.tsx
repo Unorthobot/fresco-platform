@@ -142,7 +142,7 @@ export function HomeDashboard({
             animate={{ opacity: 1, y: 0 }}
             className="flex-1"
           >
-            <span className="fresco-label mb-3 block">Welcome back, {firstName}</span>
+            <span className="fresco-label mb-3 block">{firstName === 'there' ? 'Welcome' : `Welcome back, ${firstName}`}</span>
             <h1 className="text-fresco-4xl font-medium text-fresco-black tracking-tight mb-4">
               What will you think through today?
             </h1>
