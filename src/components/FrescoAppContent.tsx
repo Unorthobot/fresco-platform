@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import { useFrescoStore } from '@/lib/store';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { LeftNavRail } from '@/components/layout/LeftNavRail';
@@ -22,7 +23,8 @@ export default function FrescoAppContent() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
-  
+  const { data: session, status } = useSession();
+
   const {
     activeSection,
     activeWorkspaceId,
@@ -36,19 +38,49 @@ export default function FrescoAppContent() {
     createSession,
     sessions,
     workspaces,
+    setUser,
+    user,
   } = useFrescoStore();
-  
+
+  // Sync NextAuth session → Zustand store
+  useEffect(() => {
+    if (status === 'loading') return;
+
+    if (status === 'authenticated' && session?.user) {
+      const s = session.user as any;
+      setUser({
+        id: s.id || 'authenticated-user',
+        email: s.email || '',
+        name: s.name || s.email?.split('@')[0] || 'User',
+        profileImage: s.image || undefined,
+        subscription: s.subscription || 'free',
+        aiGenerationsThisMonth: s.aiGenerationsThisMonth || 0,
+        aiGenerationsResetDate: s.aiGenerationsResetDate || new Date().toISOString().slice(0, 7),
+      });
+    } else if (status === 'unauthenticated') {
+      // Clear user — show as guest
+      setUser({
+        id: 'guest',
+        email: '',
+        name: 'Guest',
+        subscription: 'free',
+        aiGenerationsThisMonth: 0,
+        aiGenerationsResetDate: new Date().toISOString().slice(0, 7),
+      });
+    }
+  }, [status, session]);
+
   // Get current session and workspace
   const currentSession = activeSessionId ? sessions.find(s => s.id === activeSessionId) : null;
   const currentWorkspace = activeWorkspaceId ? workspaces.find(w => w.id === activeWorkspaceId) : null;
-  
+
   // Compute effective view - ensures we never show a blank screen
   const effectiveView = (() => {
     if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
     if (currentView === 'session' && (!activeWorkspaceId || !currentSession)) return 'home';
     return currentView;
   })();
-  
+
   // Update view based on active state
   useEffect(() => {
     if (activeSection === 'archive') {
@@ -65,11 +97,10 @@ export default function FrescoAppContent() {
       setCurrentView('home');
     }
   }, [activeSessionId, activeWorkspaceId, activeSection]);
-  
+
   // Handle deleted session - navigate back to workspace or home
   useEffect(() => {
     if (activeSessionId && !currentSession) {
-      // Session was deleted, navigate back
       if (activeWorkspaceId) {
         setActiveSession(null);
         setCurrentView('workspace');
@@ -80,23 +111,22 @@ export default function FrescoAppContent() {
       }
     }
   }, [activeSessionId, currentSession, activeWorkspaceId, setActiveSession, setActiveWorkspace]);
-  
+
   // Handle deleted workspace - navigate back to home
   useEffect(() => {
     if ((currentView === 'workspace' || currentView === 'session') && (!activeWorkspaceId || !currentWorkspace)) {
-      // Workspace was deleted, navigate back to home
       setActiveSession(null);
       setActiveWorkspace(null);
       setActiveSection('home');
       setCurrentView('home');
     }
   }, [activeWorkspaceId, currentWorkspace, setActiveSession, setActiveWorkspace, setActiveSection]);
-  
+
   // Scroll to top when view changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentView]);
-  
+
   const handleNavigate = (section: string) => {
     if (section === 'home') {
       setActiveWorkspace(null);
@@ -116,30 +146,27 @@ export default function FrescoAppContent() {
       setActiveSection('account');
       setCurrentView('account');
     } else if (section === 'workspaces') {
-      // Workspace navigation is handled by Zustand state changes
-      // The useEffect will update currentView based on activeWorkspaceId
       setActiveSession(null);
       setActiveSection('workspaces');
     }
   };
-  
+
   const handleNavigateToWorkspace = (workspaceId: string) => {
     setActiveWorkspace(workspaceId);
     setActiveSession(null);
     setActiveSection('workspaces');
     setCurrentView('workspace');
   };
-  
+
   const handleNavigateToSession = (sessionId: string, workspaceId: string) => {
     setActiveWorkspace(workspaceId);
     setActiveSession(sessionId);
     setActiveSection('toolkit');
     setCurrentView('session');
   };
-  
+
   const handleCreateWorkspace = () => {
     if (!canCreateWorkspace()) {
-      setShowUpgradeModal(true);
       setShowUpgradeModal(true);
       return;
     }
@@ -149,12 +176,11 @@ export default function FrescoAppContent() {
     setActiveSection('workspaces');
     setCurrentView('workspace');
   };
-  
+
   const handleStartToolkit = (toolkitType: string) => {
     let workspaceId = activeWorkspaceId;
     if (!workspaceId) {
       if (!canCreateWorkspace()) {
-        setShowUpgradeModal(true);
         setShowUpgradeModal(true);
         return;
       }
@@ -164,43 +190,34 @@ export default function FrescoAppContent() {
     const session = createSession(workspaceId, toolkitType as ToolkitType);
     handleNavigateToSession(session.id, workspaceId);
   };
-  
+
   const handleBackToHome = () => {
     setActiveWorkspace(null);
     setActiveSession(null);
     setActiveSection('home');
     setCurrentView('home');
   };
-  
+
   const handleBackToWorkspace = () => {
     setActiveSession(null);
     setActiveSection('workspaces');
     setCurrentView('workspace');
   };
-  
+
   return (
     <div className="min-h-screen bg-fresco-white">
-      {/* Skip link for accessibility */}
       <a href="#main-content" className="skip-link">Skip to main content</a>
-      
-      {/* Desktop Nav */}
+
       <div className="hidden md:block">
         <LeftNavRail onNavigate={handleNavigate} />
       </div>
-      
-      {/* Mobile Nav */}
+
       <MobileNav activeSection={activeSection} onNavigate={handleNavigate} />
-      
+
       <main id="main-content" className="md:ml-[220px] min-h-screen">
         <AnimatePresence mode="wait">
           {effectiveView === 'home' && (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <HomeDashboard
                 onNavigateToWorkspace={handleNavigateToWorkspace}
                 onNavigateToSession={handleNavigateToSession}
@@ -209,15 +226,9 @@ export default function FrescoAppContent() {
               />
             </motion.div>
           )}
-          
+
           {effectiveView === 'workspace' && activeWorkspaceId && (
-            <motion.div
-              key="workspace"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <WorkspaceOverview
                 workspaceId={activeWorkspaceId}
                 onBack={handleBackToHome}
@@ -226,16 +237,9 @@ export default function FrescoAppContent() {
               />
             </motion.div>
           )}
-          
+
           {effectiveView === 'session' && activeWorkspaceId && currentSession && (
-            <motion.div
-              key="session"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="h-screen"
-            >
+            <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="h-screen">
               <ToolkitRouter
                 sessionId={currentSession.id}
                 workspaceId={activeWorkspaceId}
@@ -244,53 +248,27 @@ export default function FrescoAppContent() {
               />
             </motion.div>
           )}
-          
+
           {effectiveView === 'archive' && (
-            <motion.div
-              key="archive"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ArchivePage
-                onOpenSession={(sessionId, workspaceId) => handleNavigateToSession(sessionId, workspaceId)}
-              />
+            <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+              <ArchivePage onOpenSession={(sessionId, workspaceId) => handleNavigateToSession(sessionId, workspaceId)} />
             </motion.div>
           )}
-          
+
           {effectiveView === 'settings' && (
-            <motion.div
-              key="settings"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <SettingsPage />
             </motion.div>
           )}
-          
+
           {effectiveView === 'account' && (
-            <motion.div
-              key="account"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div key="account" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <AccountPage />
             </motion.div>
           )}
-        {/* Fallback to home if nothing matches */}
+
           {effectiveView !== 'home' && effectiveView !== 'archive' && effectiveView !== 'settings' && effectiveView !== 'account' && !activeWorkspaceId && (
-            <motion.div
-              key="fallback-home"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div key="fallback-home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <HomeDashboard
                 onNavigateToWorkspace={handleNavigateToWorkspace}
                 onNavigateToSession={handleNavigateToSession}
@@ -301,11 +279,9 @@ export default function FrescoAppContent() {
           )}
         </AnimatePresence>
       </main>
-      
-      {/* Onboarding for first-time users */}
+
       {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
 
-      {/* Upgrade Modal */}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
@@ -317,7 +293,6 @@ export default function FrescoAppContent() {
   );
 }
 
-// Wrapper with ToastProvider
 export function FrescoApp() {
   return (
     <ToastProvider>
