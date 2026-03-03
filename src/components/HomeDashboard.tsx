@@ -129,7 +129,8 @@ export function HomeDashboard({
   };
 
   const { data: session } = useSession();
-  const firstName = session?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || 'there';
+  const isGuest = !session && (!user || user.id === 'guest');
+  const firstName = isGuest ? 'there' : (session?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || 'there');
 
   return (
     <div className="min-h-screen fresco-grid-bg-subtle relative">
