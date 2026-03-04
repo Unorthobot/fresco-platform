@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import { useDBSync } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { LeftNavRail } from '@/components/layout/LeftNavRail';
@@ -24,6 +25,7 @@ export default function FrescoAppContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const { data: session, status } = useSession();
+  useDBSync();
 
   const {
     activeSection,
