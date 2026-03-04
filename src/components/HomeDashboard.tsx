@@ -134,6 +134,7 @@ export function HomeDashboard({
   const firstName = isGuest ? 'there' : (session?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || 'there');
 
   return (
+    <>
     <div className="min-h-screen fresco-grid-bg-subtle relative">
       {/* Hero Section */}
       <div className="px-6 md:px-12 py-12 border-b border-fresco-border-light relative">
@@ -436,5 +437,6 @@ export function HomeDashboard({
       currentUsage={0}
       limit={0}
     />
+    </>
   );
 }
