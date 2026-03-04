@@ -24,6 +24,7 @@ import {
   FileType
 } from 'lucide-react';
 import { cn, debounce, formatRelativeTime } from '@/lib/utils';
+import { useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { TOOLKITS, type ThinkingModeId, type ToolkitType } from '@/types';
 import { ThinkingLensSelector } from '@/components/ui/ThinkingLensSelector';
@@ -134,7 +135,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
         setAiContent(data);
         if (data.sentenceOfTruth && !manualSentence) {
           setManualSentence(data.sentenceOfTruth);
-          setSentenceOfTruth(sessionId, data.sentenceOfTruth);
+          db.setSentenceOfTruth(sessionId, data.sentenceOfTruth);
         }
         setShowGenerationSuccess(true);
       }
@@ -144,7 +145,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
   
   const debouncedSave = useCallback(
     debounce((stepNumber: number, value: string) => {
-      updateSessionStep(sessionId, stepNumber, value);
+      db.updateSessionStep(sessionId, stepNumber, value);
     }, 500),
     [sessionId, updateSessionStep]
   );
@@ -171,7 +172,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
   };
   
   const handleLensChange = (lens: ThinkingModeId) => {
-    setSessionLens(sessionId, lens);
+    db.setSessionLens(sessionId, lens);
     setTimeout(() => generateContent(), 500);
   };
   
@@ -500,7 +501,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
             <span className="fresco-label block mb-4">{outputLabels.secondary}</span>
             <SentenceOfTruth
               value={manualSentence || aiContent.sentenceOfTruth}
-              onChange={(val) => { setManualSentence(val); setSentenceOfTruth(sessionId, val); }}
+              onChange={(val) => { setManualSentence(val); db.setSentenceOfTruth(sessionId, val); }}
               isLocked={session.sentenceOfTruth?.isLocked || false}
               onToggleLock={() => toggleSentenceLock(sessionId)}
               placeholder={`Your ${outputLabels.secondary.toLowerCase()} will appear here...`}

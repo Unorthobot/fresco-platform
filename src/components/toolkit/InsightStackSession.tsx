@@ -35,6 +35,7 @@ import {
   Zap
 } from 'lucide-react';
 import { cn, debounce, formatRelativeTime } from '@/lib/utils';
+import { useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { useAIGeneration } from '@/lib/useAIGeneration';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
@@ -97,6 +98,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
     saveAIOutputs,
     getWorkspaceSessions,
   } = useFrescoStore();
+  const db = useDBWrite();
   
   // Toast notifications
   const { showToast } = useToast();
@@ -199,7 +201,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
 
   const debouncedSave = useCallback(
     debounce((stepNumber: number, value: string) => {
-      updateSessionStep(sessionId, stepNumber, value);
+      db.updateSessionStep(sessionId, stepNumber, value);
     }, 500),
     [sessionId, updateSessionStep]
   );
@@ -220,7 +222,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
   };
 
   const handleLensChange = (lens: ThinkingModeId) => {
-    setSessionLens(sessionId, lens);
+    db.setSessionLens(sessionId, lens);
   };
 
   // Get workspace context from other sessions - includes full context for AI continuity
@@ -285,7 +287,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
         setAiContent(data);
         
         // Save AI outputs to store for persistence
-        saveAIOutputs(sessionId, data);
+        db.saveAIOutputs(sessionId, data);
         
         if (data.sentenceOfTruth) {
           setManualSentence(data.sentenceOfTruth);
@@ -937,7 +939,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                 sentence={manualSentence || aiContent.sentenceOfTruth}
                 isLocked={session?.sentenceOfTruth?.isLocked}
                 onLockToggle={() => toggleSentenceLock(sessionId)}
-                onEdit={(val) => { setManualSentence(val); setSentenceOfTruth(sessionId, val); }}
+                onEdit={(val) => { setManualSentence(val); db.setSentenceOfTruth(sessionId, val); }}
                 toolkitName={toolkit.name}
               />
             </div>

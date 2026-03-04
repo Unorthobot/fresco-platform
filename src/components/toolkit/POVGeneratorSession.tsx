@@ -24,6 +24,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { cn, debounce, formatRelativeTime } from '@/lib/utils';
+import { useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { useAIGeneration } from '@/lib/useAIGeneration';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
@@ -112,7 +113,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
 
   const debouncedSave = useCallback(
     debounce((stepNumber: number, value: string) => {
-      updateSessionStep(sessionId, stepNumber, value);
+      db.updateSessionStep(sessionId, stepNumber, value);
     }, 500),
     [sessionId, updateSessionStep]
   );
@@ -123,7 +124,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
   };
 
   const handleLensChange = (lens: ThinkingModeId) => {
-    setSessionLens(sessionId, lens);
+    db.setSessionLens(sessionId, lens);
   };
 
   // Generate POV statement from components
@@ -191,7 +192,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
         incrementUsage();
         const data = await response.json();
         setAiContent(data);
-        saveAIOutputs(sessionId, data);
+        db.saveAIOutputs(sessionId, data);
         
         // Trigger celebration and expand output panel
         setShowCelebration(true);
@@ -508,7 +509,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
                       toolkitName={toolkit.name}
                       isLocked={session?.sentenceOfTruth?.isLocked}
                       onLockToggle={() => toggleSentenceLock(sessionId)}
-                      onEdit={(val) => setSentenceOfTruth(sessionId, val)}
+                      onEdit={(val) => db.setSentenceOfTruth(sessionId, val)}
                     />
                   </div>
                 ) : (

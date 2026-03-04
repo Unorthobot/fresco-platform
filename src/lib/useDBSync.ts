@@ -219,5 +219,62 @@ export function useDBWrite() {
     }
   };
 
-  return { createWorkspace, updateWorkspace, deleteWorkspace, createSession, updateSession, deleteSession };
+  // Debounced step sync - fires 1.5s after last keystroke
+  const stepSyncTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  const syncSessionToDB = async (sessionId: string) => {
+    if (!isAuthenticated) return;
+    const s = store.sessions.find(s => s.id === sessionId);
+    if (!s) return;
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          thinkingLens: s.thinkingLens,
+          stepResponses: Object.fromEntries(
+            (s.steps || []).map((step: any) => [step.stepNumber, step.response || step.content || ''])
+          ),
+          aiOutputs: {
+            insights: (s.insights || []).map((i: any) => i.content),
+            necessaryMoves: (s.necessaryMoves || []).map((m: any) => m.content),
+          },
+          sentenceOfTruth: s.sentenceOfTruth?.content || null,
+          isLocked: s.sentenceOfTruth?.isLocked || false,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to sync session to DB:', err);
+    }
+  };
+
+  const updateSessionStep = (sessionId: string, stepNumber: number, response: string) => {
+    store.updateSessionStep(sessionId, stepNumber, response);
+    if (!isAuthenticated) return;
+    // Debounce - wait 1.5s after last keystroke
+    const key = `${sessionId}-${stepNumber}`;
+    if (stepSyncTimers.has(key)) clearTimeout(stepSyncTimers.get(key)!);
+    stepSyncTimers.set(key, setTimeout(() => {
+      syncSessionToDB(sessionId);
+      stepSyncTimers.delete(key);
+    }, 1500));
+  };
+
+  const saveAIOutputs = (sessionId: string, outputs: { insights: string[]; sentenceOfTruth: string; necessaryMoves: string[] }) => {
+    store.saveAIOutputs(sessionId, outputs);
+    // Save immediately after AI generation
+    if (isAuthenticated) setTimeout(() => syncSessionToDB(sessionId), 100);
+  };
+
+  const setSentenceOfTruth = (sessionId: string, content: string) => {
+    store.setSentenceOfTruth(sessionId, content);
+    if (isAuthenticated) setTimeout(() => syncSessionToDB(sessionId), 1500);
+  };
+
+  const setSessionLens = (sessionId: string, lens: any) => {
+    store.setSessionLens(sessionId, lens);
+    if (isAuthenticated) setTimeout(() => syncSessionToDB(sessionId), 100);
+  };
+
+  return { createWorkspace, updateWorkspace, deleteWorkspace, createSession, updateSession, updateSessionStep, saveAIOutputs, setSentenceOfTruth, setSessionLens, deleteSession };
 }

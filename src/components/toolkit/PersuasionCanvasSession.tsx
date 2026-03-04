@@ -28,6 +28,7 @@ import {
   Hand
 } from 'lucide-react';
 import { cn, debounce, formatRelativeTime } from '@/lib/utils';
+import { useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { useAIGeneration } from '@/lib/useAIGeneration';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
@@ -170,7 +171,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
 
   const debouncedSave = useCallback(
     debounce((stepNumber: number, value: string) => {
-      updateSessionStep(sessionId, stepNumber, value);
+      db.updateSessionStep(sessionId, stepNumber, value);
     }, 500),
     [sessionId, updateSessionStep]
   );
@@ -242,7 +243,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
   };
 
   const handleLensChange = (lens: ThinkingModeId) => {
-    setSessionLens(sessionId, lens);
+    db.setSessionLens(sessionId, lens);
   };
 
   // Get workspace context from other sessions
@@ -300,7 +301,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
         incrementUsage();
         const data = await response.json();
         setAiContent(data);
-        saveAIOutputs(sessionId, data);
+        db.saveAIOutputs(sessionId, data);
         setShowCelebration(true);
         setIsOutputPanelExpanded(true);
       }
@@ -625,7 +626,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                 toolkitName="Persuasion Canvas"
                 isLocked={session?.sentenceOfTruth?.isLocked}
                 onLockToggle={() => toggleSentenceLock(sessionId)}
-                onEdit={(val) => setSentenceOfTruth(sessionId, val)}
+                onEdit={(val) => db.setSentenceOfTruth(sessionId, val)}
               />
             </div>
           ) : (
