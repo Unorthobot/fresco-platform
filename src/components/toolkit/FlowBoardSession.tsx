@@ -58,7 +58,7 @@ interface FlowBoardSessionProps {
   sessionId: string;
   workspaceId: string;
   onBack?: () => void;
-  onStartToolkit?: (toolkitType: string) => void;
+  onStartToolkit?: (toolkitType: string) => void | Promise<void>;
 }
 
 interface FlowStep {
