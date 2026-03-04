@@ -202,6 +202,11 @@ export default function FrescoAppContent() {
     setActiveSession(null);
     setActiveSection('workspaces');
     setCurrentView('workspace');
+    // If no active workspace, go home instead
+    if (!activeWorkspaceId) {
+      setActiveSection('home');
+      setCurrentView('home');
+    }
   };
 
   return (
