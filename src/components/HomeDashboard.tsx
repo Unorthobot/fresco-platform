@@ -429,13 +429,13 @@ export function HomeDashboard({
         </div>
       </div>
     </div>
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        reason="toolkits"
-        currentUsage={0}
-        limit={0}
-      />
-    </div>
+    <UpgradeModal
+      isOpen={showUpgradeModal}
+      onClose={() => setShowUpgradeModal(false)}
+      reason="toolkits"
+      currentUsage={0}
+      limit={0}
+    />
+  </div>
   );
 }
