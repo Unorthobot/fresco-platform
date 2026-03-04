@@ -9,6 +9,7 @@ import { useFrescoStore, useWorkspaces } from '@/lib/store';
 import { formatRelativeTime } from '@/lib/utils';
 import { TOOLKITS, type ToolkitType } from '@/types';
 import { EmptyState } from '@/components/ui/EmptyStates';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { JourneyMap } from '@/components/ui/JourneyMap';
 import { TimelineView } from '@/components/ui/TimelineView';
