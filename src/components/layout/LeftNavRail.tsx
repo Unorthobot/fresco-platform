@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFrescoStore, useWorkspaces, useActiveWorkspace } from '@/lib/store';
+import { useDBWrite } from '@/lib/useDBSync';
 import type { Workspace } from '@/types';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { UsageIndicator } from '@/components/ui/UsageIndicator';
@@ -46,6 +47,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
     user,
   } = useFrescoStore();
   
+  const db = useDBWrite();
   const [showWorkspaces, setShowWorkspaces] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [hoveredWorkspace, setHoveredWorkspace] = useState<string | null>(null);
@@ -63,13 +65,13 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
   
-  const handleCreateWorkspace = () => {
+  const handleCreateWorkspace = async () => {
     if (!canCreateWorkspace()) {
       const limits = getUsageLimits();
       setShowUpgradeModal(true);
       return;
     }
-    const workspace = createWorkspace('New Workspace', 'A new thinking space');
+    const workspace = await db.createWorkspace('New Workspace', 'A new thinking space');
     setActiveWorkspace(workspace.id);
     setActiveSession(null);
     setActiveSection('workspaces');
@@ -84,7 +86,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
       setActiveSection('home');
     }
     // Then delete the workspace
-    setTimeout(() => deleteWorkspace(workspaceId), 50);
+    setTimeout(() => db.deleteWorkspace(workspaceId), 50);
     setDeleteConfirm(null);
     // Force navigation to home
     onNavigate?.('home');

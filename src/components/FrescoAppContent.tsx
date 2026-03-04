@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
-import { useDBSync } from '@/lib/useDBSync';
+import { useDBSync, useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { LeftNavRail } from '@/components/layout/LeftNavRail';
@@ -26,6 +26,7 @@ export default function FrescoAppContent() {
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const { data: session, status } = useSession();
   useDBSync();
+  const db = useDBWrite();
 
   const {
     activeSection,
@@ -167,29 +168,29 @@ export default function FrescoAppContent() {
     setCurrentView('session');
   };
 
-  const handleCreateWorkspace = () => {
+  const handleCreateWorkspace = async () => {
     if (!canCreateWorkspace()) {
       setShowUpgradeModal(true);
       return;
     }
-    const workspace = createWorkspace('New Workspace', 'A new thinking space for clarity.');
+    const workspace = await db.createWorkspace('New Workspace', 'A new thinking space for clarity.');
     setActiveWorkspace(workspace.id);
     setActiveSession(null);
     setActiveSection('workspaces');
     setCurrentView('workspace');
   };
 
-  const handleStartToolkit = (toolkitType: string) => {
+  const handleStartToolkit = async (toolkitType: string) => {
     let workspaceId = activeWorkspaceId;
     if (!workspaceId) {
       if (!canCreateWorkspace()) {
         setShowUpgradeModal(true);
         return;
       }
-      const workspace = createWorkspace('New Workspace', 'Created for a new thinking session.');
+      const workspace = await db.createWorkspace('New Workspace', 'Created for a new thinking session.');
       workspaceId = workspace.id;
     }
-    const session = createSession(workspaceId, toolkitType as ToolkitType);
+    const session = await db.createSession(workspaceId, toolkitType as ToolkitType);
     handleNavigateToSession(session.id, workspaceId);
   };
 
