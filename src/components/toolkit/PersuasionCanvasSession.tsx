@@ -97,6 +97,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
     saveAIOutputs,
     getWorkspaceSessions,
   } = useFrescoStore();
+  const db = useDBWrite();
   const { showToast } = useToast();
   
   // AI generation with limits

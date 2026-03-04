@@ -68,6 +68,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
     saveAIOutputs,
     getWorkspaceSessions,
   } = useFrescoStore();
+  const db = useDBWrite();
   const { showToast } = useToast();
   
   // AI generation with limits

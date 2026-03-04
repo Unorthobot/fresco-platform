@@ -78,6 +78,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
     saveAIOutputs,
     getWorkspaceSessions,
   } = useFrescoStore();
+  const db = useDBWrite();
   const { showToast } = useToast();
   
   // AI generation with limits

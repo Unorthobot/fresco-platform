@@ -80,6 +80,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
     saveAIOutputs,
     getWorkspaceSessions,
   } = useFrescoStore();
+  const db = useDBWrite();
   const { showToast } = useToast();
   
   // AI generation with limits

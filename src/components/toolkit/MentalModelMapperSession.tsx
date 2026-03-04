@@ -86,6 +86,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
     saveAIOutputs,
     getWorkspaceSessions,
   } = useFrescoStore();
+  const db = useDBWrite();
   const { showToast } = useToast();
   
   // AI generation with limits

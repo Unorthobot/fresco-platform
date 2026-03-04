@@ -75,6 +75,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
     toggleSentenceLock,
     addInsight,
   } = useFrescoStore();
+  const db = useDBWrite();
   
   const session = sessions.find((s) => s.id === sessionId);
   const workspace = workspaces.find((w) => w.id === workspaceId);
