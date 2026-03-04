@@ -19,7 +19,7 @@ interface HomeDashboardProps {
   onNavigateToWorkspace?: (workspaceId: string) => void;
   onNavigateToSession?: (sessionId: string, workspaceId: string) => void;
   onCreateWorkspace?: () => void;
-  onStartToolkit?: (toolkitType: ToolkitType) => void;
+  onStartToolkit?: (toolkitType: ToolkitType) => void | Promise<void>;
 }
 
 interface WeatherData {

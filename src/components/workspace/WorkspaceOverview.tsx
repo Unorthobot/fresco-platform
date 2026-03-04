@@ -113,7 +113,7 @@ interface WorkspaceOverviewProps {
   workspaceId: string;
   onBack?: () => void;
   onOpenSession?: (sessionId: string) => void;
-  onStartToolkit?: (toolkitType: ToolkitType) => void;
+  onStartToolkit?: (toolkitType: ToolkitType) => void | Promise<void>;
 }
 
 // Toolkit flow - each toolkit suggests the next in the journey
