@@ -204,5 +204,20 @@ export function useDBWrite() {
     }
   };
 
-  return { createWorkspace, deleteWorkspace, createSession, updateSession, deleteSession };
+  const updateWorkspace = async (id: string, updates: { title?: string; description?: string }) => {
+    store.updateWorkspace(id, updates);
+    if (isAuthenticated) {
+      try {
+        await fetch(`/api/workspaces/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+      } catch (err) {
+        console.error('Failed to update workspace in DB:', err);
+      }
+    }
+  };
+
+  return { createWorkspace, updateWorkspace, deleteWorkspace, createSession, updateSession, deleteSession };
 }

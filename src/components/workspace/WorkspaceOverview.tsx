@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Plus, ArrowRight, Edit3, Check, X, Trash2, Sparkles, ChevronDown, Layout, Clock, Link2 } from 'lucide-react';
+import { useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { formatRelativeTime, truncate, cn } from '@/lib/utils';
 import { TOOLKITS, type ToolkitType, type ToolkitCategory } from '@/types';
@@ -161,7 +162,8 @@ const CATEGORY_LABELS: Record<ToolkitCategory, string> = {
 };
 
 export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartToolkit }: WorkspaceOverviewProps) {
-  const { workspaces, sessions, updateWorkspace, deleteSession } = useFrescoStore();
+  const { workspaces, sessions, deleteSession } = useFrescoStore();
+  const db = useDBWrite();
   const workspace = workspaces.find((w) => w.id === workspaceId);
   const workspaceSessions = sessions.filter((s) => s.workspaceId === workspaceId).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   const sentencesOfTruth = workspaceSessions.filter((s) => s.sentenceOfTruth?.content);
@@ -235,7 +237,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
 
   const handleSaveTitle = () => { 
     if (editTitle.trim()) { 
-      updateWorkspace(workspaceId, { title: editTitle.trim() }); 
+      db.updateWorkspace(workspaceId, { title: editTitle.trim() }); 
     } 
     setIsEditingTitle(false); 
   };
