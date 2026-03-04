@@ -436,6 +436,5 @@ export function HomeDashboard({
       currentUsage={0}
       limit={0}
     />
-  </div>
   );
 }
