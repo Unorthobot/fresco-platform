@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Plus, Clock, MapPin, Cloud, Sun, CloudRain, Folder, Lightbulb, Timer, Layout, GitBranch } from 'lucide-react';
+import { ArrowRight, Plus, Clock, MapPin, Cloud, Sun, CloudRain, Folder, Lightbulb, Timer, Layout, GitBranch, Lock } from 'lucide-react';
 import { useFrescoStore, useWorkspaces } from '@/lib/store';
 import { formatRelativeTime } from '@/lib/utils';
 import { TOOLKITS, type ToolkitType } from '@/types';
@@ -286,22 +286,34 @@ export function HomeDashboard({
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.insight_stack}</p>
                 </button>
                 <button 
-                  onClick={() => canUseToolkit('pov_generator') ? onStartToolkit?.('pov_generator') : setShowUpgradeModal(true)} 
-                  className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                  onClick={() => canUseToolkit('pov_generator') ? onStartToolkit?.('pov_generator') : setShowUpgradeModal(true)}
+                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('pov_generator') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">POV Generator™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    {!canUseToolkit('pov_generator') ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <Lock className="w-3 h-3" />Pro
+                      </span>
+                    ) : (
+                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    )}
                   </div>
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.pov_generator}</p>
                 </button>
                 <button 
-                  onClick={() => canUseToolkit('mental_model_mapper') ? onStartToolkit?.('mental_model_mapper') : setShowUpgradeModal(true)} 
-                  className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                  onClick={() => canUseToolkit('mental_model_mapper') ? onStartToolkit?.('mental_model_mapper') : setShowUpgradeModal(true)}
+                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('mental_model_mapper') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Mental Model Mapper™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    {!canUseToolkit('mental_model_mapper') ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <Lock className="w-3 h-3" />Pro
+                      </span>
+                    ) : (
+                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    )}
                   </div>
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.mental_model_mapper}</p>
                 </button>
@@ -327,22 +339,34 @@ export function HomeDashboard({
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.flow_board}</p>
                 </button>
                 <button 
-                  onClick={() => canUseToolkit('experiment_brief') ? onStartToolkit?.('experiment_brief') : setShowUpgradeModal(true)} 
-                  className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                  onClick={() => canUseToolkit('experiment_brief') ? onStartToolkit?.('experiment_brief') : setShowUpgradeModal(true)}
+                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('experiment_brief') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Experiment Brief™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    {!canUseToolkit('experiment_brief') ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <Lock className="w-3 h-3" />Pro
+                      </span>
+                    ) : (
+                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    )}
                   </div>
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.experiment_brief}</p>
                 </button>
                 <button 
-                  onClick={() => canUseToolkit('strategy_sketchbook') ? onStartToolkit?.('strategy_sketchbook') : setShowUpgradeModal(true)} 
-                  className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                  onClick={() => canUseToolkit('strategy_sketchbook') ? onStartToolkit?.('strategy_sketchbook') : setShowUpgradeModal(true)}
+                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('strategy_sketchbook') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Strategy Sketchbook™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    {!canUseToolkit('strategy_sketchbook') ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <Lock className="w-3 h-3" />Pro
+                      </span>
+                    ) : (
+                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    )}
                   </div>
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.strategy_sketchbook}</p>
                 </button>
@@ -368,22 +392,34 @@ export function HomeDashboard({
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.ux_scorecard}</p>
                 </button>
                 <button 
-                  onClick={() => canUseToolkit('persuasion_canvas') ? onStartToolkit?.('persuasion_canvas') : setShowUpgradeModal(true)} 
-                  className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                  onClick={() => canUseToolkit('persuasion_canvas') ? onStartToolkit?.('persuasion_canvas') : setShowUpgradeModal(true)}
+                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('persuasion_canvas') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Persuasion Canvas™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    {!canUseToolkit('persuasion_canvas') ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <Lock className="w-3 h-3" />Pro
+                      </span>
+                    ) : (
+                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    )}
                   </div>
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.persuasion_canvas}</p>
                 </button>
                 <button 
-                  onClick={() => canUseToolkit('performance_grid') ? onStartToolkit?.('performance_grid') : setShowUpgradeModal(true)} 
-                  className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                  onClick={() => canUseToolkit('performance_grid') ? onStartToolkit?.('performance_grid') : setShowUpgradeModal(true)}
+                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('performance_grid') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Performance Grid™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    {!canUseToolkit('performance_grid') ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <Lock className="w-3 h-3" />Pro
+                      </span>
+                    ) : (
+                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    )}
                   </div>
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.performance_grid}</p>
                 </button>
