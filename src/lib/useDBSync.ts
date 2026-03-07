@@ -12,7 +12,7 @@ export function useDBSync() {
   const { data: session, status } = useSession();
   const { setUser, workspaces, sessions } = useFrescoStore();
   const hasSynced = useRef(false);
-  const wasAuthenticated = useRef(false);
+
   const [isSyncComplete, setIsSyncComplete] = useState(false);
   const isAuthenticated = status === 'authenticated' && !!session?.user?.id;
 
@@ -94,7 +94,7 @@ export function useDBSync() {
         });
 
         hasSynced.current = true;
-        wasAuthenticated.current = true;
+        sessionStorage.setItem("fresco_was_authed", "1");
         setIsSyncComplete(true);
       } catch (err) {
         console.error('DB sync failed:', err);
@@ -106,9 +106,9 @@ export function useDBSync() {
 
   // On logout: clear store
   useEffect(() => {
-    if (status === 'unauthenticated' && wasAuthenticated.current) {
+    if (status === 'unauthenticated' && sessionStorage.getItem("fresco_was_authed")) {
       hasSynced.current = false;
-      wasAuthenticated.current = false;
+      sessionStorage.removeItem("fresco_was_authed");
       setIsSyncComplete(false);
       useFrescoStore.setState({
         workspaces: [],
