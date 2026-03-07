@@ -94,7 +94,14 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
   const [steps, setSteps] = useState<FlowStep[]>([]);
   const [idealState, setIdealState] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [aiContent, setAiContent] = useState<{ insights: string[]; sentenceOfTruth: string; necessaryMoves: string[] }>({ insights: [], sentenceOfTruth: '', necessaryMoves: [] });
+  const [aiContent, setAiContent] = useState<{ insights: string[]; sentenceOfTruth: string; necessaryMoves: string[] }>(() => {
+    const s = sessions.find((s: any) => s.id === sessionId);
+    return {
+      insights: (s?.insights || []).map((i: any) => i.content).filter(Boolean),
+      sentenceOfTruth: s?.sentenceOfTruth?.content || '',
+      necessaryMoves: (s?.necessaryMoves || []).map((m: any) => m.content).filter(Boolean),
+    };
+  });
   const [showExportModal, setShowExportModal] = useState(false);
   
   // New UX state
