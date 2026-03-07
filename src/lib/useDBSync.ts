@@ -224,7 +224,7 @@ export function useDBWrite() {
 
   const syncSessionToDB = async (sessionId: string) => {
     if (!isAuthenticated) return;
-    const s = store.sessions.find(s => s.id === sessionId);
+    const s = useFrescoStore.getState().sessions.find((s: any) => s.id === sessionId);
     if (!s) return;
     try {
       await fetch(`/api/sessions/${sessionId}`, {
@@ -233,11 +233,11 @@ export function useDBWrite() {
         body: JSON.stringify({
           thinkingLens: s.thinkingLens,
           stepResponses: Object.fromEntries(
-            (s.steps || []).map((step: any) => [step.stepNumber, step.response || step.content || ''])
+            (s.steps || []).map((step: any) => [String(step.stepNumber), step.response || step.content || ''])
           ),
           aiOutputs: {
-            insights: (s.insights || []).map((i: any) => i.content),
-            necessaryMoves: (s.necessaryMoves || []).map((m: any) => m.content),
+            insights: (s.insights || []).map((i: any) => i.content).filter(Boolean),
+            necessaryMoves: (s.necessaryMoves || []).map((m: any) => m.content).filter(Boolean),
           },
           sentenceOfTruth: s.sentenceOfTruth?.content || null,
           isLocked: s.sentenceOfTruth?.isLocked || false,
@@ -257,13 +257,13 @@ export function useDBWrite() {
     stepSyncTimers.set(key, setTimeout(() => {
       syncSessionToDB(sessionId);
       stepSyncTimers.delete(key);
-    }, 1500));
+    }, 2000));
   };
 
   const saveAIOutputs = (sessionId: string, outputs: { insights: string[]; sentenceOfTruth: string; necessaryMoves: string[] }) => {
     store.saveAIOutputs(sessionId, outputs);
     // Save immediately after AI generation
-    if (isAuthenticated) setTimeout(() => syncSessionToDB(sessionId), 100);
+    if (isAuthenticated) setTimeout(() => syncSessionToDB(sessionId), 500);
   };
 
   const setSentenceOfTruth = (sessionId: string, content: string) => {
@@ -273,7 +273,7 @@ export function useDBWrite() {
 
   const setSessionLens = (sessionId: string, lens: any) => {
     store.setSessionLens(sessionId, lens);
-    if (isAuthenticated) setTimeout(() => syncSessionToDB(sessionId), 100);
+    if (isAuthenticated) setTimeout(() => syncSessionToDB(sessionId), 500);
   };
 
   return { createWorkspace, updateWorkspace, deleteWorkspace, createSession, updateSession, updateSessionStep, saveAIOutputs, setSentenceOfTruth, setSessionLens, deleteSession };
