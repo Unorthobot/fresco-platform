@@ -55,12 +55,12 @@ export function useDBSync() {
             thinkingLens: s.thinkingLens || 'automatic',
             status: 'draft',
             steps: s.stepResponses ? Object.entries(s.stepResponses).map(([k, v]: any) => ({
-              id: k,
+              id: `${s.id}-step-${k}`,
               stepNumber: parseInt(k),
               label: '',
               prompt: '',
-              response: v,
-              content: v,
+              response: v as string,
+              content: v as string,
               sessionId: s.id,
             })) : [],
             insights: s.aiOutputs?.insights?.map((content: string, i: number) => ({
