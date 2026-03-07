@@ -123,6 +123,7 @@ export default function FrescoAppContent() {
       setActiveWorkspace(null);
       setActiveSection('home');
       setCurrentView('home');
+      onNavigate?.('home');
     }
   }, [activeWorkspaceId, currentWorkspace, setActiveSession, setActiveWorkspace, setActiveSection]);
 
@@ -152,6 +153,7 @@ export default function FrescoAppContent() {
     } else if (section === 'workspaces') {
       setActiveSession(null);
       setActiveSection('workspaces');
+      setCurrentView('workspace');
     }
   };
 
@@ -224,7 +226,7 @@ export default function FrescoAppContent() {
       <MobileNav activeSection={activeSection} onNavigate={handleNavigate} />
 
       <main id="main-content" className="md:ml-[220px] min-h-screen">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           {effectiveView === 'home' && (
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <HomeDashboard
