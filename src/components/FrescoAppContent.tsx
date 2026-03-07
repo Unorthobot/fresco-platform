@@ -123,7 +123,6 @@ export default function FrescoAppContent() {
       setActiveWorkspace(null);
       setActiveSection('home');
       setCurrentView('home');
-      onNavigate?.('home');
     }
   }, [activeWorkspaceId, currentWorkspace, setActiveSession, setActiveWorkspace, setActiveSection]);
 
