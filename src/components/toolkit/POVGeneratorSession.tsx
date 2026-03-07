@@ -78,7 +78,11 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
   const workspace = workspaces.find((w) => w.id === workspaceId);
   const toolkit = TOOLKITS.pov_generator;
   
-  const [stepResponses, setStepResponses] = useState<Record<number, string>>({});
+  const [stepResponses, setStepResponses] = useState<Record<number, string>>(() => {
+    const s = sessions.find((s: any) => s.id === sessionId);
+    if (!s?.steps?.length) return {};
+    return Object.fromEntries((s.steps || []).map((step: any) => [step.stepNumber, step.response || step.content || '']));
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiContent, setAiContent] = useState<{ insights: string[]; sentenceOfTruth: string; necessaryMoves: string[] }>({ insights: [], sentenceOfTruth: '', necessaryMoves: [] });
   const [showExportModal, setShowExportModal] = useState(false);

@@ -110,13 +110,24 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
   const workspace = workspaces.find((w) => w.id === workspaceId);
   const toolkit = TOOLKITS.insight_stack;
   
-  const [stepResponses, setStepResponses] = useState<Record<number, string>>({});
+  const [stepResponses, setStepResponses] = useState<Record<number, string>>(() => {
+    const s = sessions.find(s => s.id === sessionId);
+    if (!s?.steps?.length) return {};
+    return Object.fromEntries((s.steps || []).map((step: any) => [step.stepNumber, step.response || step.content || '']));
+  });
   const [stepFiles, setStepFiles] = useState<Record<number, { name: string; type: string; preview?: string }[]>>({});
   const [activeStep, setActiveStep] = useState(1);
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(() => {
+    const s = sessions.find(s => s.id === sessionId);
+    if (!s?.steps?.length) return new Set();
+    return new Set((s.steps || []).filter((step: any) => step.response || step.content).map((step: any) => step.stepNumber));
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [manualInsights, setManualInsights] = useState<string[]>([]);
-  const [manualSentence, setManualSentence] = useState('');
+  const [manualSentence, setManualSentence] = useState(() => {
+    const s = sessions.find(s => s.id === sessionId);
+    return s?.sentenceOfTruth?.content || '';
+  });
   const [aiContent, setAiContent] = useState<{ 
     insights: string[]; 
     sentenceOfTruth: string; 
@@ -127,7 +138,14 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
     ethicalMatrix?: { stakeholders: Array<{ name: string; impact: 'positive' | 'negative' | 'neutral'; notes: string }> } | null;
     firstPrinciplesList?: string[] | null;
     narrativeArc?: { setup: string; conflict: string; resolution: string } | null;
-  }>({ insights: [], sentenceOfTruth: '', necessaryMoves: [] });
+  }>(() => {
+    const s = sessions.find(s => s.id === sessionId);
+    return {
+      insights: (s?.insights || []).map((i: any) => i.content).filter(Boolean),
+      sentenceOfTruth: s?.sentenceOfTruth?.content || '',
+      necessaryMoves: (s?.necessaryMoves || []).map((m: any) => m.content).filter(Boolean),
+    };
+  });
   const [showExportModal, setShowExportModal] = useState(false);
   const [isRecording, setIsRecording] = useState<number | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
