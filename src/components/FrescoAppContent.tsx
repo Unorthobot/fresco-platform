@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
-import { useDBSync, useDBWrite } from '@/lib/useDBSync';
+import { useDBSync, useDBWrite, useDBSyncComplete } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { LeftNavRail } from '@/components/layout/LeftNavRail';
@@ -25,7 +25,7 @@ export default function FrescoAppContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const { data: session, status } = useSession();
-  useDBSync();
+  const { isSyncComplete } = useDBSync();
   const db = useDBWrite();
 
   const {
@@ -117,6 +117,7 @@ export default function FrescoAppContent() {
 
   // Handle deleted workspace - navigate back to home
   useEffect(() => {
+    if (!isSyncComplete) return; // Wait for DB sync before redirecting
     if ((currentView === 'workspace' || currentView === 'session') && (!activeWorkspaceId || !currentWorkspace)) {
       setActiveSession(null);
       setActiveWorkspace(null);
