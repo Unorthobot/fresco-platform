@@ -4,7 +4,7 @@
 // Syncs Zustand store with database for authenticated users
 // Falls back to localStorage for guests
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useFrescoStore } from '@/lib/store';
 
