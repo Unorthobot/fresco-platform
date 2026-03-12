@@ -552,6 +552,17 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
                   </div>
                 )}
           
+          {/* Decision Gate */}
+          <DecisionGate
+            isVisible={aiContent.insights.length > 0 && !!aiContent.sentenceOfTruth}
+            currentDecision={sessionDecision}
+            onDecision={(decision, rationale, confidence) => {
+              setSessionDecision(decision);
+              db.saveDecision(sessionId, decision, rationale, confidence);
+            }}
+          />
+
+
                 {/* Export */}
                 <div className="pt-6 border-t border-fresco-border-light">
                   <button 
