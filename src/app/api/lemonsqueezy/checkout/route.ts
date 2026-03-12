@@ -5,7 +5,7 @@ import { createCheckout } from '@lemonsqueezy/lemonsqueezy.js';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
     {
       checkoutOptions: { embed: false },
       checkoutData: {
-        email: session.user.email,
-        custom: { user_id: (session.user as any).id },
+        email: session.user.email ?? undefined,
+        custom: { user_id: session.user.id },
       },
       productOptions: {
         redirectUrl: process.env.NEXTAUTH_URL + '/',
