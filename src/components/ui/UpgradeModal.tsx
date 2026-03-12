@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Crown, Sparkles, Zap } from 'lucide-react';
-import { redirectToCheckout } from '@/lib/stripe';
 import { useState } from 'react';
 
 interface UpgradeModalProps {

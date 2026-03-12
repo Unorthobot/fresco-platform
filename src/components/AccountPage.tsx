@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { User, CreditCard, Calendar, LogOut, Check, Crown, Zap, Camera, Users, Loader2, LogIn } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
-import { redirectToCheckout } from '@/lib/stripe';
 
 export function AccountPage() {
   const { data: session, status } = useSession();

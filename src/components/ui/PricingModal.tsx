@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Sparkles, Zap, Building2 } from 'lucide-react';
-import { PRICING_PLANS, PlanType, redirectToCheckout } from '@/lib/stripe';
 import { cn } from '@/lib/utils';
 
 interface PricingModalProps {
