@@ -62,10 +62,16 @@ export function AccountPage() {
   };
 
   const handleUpgrade = async (planKey: 'pro' | 'studio') => {
-    const priceId = PRICE_IDS[planKey];
     setLoadingPlan(planKey);
     try {
-      await redirectToCheckout(priceId, session?.user?.email || undefined);
+      const res = await fetch('/api/lemonsqueezy/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planKey }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else throw new Error(data.error || 'No checkout URL');
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Failed to start checkout. Please try again.');
