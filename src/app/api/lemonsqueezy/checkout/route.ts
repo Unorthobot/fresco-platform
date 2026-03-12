@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
         custom: { user_id: session.user.id },
       },
       productOptions: {
-        redirectUrl: process.env.NEXTAUTH_URL + '/',
+        redirectUrl: 'https://app.frescolab.io/',
         receiptButtonText: 'Back to Fresco',
       },
     }
