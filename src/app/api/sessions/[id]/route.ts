@@ -22,6 +22,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       aiOutputs: data.aiOutputs,
       sentenceOfTruth: data.sentenceOfTruth,
       isLocked: data.isLocked,
+      ...(data.decision !== undefined && { decision: data.decision }),
+      ...(data.decisionRationale !== undefined && { decisionRationale: data.decisionRationale }),
+      ...(data.decisionConfidence !== undefined && { decisionConfidence: data.decisionConfidence }),
+      ...(data.decisionAt !== undefined && { decisionAt: new Date(data.decisionAt) }),
       updatedAt: new Date(),
     },
   });
