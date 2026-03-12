@@ -738,15 +738,6 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                             goodLength={80} 
                           />
                           
-                          {/* Lens Suggestion based on content (only show on last step) */}
-                          {step.stepNumber === toolkit.steps.length && session?.thinkingLens === 'automatic' && (
-                            <LensSuggestBadge
-                              content={Object.values(stepResponses).join(' ')}
-                              currentLens={session.thinkingLens}
-                              onSelectLens={handleLensChange}
-                            />
-                          )}
-                          
                           {/* Smart Prompt Hint */}
                           <SmartPrompt 
                             value={stepResponses[step.stepNumber] || ''} 
