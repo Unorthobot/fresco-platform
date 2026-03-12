@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  console.log('LS checkout session:', JSON.stringify(session));
   const { plan } = await req.json();
   const variantId = plan === 'studio'
     ? process.env.LEMONSQUEEZY_STUDIO_VARIANT_ID!
