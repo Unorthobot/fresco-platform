@@ -49,6 +49,7 @@ import { SentenceOfTruthDisplay } from '@/components/ui/SentenceOfTruthDisplay';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { GenerationSuccess } from '@/components/ui/GenerationSuccess';
 import { TOOLKIT_EXAMPLES } from '@/lib/examples';
+import DecisionGate, { DecisionType } from '@/components/ui/DecisionGate';
 
 interface MentalModelMapperSessionProps {
   sessionId: string;

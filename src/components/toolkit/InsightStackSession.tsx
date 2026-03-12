@@ -71,6 +71,7 @@ import {
   DynamicPrompt
 } from '@/components/ui/ToolkitUX';
 import { TOOLKIT_EXAMPLES } from '@/lib/examples';
+import DecisionGate, { DecisionType } from '@/components/ui/DecisionGate';
 
 interface InsightStackSessionProps {
   sessionId: string;

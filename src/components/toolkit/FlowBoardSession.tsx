@@ -54,6 +54,7 @@ import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { GenerationSuccess } from '@/components/ui/GenerationSuccess';
 import { TOOLKIT_EXAMPLES } from '@/lib/examples';
 import type { ExportData } from '@/lib/export';
+import DecisionGate, { DecisionType } from '@/components/ui/DecisionGate';
 
 interface FlowBoardSessionProps {
   sessionId: string;
