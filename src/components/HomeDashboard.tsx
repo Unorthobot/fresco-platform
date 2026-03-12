@@ -59,6 +59,17 @@ export function HomeDashboard({
   const recentSessions = getRecentSessions(5);
   const sentencesOfTruth = sessions.filter((s) => s.sentenceOfTruth?.content).slice(0, 3);
   const totalInsights = sessions.reduce((acc, s) => acc + (s.insights?.length || 0), 0);
+  const decisionCounts = sessions.reduce((acc, s) => {
+    const d = (s as any).decision;
+    if (d === 'GO') acc.go++;
+    else if (d === 'PIVOT') acc.pivot++;
+    else if (d === 'KILL') acc.kill++;
+    else if (d === 'DEFERRED') acc.deferred++;
+    else acc.pending++;
+    return acc;
+  }, { go: 0, pivot: 0, kill: 0, deferred: 0, pending: 0 });
+  const decidedCount = decisionCounts.go + decisionCounts.pivot + decisionCounts.kill + decisionCounts.deferred;
+  const pendingCount = sessions.filter(s => !(s as any).decision && (s.insights?.length || 0) > 0).length;
 
   // Set mounted and initial time on client
   useEffect(() => {
@@ -253,6 +264,42 @@ export function HomeDashboard({
                   <div className="text-fresco-xl font-medium text-fresco-black">{sentencesOfTruth.length}</div>
                 </div>
               </div>
+              {/* Decision Summary */}
+              {sessions.length > 0 && (
+                <div className="pt-4 border-t border-fresco-border-light mt-2">
+                  <div className="text-fresco-xs text-fresco-graphite-light mb-2">Decisions</div>
+                  <div className="flex gap-2 flex-wrap">
+                    {decisionCounts.go > 0 && (
+                      <span className="text-fresco-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {decisionCounts.go} GO
+                      </span>
+                    )}
+                    {decisionCounts.pivot > 0 && (
+                      <span className="text-fresco-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                        {decisionCounts.pivot} PIVOT
+                      </span>
+                    )}
+                    {decisionCounts.kill > 0 && (
+                      <span className="text-fresco-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
+                        {decisionCounts.kill} KILL
+                      </span>
+                    )}
+                    {decisionCounts.deferred > 0 && (
+                      <span className="text-fresco-xs font-medium px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-200">
+                        {decisionCounts.deferred} Pending
+                      </span>
+                    )}
+                    {pendingCount > 0 && (
+                      <span className="text-fresco-xs font-medium px-2 py-0.5 rounded-full bg-fresco-light-gray text-fresco-graphite-light border border-fresco-border-light">
+                        {pendingCount} undecided
+                      </span>
+                    )}
+                    {decidedCount === 0 && pendingCount === 0 && (
+                      <span className="text-fresco-xs text-fresco-graphite-light">No decisions yet</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
