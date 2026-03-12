@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
   }
 
   console.log('LS checkout session:', JSON.stringify(session));
+  console.log('LS variant/store:', process.env.LEMONSQUEEZY_STORE_ID, process.env.LEMONSQUEEZY_PRO_VARIANT_ID);
   const { plan } = await req.json();
   const variantId = plan === 'studio'
     ? process.env.LEMONSQUEEZY_STUDIO_VARIANT_ID!
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   );
 
   if (checkout.error) {
-    console.error('LS checkout error:', JSON.stringify(checkout.error));
+    console.error('LS checkout full error:', JSON.stringify(checkout));
     return NextResponse.json({ error: checkout.error.message }, { status: 500 });
   }
   if (!checkout.data?.data.attributes.url) {
