@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { PRICING_PLANS, PlanType } from '@/lib/stripe';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Sparkles, Zap, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
