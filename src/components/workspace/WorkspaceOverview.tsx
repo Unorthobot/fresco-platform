@@ -443,6 +443,17 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                     {session.sentenceOfTruth?.content && (
                                       <Sparkles className="w-4 h-4 text-fresco-graphite" />
                                     )}
+                                    {(session as any).decision && (
+                                      <span className={[
+                                        'text-fresco-xs font-medium px-2 py-0.5 rounded-full border',
+                                        (session as any).decision === 'GO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                        (session as any).decision === 'PIVOT' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        (session as any).decision === 'KILL' ? 'bg-red-50 text-red-600 border-red-200' :
+                                        'bg-gray-50 text-gray-500 border-gray-200'
+                                      ].join(' ')}>
+                                        {(session as any).decision === 'DEFERRED' ? 'Pending' : (session as any).decision}
+                                      </span>
+                                    )}
                                   </div>
                                   <p className="text-fresco-xs text-fresco-graphite-light">{formatRelativeTime(session.updatedAt)}</p>
                                   {session.sentenceOfTruth?.content && (
