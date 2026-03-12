@@ -17,12 +17,17 @@ export function PricingModal({ isOpen, onClose, currentPlan = 'starter', userEma
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   const handleUpgrade = async (planKey: PlanType) => {
-    const plan = PRICING_PLANS[planKey];
-    if (!plan.priceId) return;
-
     setLoading(planKey);
     try {
-      await redirectToCheckout(plan.priceId, userEmail);
+      const plan = planKey === 'studio' ? 'studio' : 'pro';
+      const res = await fetch('/api/lemonsqueezy/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else throw new Error(data.error || 'No checkout URL');
     } catch (error) {
       console.error('Upgrade failed:', error);
       alert('Failed to start checkout. Please try again.');
