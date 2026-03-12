@@ -33,7 +33,12 @@ export async function POST(req: NextRequest) {
   );
 
   if (checkout.error) {
+    console.error('LS checkout error:', JSON.stringify(checkout.error));
     return NextResponse.json({ error: checkout.error.message }, { status: 500 });
+  }
+  if (!checkout.data?.data.attributes.url) {
+    console.error('LS checkout no URL:', JSON.stringify(checkout));
+    return NextResponse.json({ error: 'No checkout URL returned' }, { status: 500 });
   }
 
   return NextResponse.json({ url: checkout.data?.data.attributes.url });
