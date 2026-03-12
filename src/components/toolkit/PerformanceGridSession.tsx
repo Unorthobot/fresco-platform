@@ -112,6 +112,10 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
   const [activeStep, setActiveStep] = useState(1);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isOutputPanelExpanded, setIsOutputPanelExpanded] = useState(false);
+  const [sessionDecision, setSessionDecision] = useState<DecisionType | null>(() => {
+    const s = sessions.find((s: any) => s.id === sessionId);
+    return (s as any)?.decision || null;
+  });
   
   // Initialize from session
   useEffect(() => {

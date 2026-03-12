@@ -162,6 +162,10 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
   const [isWizardMode, setIsWizardMode] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isOutputPanelExpanded, setIsOutputPanelExpanded] = useState(false);
+  const [sessionDecision, setSessionDecision] = useState<DecisionType | null>(() => {
+    const s = sessions.find((s: any) => s.id === sessionId);
+    return (s as any)?.decision || null;
+  });
   
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1004,6 +1008,16 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
             </div>
           )}
           
+          {/* Decision Gate */}
+          <DecisionGate
+            isVisible={aiContent.insights.length > 0 && !!aiContent.sentenceOfTruth}
+            currentDecision={sessionDecision}
+            onDecision={(decision, rationale, confidence) => {
+              setSessionDecision(decision);
+              db.saveDecision(sessionId, decision, rationale, confidence);
+            }}
+          />
+
           {/* Export */}
           <div className="pt-6 border-t border-fresco-border-light">
             <button 

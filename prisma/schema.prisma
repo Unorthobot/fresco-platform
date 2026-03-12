@@ -83,6 +83,10 @@ model ToolkitSession {
   aiOutputs       Json?
   sentenceOfTruth String?
   isLocked        Boolean  @default(false)
+  decision        String?  // GO | PIVOT | KILL | DEFERRED
+  decisionRationale String?
+  decisionConfidence Int?
+  decisionAt      DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
