@@ -287,5 +287,18 @@ export function useDBWrite() {
     if (isAuthenticated) setTimeout(() => syncSessionToDB(sessionId), 500);
   };
 
-  return { createWorkspace, updateWorkspace, deleteWorkspace, createSession, updateSession, updateSessionStep, saveAIOutputs, setSentenceOfTruth, setSessionLens, deleteSession };
+
+  const saveDecision = async (sessionId: string, decision: string, rationale?: string, confidence?: number) => {
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision, decisionRationale: rationale, decisionConfidence: confidence, decisionAt: new Date().toISOString() }),
+      });
+    } catch (err) {
+      console.error('Failed to save decision', err);
+    }
+  };
+
+  return { createWorkspace, updateWorkspace, deleteWorkspace, createSession, updateSession, updateSessionStep, saveAIOutputs, setSentenceOfTruth, setSessionLens, deleteSession, saveDecision };
 }
