@@ -16,10 +16,20 @@ interface UpgradeModalProps {
 export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: UpgradeModalProps) {
   const [loading, setLoading] = useState(false);
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (plan: 'pro' | 'studio' = 'pro') => {
     setLoading(true);
     try {
-      await redirectToCheckout('price_1T1muDDxdMzzMWBlKFBbR4jK');
+      const res = await fetch('/api/lemonsqueezy/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'No checkout URL');
+      }
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Failed to start checkout. Please try again.');
@@ -125,7 +135,7 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
                   Maybe later
                 </button>
                 <button
-                  onClick={handleUpgrade}
+                  onClick={() => handleUpgrade('pro')}
                   disabled={loading}
                   className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
