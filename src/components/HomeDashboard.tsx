@@ -159,10 +159,10 @@ export function HomeDashboard({
           >
             <span className="fresco-label mb-3 block">{isGuest ? 'Hello fellow thinker, welcome to Fresco!' : `Welcome back, ${firstName}!`}</span>
             <h1 className="text-fresco-4xl font-medium text-fresco-black tracking-tight mb-4">
-              What will you think through today?
+              What decision are you working toward?
             </h1>
             <p className="text-fresco-lg text-fresco-graphite-mid max-w-xl mb-6">
-              Structure your thinking before action begins. Choose a toolkit to start extracting clarity.
+              Fresco makes decision discipline visible. Choose a house to define the problem, design the solution, or validate before you commit.
             </p>
             
             {/* Recent Sessions */}
@@ -311,7 +311,7 @@ export function HomeDashboard({
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
             <h2 className="text-fresco-2xl font-medium text-fresco-black mb-2">The Three Houses</h2>
             <p className="text-fresco-base text-fresco-graphite-mid">
-              Every clear decision requires three movements: understanding truth, exploring possibility, and validating direction.
+              Fresco reduces R&D waste by helping teams define the right problem, design focused solutions, and validate before scaling — so they never commit serious resources in the wrong direction.
             </p>
           </motion.div>
 
@@ -322,7 +322,7 @@ export function HomeDashboard({
                 <img src="/01-investigate.png" alt="Investigate" className="w-5 h-5 icon-theme" />
               </div>
               <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">Investigate</h3>
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Extract truth from complexity. Define the real problem before proposing solutions.</p>
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Replace opinion with evidence. Produce a clear, defensible problem definition before anyone proposes a solution.</p>
               <div className="space-y-2">
                 <button 
                   onClick={() => onStartToolkit?.('insight_stack')} 
@@ -375,7 +375,7 @@ export function HomeDashboard({
                 <img src="/02-innovate.png" alt="Innovate" className="w-5 h-5 icon-theme" />
               </div>
               <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">Innovate</h3>
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Create structured possibilities. Transform truth into strategic direction.</p>
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Turn complexity into structured solution pathways. Narrow to 1–2 focused directions instead of building bloated feature sets.</p>
               <div className="space-y-2">
                 <button 
                   onClick={() => onStartToolkit?.('flow_board')} 
@@ -428,7 +428,7 @@ export function HomeDashboard({
                 <img src="/03-validate.png" alt="Validate" className="w-5 h-5 icon-theme" />
               </div>
               <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">Validate</h3>
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Judge strength and feasibility. Ensure clarity before execution begins.</p>
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Replace hope with signal. Run structured validation before committing engineering or marketing budget.</p>
               <div className="space-y-2">
                 <button 
                   onClick={() => onStartToolkit?.('ux_scorecard')} 
