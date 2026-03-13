@@ -292,6 +292,8 @@ export function useDBWrite() {
 
 
   const saveDecision = async (sessionId: string, decision: string, rationale?: string, confidence?: number) => {
+    // Update Zustand store immediately so HomeDashboard reflects the change
+    updateSession(sessionId, { decision, decisionRationale: rationale, decisionConfidence: confidence } as any);
     try {
       await fetch(`/api/sessions/${sessionId}`, {
         method: 'PATCH',
