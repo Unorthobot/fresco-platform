@@ -85,7 +85,7 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
   insight_stack: {
     id: 'insight_stack',
     name: 'Insight Stack',
-    subtitle: 'Extract the real insight from what you're seeing.',
+    subtitle: "Extract the real insight from what you're seeing.",
     category: 'investigate',
     purpose: 'Extract, structure, and refine raw observations into meaningful insights.',
     primaryModes: ['critical', 'systems', 'analytical', 'first_principles', 'scientific'],
