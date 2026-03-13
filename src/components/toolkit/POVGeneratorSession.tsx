@@ -229,6 +229,8 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
   const povStatement = generatePOVStatement();
   const hasContent = Object.values(stepResponses).some(v => v && v.trim().length > 10);
   
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+
   if (!session) return <div className="flex items-center justify-center h-96"><p className="text-fresco-graphite-light">Session not found</p></div>;
 
   const stepIcons = [User, Heart, Lightbulb, ArrowRight];

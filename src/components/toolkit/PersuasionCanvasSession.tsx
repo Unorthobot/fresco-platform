@@ -331,6 +331,8 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
     tactics.filter(t => t.content.trim()).length >= 1 || coreMessage.trim().length > 10
   ].filter(Boolean).length;
   
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+
   if (!session) return <div className="flex items-center justify-center h-96"><p className="text-fresco-graphite-light">Session not found</p></div>;
 
   return (

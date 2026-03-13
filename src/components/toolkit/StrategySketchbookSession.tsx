@@ -325,6 +325,8 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
     recommendation.trim().length > 20
   ].filter(Boolean).length;
   
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+
   if (!session) return <div className="flex items-center justify-center h-96"><p className="text-fresco-graphite-light">Session not found</p></div>;
 
   return (
