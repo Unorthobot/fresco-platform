@@ -169,6 +169,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
   });
   
   const recognitionRef = useRef<any>(null);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeFileStepRef = useRef<number>(1);
   
@@ -319,6 +320,8 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
         // Show sleek success celebration
         setShowCelebration(true);
         setIsOutputPanelExpanded(true);
+        // Scroll to top
+        mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         showToast('Failed to generate insights. Please try again.', 'error');
       }
@@ -599,12 +602,12 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
       />
       
       {/* Main Column */}
-      <div className={cn("flex-1 overflow-y-auto transition-all", isOutputPanelExpanded ? "" : "")}>
+      <div ref={mainScrollRef} className={cn("flex-1 overflow-y-auto transition-all", isOutputPanelExpanded ? "" : "")}>
         <div className="max-w-[800px] mx-auto px-8 py-10">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <button type="button" onClick={() => onBack?.()} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
+              <button type="button" onClick={() => { try { onBack?.(); } catch(e) { window.location.href = "/"; } }} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
                 <ChevronLeft className="w-4 h-4" /><span>Back to {workspace?.title || 'Workspace'}</span>
               </button>
               <div className="flex items-center gap-3">
@@ -617,12 +620,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                   onNext={() => setActiveStep(Math.min(toolkit.steps.length, activeStep + 1))}
                   canGoNext={isStepComplete(activeStep)}
                 />
-                <details className="relative">
-                  <summary className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black cursor-pointer list-none select-none">Advanced</summary>
-                  <div className="absolute right-0 top-6 z-50 bg-white border border-fresco-border shadow-fresco p-3">
-                    <ThinkingLensSelector value={session.thinkingLens} onChange={handleLensChange} recommendedModes={toolkit.primaryModes} />
-                  </div>
-                </details>
+                <ThinkingLensSelector value={session.thinkingLens} onChange={handleLensChange} recommendedModes={toolkit.primaryModes} />
               </div>
             </div>
             
@@ -734,28 +732,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                             style={{ minHeight: step.minHeight || 120 }}
                           />
                           
-                          {/* Input Quality Indicator */}
-                          <InputQualityIndicator 
-                            value={stepResponses[step.stepNumber] || ''} 
-                            minLength={20} 
-                            goodLength={80} 
-                          />
-                          
-                          {/* Smart Prompt Hint */}
-                          <SmartPrompt 
-                            value={stepResponses[step.stepNumber] || ''} 
-                            minLength={20} 
-                            goodLength={80}
-                          />
-                          
-                          {/* Contextual Example */}
-                          {TOOLKIT_EXAMPLES.insight_stack[step.stepNumber as keyof typeof TOOLKIT_EXAMPLES.insight_stack] && (
-                            <ContextualExample
-                              stepLabel={step.label}
-                              example={TOOLKIT_EXAMPLES.insight_stack[step.stepNumber as keyof typeof TOOLKIT_EXAMPLES.insight_stack].example}
-                              tip={TOOLKIT_EXAMPLES.insight_stack[step.stepNumber as keyof typeof TOOLKIT_EXAMPLES.insight_stack].tip}
-                            />
-                          )}
+
                           
                           {/* Uploaded Files Preview */}
                           {files.length > 0 && (
