@@ -322,7 +322,7 @@ export function HomeDashboard({
                 <img src="/01-investigate.png" alt="Investigate" className="w-5 h-5 icon-theme" />
               </div>
               <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">Investigate</h3>
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Replace opinion with evidence. Define the real problem before anyone proposes a solution.</p>
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Replace opinion with evidence. Define the real problem before solutions are proposed.</p>
               <div className="space-y-2">
                 <button 
                   onClick={() => onStartToolkit?.('insight_stack')} 
