@@ -119,7 +119,7 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       {
         stepNumber: 2,
         label: 'What are you noticing?',
-        prompt: 'Dump your raw observations here — data points, things people said, behaviours you've seen. Don't interpret yet, just list.',
+        prompt: "Dump your raw observations here — data points, things people said, behaviours you've seen. Don't interpret yet, just list.",
         lensHints: {
           automatic: '',
           critical: 'Separate observation from interpretation.',
@@ -170,8 +170,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       },
       {
         stepNumber: 4,
-        label: 'What doesn't add up?',
-        prompt: 'Where do things contradict each other? What surprised you? What's broken or missing?',
+        label: "What doesn't add up?",
+        prompt: "Where do things contradict each other? What surprised you? What's broken or missing?",
         lensHints: {
           automatic: '',
           critical: 'Contradictions are sources of insight.',
@@ -196,8 +196,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       },
       {
         stepNumber: 5,
-        label: 'What's the real truth here?',
-        prompt: 'Based on everything above — what is the one deeper truth this is pointing to? Don't be safe. Say what the evidence actually shows.',
+        label: "What's the real truth here?",
+        prompt: "Based on everything above — what is the one deeper truth this is pointing to? Don't be safe. Say what the evidence actually shows.",
         lensHints: {
           automatic: '',
           critical: 'Ensure evidence supports your insight.',
@@ -217,7 +217,7 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
           philosophical: 'What essential truth emerges?',
           behavioral: 'What behavioural truth emerges?',
         },
-        placeholder: 'e.g. We've been solving for feature breadth when users need a faster path to their first win. The problem isn't the product — it's the journey.',
+        placeholder: "e.g. We've been solving for feature breadth when users need a faster path to their first win. The problem isn't the product — it's the journey.",
         minHeight: 180,
       },
     ],
