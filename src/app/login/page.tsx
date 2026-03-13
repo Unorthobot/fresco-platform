@@ -148,7 +148,7 @@ function LoginForm() {
           </button>
           
           <p className="mt-4 text-center text-xs text-gray-400">
-            Google sign-in requires setup. Use email/password for now.
+            
           </p>
         </div>
 
