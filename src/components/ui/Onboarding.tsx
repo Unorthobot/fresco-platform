@@ -9,10 +9,10 @@ interface OnboardingProps {
 }
 
 const STEPS = [
-  { title: 'Welcome to Fresco', description: 'A thinking system that helps you move from confusion to clarity through structured exploration.', icon: Sparkles },
-  { title: 'Start with a Workspace', description: 'Create a workspace for each project or problem you\'re exploring. It keeps all your thinking organised.', icon: Layers },
-  { title: 'Choose Your Toolkit', description: 'Pick from 9 specialised toolkits across three phases: Investigate, Innovate, and Validate.', icon: Lightbulb },
-  { title: 'Find Your Truth', description: 'Each toolkit helps you discover a "Sentence of Truth" - the core insight that guides your next steps.', icon: Target },
+  { title: 'Welcome to Fresco', description: 'Fresco is a decision discipline system. It helps teams kill weak ideas earlier and commit faster to strong ones.', icon: Sparkles },
+  { title: 'Start with a Workspace', description: 'Create a workspace for each decision you\'re working toward. Every project deserves its own space.', icon: Layers },
+  { title: 'Work Through the Three Houses', description: 'Investigate to define the real problem. Innovate to design focused solutions. Validate before you commit budget.', icon: Lightbulb },
+  { title: 'End Every Session with a Decision', description: 'Each toolkit ends with a GO, PIVOT, KILL, or DEFER gate. Make indecision visible before it becomes expensive.', icon: Target },
 ];
 
 export function Onboarding({ onComplete }: OnboardingProps) {
