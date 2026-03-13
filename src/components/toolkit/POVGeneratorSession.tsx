@@ -4,7 +4,7 @@
 // Combines User + Need + Truth into a formatted statement in real-time
 // Enhanced UX: Floating generate, progress indicator, wizard mode, celebrations
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef} from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, 

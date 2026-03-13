@@ -3,7 +3,7 @@
 // FRESCO Experiment Brief™ - Structured Hypothesis Testing
 // Hypothesis cards with confidence sliders and structured brief output
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef} from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, 

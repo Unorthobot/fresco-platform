@@ -3,7 +3,7 @@
 // FRESCO Mental Model Mapper™ - Visual Node & Relationship Builder
 // Interactive belief mapping with connections
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef} from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, 

@@ -3,7 +3,7 @@
 // FRESCO Flow Board™ - Visual Flow Builder
 // Drag-and-drop steps with friction markers and connectors
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef} from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { 
   ChevronLeft, 

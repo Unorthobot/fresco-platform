@@ -3,7 +3,7 @@
 // FRESCO Persuasion Canvas™ - Visual Influence Mapping
 // Audience persona, barrier cards, and message builder
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef} from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, 
