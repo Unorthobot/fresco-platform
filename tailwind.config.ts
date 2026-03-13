@@ -111,10 +111,10 @@ const config: Config = {
       
       // Border radius (more rounded to match site)
       borderRadius: {
-        'fresco-sm': '2px',
-        'fresco': '4px',
-        'fresco-lg': '4px',
-        'fresco-xl': '4px',
+        'fresco-sm': '0px',
+        'fresco': '0px',
+        'fresco-lg': '0px',
+        'fresco-xl': '0px',
         'fresco-full': '9999px',
       },
       
