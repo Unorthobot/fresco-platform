@@ -214,6 +214,29 @@ export default function FrescoAppContent() {
     }
   };
 
+
+  // Handle post-login checkout intent
+  useEffect(() => {
+    if (!isSyncComplete || !user) return;
+    const raw = sessionStorage.getItem('post_login_action');
+    if (!raw) return;
+    try {
+      const action = JSON.parse(raw);
+      sessionStorage.removeItem('post_login_action');
+      if (action.type === 'checkout') {
+        fetch('/api/lemonsqueezy/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: action.plan }),
+        })
+          .then(r => r.json())
+          .then(data => { if (data.url) window.location.href = data.url; });
+      }
+    } catch (e) {
+      console.error('post_login_action error', e);
+    }
+  }, [isSyncComplete, user]);
+
   return (
     <div className="min-h-screen bg-fresco-white">
       <a href="#main-content" className="skip-link">Skip to main content</a>

@@ -23,6 +23,12 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
       });
+      if (res.status === 401) {
+        // Not logged in — save intent and redirect to login
+        sessionStorage.setItem('post_login_action', JSON.stringify({ type: 'checkout', plan }));
+        window.location.href = '/login';
+        return;
+      }
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
