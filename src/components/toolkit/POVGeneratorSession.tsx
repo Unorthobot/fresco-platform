@@ -93,7 +93,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
   const [isWizardMode, setIsWizardMode] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [isOutputPanelExpanded, setIsOutputPanelExpanded] = useState(false);
+  const [isOutputPanelExpanded, setIsOutputPanelExpanded] = useState(true);
   const [sessionDecision, setSessionDecision] = useState<DecisionType | null>(() => {
     const s = sessions.find((s: any) => s.id === sessionId);
     return (s as any)?.decision || null;
@@ -207,6 +207,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
         // Trigger celebration and expand output panel
         setShowCelebration(true);
         setIsOutputPanelExpanded(true);
+        mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (e) { console.error('Failed to generate:', e); showToast('Failed to generate. Please try again.', 'error'); }
     setIsGenerating(false);
@@ -253,12 +254,12 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
       />
       
       {/* Main Column */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
         <div className="max-w-[900px] mx-auto px-8 py-10">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <button type="button" onClick={() => onBack?.()} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
+              <button type="button" onClick={() => { try { onBack?.(); } catch(e) { window.location.href = "/"; } }} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
                 <ChevronLeft className="w-4 h-4" /><span>Back to {workspace?.title || 'Workspace'}</span>
               </button>
               <div className="flex items-center gap-3">
