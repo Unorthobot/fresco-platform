@@ -162,7 +162,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
   // New UX state
   const [isWizardMode, setIsWizardMode] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [isOutputPanelExpanded, setIsOutputPanelExpanded] = useState(false);
+  const [isOutputPanelExpanded, setIsOutputPanelExpanded] = useState(true);
   const [sessionDecision, setSessionDecision] = useState<DecisionType | null>(() => {
     const s = sessions.find((s: any) => s.id === sessionId);
     return (s as any)?.decision || null;
@@ -582,7 +582,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
       
       {/* Floating Generate Button */}
       <FloatingGenerateButton
-        isVisible={completedSteps.size >= 3 && !aiContent.sentenceOfTruth && !isGenerating}
+        isVisible={completedSteps.size >= 2 && !aiContent.sentenceOfTruth && !isGenerating}
         isGenerating={isGenerating}
         onClick={generateContent}
         label="Extract Insights"
@@ -617,9 +617,12 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                   onNext={() => setActiveStep(Math.min(toolkit.steps.length, activeStep + 1))}
                   canGoNext={isStepComplete(activeStep)}
                 />
-                <div className="flex items-center gap-2">
-                  <ThinkingLensSelector value={session.thinkingLens} onChange={handleLensChange} recommendedModes={toolkit.primaryModes} />
-                </div>
+                <details className="relative">
+                  <summary className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black cursor-pointer list-none select-none">Advanced</summary>
+                  <div className="absolute right-0 top-6 z-50 bg-white border border-fresco-border shadow-fresco p-3">
+                    <ThinkingLensSelector value={session.thinkingLens} onChange={handleLensChange} recommendedModes={toolkit.primaryModes} />
+                  </div>
+                </details>
               </div>
             </div>
             
@@ -629,7 +632,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
               </div>
               <div>
                 <h1 className="text-fresco-2xl font-medium text-fresco-black tracking-tight">{toolkit.name}</h1>
-                <p className="text-fresco-sm text-fresco-graphite-mid">{toolkit.subtitle}</p>
+                <p className="text-fresco-sm text-fresco-graphite-mid">Fill in all 5 steps → Generate Insights → Get your truth.</p>
               </div>
             </div>
             
@@ -879,7 +882,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                   {allInsights.length === 0 ? (
                     <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <Layers className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
-                      <p className="text-fresco-sm text-fresco-graphite-light">Complete at least 3 steps<br/>to extract insights</p>
+                      <p className="text-fresco-sm text-fresco-graphite-light">Complete at least 2 steps<br/>then hit Generate Insights</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
