@@ -16,7 +16,11 @@ function LoginForm() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [formError, setFormError] = useState<string | null>(error ? 'Invalid credentials' : null);
+  const [formError, setFormError] = useState<string | null>(
+    error === 'OAuthAccountNotLinked' ? 'This email is already registered. Please sign in with email/password.' :
+    error === 'OAuthSignin' ? 'Google sign-in failed. Please try again.' :
+    error ? 'Invalid credentials' : null
+  );
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
