@@ -80,7 +80,7 @@ export function ShareableInsightModal({ insight, source, author, isOpen, onClose
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-none shadow-2xl max-w-lg w-full overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-fresco-border-light">
@@ -97,7 +97,7 @@ export function ShareableInsightModal({ insight, source, author, isOpen, onClose
               key={s}
               onClick={() => setStyle(s)}
               className={cn(
-                "px-3 py-1.5 text-fresco-xs font-medium rounded-lg capitalize transition-colors",
+                "px-3 py-1.5 text-fresco-xs font-medium rounded-none capitalize transition-colors",
                 style === s 
                   ? "bg-fresco-black text-white" 
                   : "bg-fresco-light-gray text-fresco-graphite hover:bg-fresco-warm-gray"
@@ -113,7 +113,7 @@ export function ShareableInsightModal({ insight, source, author, isOpen, onClose
           <div
             ref={cardRef}
             className={cn(
-              "p-8 rounded-xl",
+              "p-8 rounded-none",
               currentStyle.bg
             )}
           >
@@ -141,7 +141,7 @@ export function ShareableInsightModal({ insight, source, author, isOpen, onClose
         <div className="flex gap-3 p-4 border-t border-fresco-border-light">
           <button
             onClick={handleCopy}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-fresco-border rounded-xl text-fresco-sm text-fresco-graphite hover:bg-fresco-light-gray transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-fresco-border rounded-none text-fresco-sm text-fresco-graphite hover:bg-fresco-light-gray transition-colors"
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? 'Copied!' : 'Copy Text'}

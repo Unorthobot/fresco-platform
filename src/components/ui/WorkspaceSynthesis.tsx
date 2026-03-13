@@ -174,7 +174,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
   if (!hasContent) {
     return (
       <div className={cn("text-center py-16", className)}>
-        <div className="w-16 h-16 rounded-2xl bg-fresco-light-gray flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 rounded-none bg-fresco-light-gray flex items-center justify-center mx-auto mb-4">
           <Sparkles className="w-8 h-8 text-fresco-graphite-light" />
         </div>
         <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">No insights to synthesise yet</h3>
@@ -200,7 +200,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
           onClick={generateSynthesis}
           disabled={isGenerating}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-fresco-sm font-medium transition-all",
+            "flex items-center gap-2 px-4 py-2 rounded-none text-fresco-sm font-medium transition-all",
             synthesis
               ? "bg-fresco-light-gray text-fresco-graphite-mid hover:bg-fresco-border"
               : "bg-fresco-black text-white hover:bg-fresco-graphite"
@@ -227,21 +227,21 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
 
       {/* Raw Data Summary (always visible) */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 bg-fresco-light-gray rounded-xl">
+        <div className="p-4 bg-fresco-light-gray rounded-none">
           <div className="flex items-center gap-2 mb-2">
             <Quote className="w-4 h-4 text-fresco-graphite-light" />
             <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">Core Truths</span>
           </div>
           <p className="text-fresco-2xl font-bold text-fresco-black">{workspaceData.truths.length}</p>
         </div>
-        <div className="p-4 bg-fresco-light-gray rounded-xl">
+        <div className="p-4 bg-fresco-light-gray rounded-none">
           <div className="flex items-center gap-2 mb-2">
             <Lightbulb className="w-4 h-4 text-fresco-graphite-light" />
             <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">Insights</span>
           </div>
           <p className="text-fresco-2xl font-bold text-fresco-black">{workspaceData.insights.length}</p>
         </div>
-        <div className="p-4 bg-fresco-light-gray rounded-xl">
+        <div className="p-4 bg-fresco-light-gray rounded-none">
           <div className="flex items-center gap-2 mb-2">
             <ArrowRight className="w-4 h-4 text-fresco-graphite-light" />
             <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">Actions</span>
@@ -252,7 +252,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
 
       {/* Collected Truths */}
       {workspaceData.truths.length > 0 && (
-        <div className="p-5 bg-fresco-black rounded-2xl">
+        <div className="p-5 bg-fresco-black rounded-none">
           <div className="flex items-center gap-2 mb-4">
             <Quote className="w-4 h-4 text-white/50" />
             <span className="text-fresco-xs font-medium text-white/50 uppercase tracking-wider">Sentences of Truth</span>
@@ -260,7 +260,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
           <div className="space-y-3">
             {workspaceData.truths.map((truth, i) => (
               <div key={i} className="flex items-start gap-3">
-                <span className="text-fresco-xs text-white/40 bg-white/10 px-2 py-0.5 rounded flex-shrink-0">{truth.toolkit}</span>
+                <span className="text-fresco-xs text-white/40 bg-white/10 px-2 py-0.5 rounded-none flex-shrink-0">{truth.toolkit}</span>
                 <p className="text-fresco-sm text-white/90 leading-relaxed">{truth.content}</p>
               </div>
             ))}
@@ -277,7 +277,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
         >
           {/* Core Direction */}
           {synthesis.coreDirection && (
-            <div className="relative p-6 bg-gradient-to-br from-fresco-graphite to-fresco-black rounded-2xl overflow-hidden">
+            <div className="relative p-6 bg-gradient-to-br from-fresco-graphite to-fresco-black rounded-none overflow-hidden">
               <div className="absolute inset-0 opacity-5" style={{
                 backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 1px)`,
                 backgroundSize: '24px 24px'
@@ -290,7 +290,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
                   </div>
                   <button
                     onClick={handleCopy}
-                    className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                    className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-none transition-colors"
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </button>
@@ -314,7 +314,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className="p-4 bg-fresco-light-gray rounded-xl"
+                    className="p-4 bg-fresco-light-gray rounded-none"
                   >
                     <p className="text-fresco-sm text-fresco-graphite-soft">{theme}</p>
                   </motion.div>
@@ -337,7 +337,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 + i * 0.1 }}
-                    className="flex items-start gap-3 p-4 bg-fresco-off-white rounded-xl border border-fresco-border"
+                    className="flex items-start gap-3 p-4 bg-fresco-off-white rounded-none border border-fresco-border"
                   >
                     <span className="w-6 h-6 rounded-full bg-fresco-black text-white flex items-center justify-center text-fresco-xs font-medium flex-shrink-0">
                       {i + 1}
@@ -363,7 +363,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
                 return acc;
               }, {} as Record<string, string[]>)
             ).map(([toolkit, insights]) => (
-              <div key={toolkit} className="p-4 bg-fresco-light-gray rounded-xl">
+              <div key={toolkit} className="p-4 bg-fresco-light-gray rounded-none">
                 <h5 className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider mb-3">{toolkit}</h5>
                 <ul className="space-y-2">
                   {insights.slice(0, 3).map((insight, i) => (

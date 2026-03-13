@@ -91,13 +91,13 @@ export function SettingsPage() {
                   </a>
                 </p>
                 <p className="text-fresco-sm text-fresco-graphite-light mb-3">
-                  Create a file called <code className="px-1.5 py-0.5 bg-fresco-light-gray dark:bg-gray-700 rounded text-fresco-black dark:text-white">.env.local</code> in your project folder with:
+                  Create a file called <code className="px-1.5 py-0.5 bg-fresco-light-gray dark:bg-gray-700 rounded-none text-fresco-black dark:text-white">.env.local</code> in your project folder with:
                 </p>
                 <pre className="p-3 bg-fresco-light-gray dark:bg-gray-800 rounded-fresco text-fresco-sm text-fresco-black dark:text-white mb-3 overflow-x-auto">
                   ANTHROPIC_API_KEY=sk-ant-your-key-here
                 </pre>
                 <p className="text-fresco-sm text-fresco-graphite-light">
-                  Then restart the dev server with <code className="px-1.5 py-0.5 bg-fresco-light-gray dark:bg-gray-700 rounded text-fresco-black dark:text-white">npm run dev</code>
+                  Then restart the dev server with <code className="px-1.5 py-0.5 bg-fresco-light-gray dark:bg-gray-700 rounded-none text-fresco-black dark:text-white">npm run dev</code>
                 </p>
               </div>
               <div className="flex items-center justify-between pt-4 border-t border-fresco-border-light">

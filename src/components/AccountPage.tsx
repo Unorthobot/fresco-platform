@@ -116,11 +116,11 @@ export function AccountPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl"
+          className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-none"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg">
+              <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-none">
                 <LogIn className="w-5 h-5 text-amber-600 dark:text-amber-300" />
               </div>
               <div>
@@ -130,7 +130,7 @@ export function AccountPage() {
             </div>
             <button
               onClick={handleSignIn}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors"
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-none font-medium transition-colors"
             >
               Sign In
             </button>
@@ -141,7 +141,7 @@ export function AccountPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Section */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-none border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <User className="w-5 h-5" />
               Profile
@@ -179,7 +179,7 @@ export function AccountPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-black dark:focus:border-white dark:bg-gray-800 dark:text-white"
+                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-none focus:outline-none focus:border-black dark:focus:border-white dark:bg-gray-800 dark:text-white"
                   placeholder="Your name"
                 />
               </div>
@@ -190,7 +190,7 @@ export function AccountPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isAuthenticated}
-                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-black dark:focus:border-white dark:bg-gray-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-none focus:outline-none focus:border-black dark:focus:border-white dark:bg-gray-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="your@email.com"
                 />
                 {isAuthenticated && (
@@ -202,7 +202,7 @@ export function AccountPage() {
             <div className="mt-6 flex items-center justify-between">
               <button
                 onClick={handleSaveChanges}
-                className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-xl font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-none font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center gap-2"
               >
                 {saved ? <><Check className="w-4 h-4" /> Saved!</> : 'Save Changes'}
               </button>
@@ -211,7 +211,7 @@ export function AccountPage() {
                 <button
                   onClick={handleSignOut}
                   disabled={isSigningOut}
-                  className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-medium transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-none font-medium transition-colors flex items-center gap-2"
                 >
                   {isSigningOut ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Signing out...</>
@@ -224,25 +224,25 @@ export function AccountPage() {
           </div>
 
           {/* Usage Stats */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-none border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5" />
               Usage
             </h2>
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-none">
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalWorkspaces}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Workspaces</p>
               </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-none">
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalSessions}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Sessions</p>
               </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-none">
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">{user?.aiGenerationsThisMonth || 0}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">AI Generations (this month)</p>
               </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-none">
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white capitalize">{currentPlan}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Current Plan</p>
               </div>
@@ -252,14 +252,14 @@ export function AccountPage() {
 
         {/* Subscription Section */}
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-none border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <CreditCard className="w-5 h-5" />
               Subscription
             </h2>
 
             {/* Current Plan */}
-            <div className={`p-4 rounded-xl mb-4 ${
+            <div className={`p-4 rounded-none mb-4 ${
               currentPlan === 'free' ? 'bg-gray-100 dark:bg-gray-800' :
               currentPlan === 'pro' ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800' :
               'bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800'
@@ -281,7 +281,7 @@ export function AccountPage() {
                 <button
                   onClick={() => handleUpgrade('pro')}
                   disabled={loadingPlan === 'pro'}
-                  className="w-full p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-none font-medium hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loadingPlan === 'pro' ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
@@ -292,7 +292,7 @@ export function AccountPage() {
                 <button
                   onClick={() => handleUpgrade('studio')}
                   disabled={loadingPlan === 'studio'}
-                  className="w-full p-4 border-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-xl font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full p-4 border-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-none font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loadingPlan === 'studio' ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
@@ -307,7 +307,7 @@ export function AccountPage() {
               <button
                 onClick={() => handleUpgrade('studio')}
                 disabled={loadingPlan === 'studio'}
-                className="w-full p-4 border-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-xl font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full p-4 border-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-none font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loadingPlan === 'studio' ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
@@ -319,7 +319,7 @@ export function AccountPage() {
           </div>
 
           {/* Pro Features */}
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-2xl border border-amber-200 dark:border-amber-800 p-6">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-none border border-amber-200 dark:border-amber-800 p-6">
             <h3 className="font-medium text-amber-900 dark:text-amber-100 mb-3 flex items-center gap-2">
               <Zap className="w-4 h-4" />
               Pro Features

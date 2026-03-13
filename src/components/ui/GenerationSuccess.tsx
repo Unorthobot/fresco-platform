@@ -74,7 +74,7 @@ export function GenerationSuccess({
             <div className="absolute inset-0 bg-gradient-radial from-fresco-graphite/20 to-transparent blur-3xl scale-150" />
             
             {/* Card */}
-            <div className="relative bg-fresco-black rounded-2xl px-8 py-6 shadow-2xl border border-white/10">
+            <div className="relative bg-fresco-black rounded-none px-8 py-6 shadow-2xl border border-white/10">
               {/* Animated checkmark */}
               <div className="flex items-center justify-center mb-4">
                 <motion.div
@@ -195,7 +195,7 @@ export function InlineSuccess({ show }: { show: boolean }) {
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="mb-4 p-3 bg-fresco-black rounded-xl flex items-center gap-3"
+      className="mb-4 p-3 bg-fresco-black rounded-none flex items-center gap-3"
     >
       <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0">
         <Check className="w-4 h-4 text-fresco-black" strokeWidth={3} />

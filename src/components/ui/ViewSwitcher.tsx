@@ -19,7 +19,7 @@ interface ViewSwitcherProps {
 export function ViewSwitcher({ options, activeView, onChange, className }: ViewSwitcherProps) {
   return (
     <div className={cn(
-      "inline-flex items-center gap-1 p-1 bg-fresco-light-gray rounded-xl",
+      "inline-flex items-center gap-1 p-1 bg-fresco-light-gray rounded-none",
       className
     )}>
       {options.map(option => (
@@ -27,7 +27,7 @@ export function ViewSwitcher({ options, activeView, onChange, className }: ViewS
           key={option.id}
           onClick={() => onChange(option.id)}
           className={cn(
-            "relative flex items-center gap-2 px-4 py-2 rounded-lg text-fresco-sm font-medium transition-colors",
+            "relative flex items-center gap-2 px-4 py-2 rounded-none text-fresco-sm font-medium transition-colors",
             activeView === option.id
               ? "text-fresco-black"
               : "text-fresco-graphite-light hover:text-fresco-graphite transition-colors"
@@ -36,7 +36,7 @@ export function ViewSwitcher({ options, activeView, onChange, className }: ViewS
           {activeView === option.id && (
             <motion.div
               layoutId="activeViewBg"
-              className="absolute inset-0 bg-white dark:bg-gray-800 rounded-lg shadow-sm"
+              className="absolute inset-0 bg-white dark:bg-gray-800 rounded-none shadow-sm"
               transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
             />
           )}

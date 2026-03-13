@@ -309,7 +309,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
             </div>
             
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-fresco-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-none bg-fresco-black flex items-center justify-center">
                 <GitBranch className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -345,7 +345,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
                 value={startingState}
                 onChange={(e) => handleStartingStateChange(e.target.value)}
                 placeholder="Describe the current state or starting point..."
-                className="w-full p-4 bg-fresco-light-gray border-2 border-fresco-border rounded-xl text-fresco-base focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
+                className="w-full p-4 bg-fresco-light-gray border-2 border-fresco-border rounded-none text-fresco-base focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
                 rows={2}
               />
               <InputQualityIndicator value={startingState} minLength={10} goodLength={50} />
@@ -370,7 +370,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       className={cn(
-                        "relative p-4 rounded-xl border-2 transition-all cursor-grab active:cursor-grabbing",
+                        "relative p-4 rounded-none border-2 transition-all cursor-grab active:cursor-grabbing",
                         step.hasFriction 
                           ? "bg-fresco-light-gray border-fresco-graphite-light" 
                           : "bg-white dark:bg-gray-900 border-fresco-border dark:border-gray-700 hover:border-fresco-graphite-light"
@@ -392,7 +392,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
                               <button
                                 onClick={() => updateStep(step.id, { hasFriction: !step.hasFriction })}
                                 className={cn(
-                                  "flex items-center gap-1 px-2 py-1 rounded-lg text-fresco-xs transition-colors",
+                                  "flex items-center gap-1 px-2 py-1 rounded-none text-fresco-xs transition-colors",
                                   step.hasFriction 
                                     ? "bg-fresco-light-gray0 text-white" 
                                     : "bg-fresco-light-gray text-fresco-graphite-mid hover:bg-fresco-light-gray hover:text-fresco-black"
@@ -429,7 +429,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
                                 value={step.frictionNote}
                                 onChange={(e) => updateStep(step.id, { frictionNote: e.target.value })}
                                 placeholder="What causes friction here?"
-                                className="w-full bg-white/50 rounded-lg px-3 py-2 text-fresco-sm text-fresco-graphite border border-fresco-border focus:outline-none focus:ring-1 focus:ring-fresco-black"
+                                className="w-full bg-white/50 rounded-none px-3 py-2 text-fresco-sm text-fresco-graphite border border-fresco-border focus:outline-none focus:ring-1 focus:ring-fresco-black"
                               />
                             </motion.div>
                           )}
@@ -443,7 +443,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
               {/* Add Step Button */}
               <button
                 onClick={addStep}
-                className="w-full p-4 border-2 border-dashed border-fresco-border rounded-xl text-fresco-sm text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors flex items-center justify-center gap-2"
+                className="w-full p-4 border-2 border-dashed border-fresco-border rounded-none text-fresco-sm text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" /> Add Step
               </button>
@@ -461,7 +461,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
                 value={idealState}
                 onChange={(e) => handleIdealStateChange(e.target.value)}
                 placeholder="Describe the optimal end state. What does success look like?"
-                className="w-full p-4 bg-fresco-light-gray border-2 border-fresco-border rounded-xl text-fresco-base focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
+                className="w-full p-4 bg-fresco-light-gray border-2 border-fresco-border rounded-none text-fresco-base focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
                 rows={2}
               />
             </div>
@@ -489,7 +489,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors">
+                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                       <EyeOff className="w-4 h-4" />
                     </button>
                   </div>
@@ -497,11 +497,11 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
           
                 {/* Flow Stats */}
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                  <div className="p-4 bg-fresco-light-gray rounded-xl text-center">
+                  <div className="p-4 bg-fresco-light-gray rounded-none text-center">
                     <div className="text-fresco-3xl font-bold text-fresco-black">{steps.length}</div>
                     <div className="text-fresco-xs text-fresco-graphite-light">Steps</div>
                   </div>
-                  <div className={cn("p-4 rounded-xl text-center", frictionCount > 0 ? "bg-fresco-light-gray" : "bg-fresco-light-gray")}>
+                  <div className={cn("p-4 rounded-none text-center", frictionCount > 0 ? "bg-fresco-light-gray" : "bg-fresco-light-gray")}>
                     <div className={cn("text-fresco-3xl font-bold", frictionCount > 0 ? "text-fresco-graphite" : "text-fresco-black")}>{frictionCount}</div>
                     <div className="text-fresco-xs text-fresco-graphite-light">Friction Points</div>
                   </div>
@@ -509,7 +509,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
           
                 {/* Visual Flow Diagram */}
                 {steps.length > 0 && (
-                  <div className="mb-6 p-4 bg-white dark:bg-gray-900 rounded-xl border border-fresco-border-light dark:border-gray-700">
+                  <div className="mb-6 p-4 bg-white dark:bg-gray-900 rounded-none border border-fresco-border-light dark:border-gray-700">
                     <span className="fresco-label block mb-3">Flow Visualization</span>
                     <FlowDiagram 
                       steps={steps.map(s => ({ 
@@ -525,7 +525,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
                 <div className="mb-8">
                   <span className="fresco-label block mb-4">Flow Analysis</span>
                   {aiContent.insights.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <GitBranch className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                       <p className="text-fresco-sm text-fresco-graphite-light">Map your flow<br/>then analyse</p>
                     </div>
@@ -552,7 +552,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
                 ) : (
                   <div className="mb-8">
                     <span className="fresco-label block mb-4">Optimal Path</span>
-                    <div className="p-6 bg-fresco-light-gray rounded-xl text-center">
+                    <div className="p-6 bg-fresco-light-gray rounded-none text-center">
                       <p className="text-fresco-sm text-fresco-graphite-light">Generate to discover the optimal path</p>
                     </div>
                   </div>
@@ -564,7 +564,7 @@ export function FlowBoardSession({ sessionId, workspaceId, onBack, onStartToolki
                     <span className="fresco-label block mb-4">Flow Improvements</span>
                     <div className="space-y-2">
                       {aiContent.necessaryMoves.map((move, i) => (
-                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-lg">
+                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-none">
                           <CheckCircle2 className="w-4 h-4 text-fresco-black flex-shrink-0 mt-0.5" />
                           <p className="text-fresco-sm text-fresco-graphite-soft">{move}</p>
                         </motion.div>

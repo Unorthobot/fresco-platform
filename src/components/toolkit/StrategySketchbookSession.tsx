@@ -356,7 +356,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
             </div>
             
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-fresco-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-none bg-fresco-black flex items-center justify-center">
                 <Map className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -385,7 +385,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
               value={strategicQuestion}
               onChange={(e) => handleQuestionChange(e.target.value)}
               placeholder="What is the core strategic question you're trying to answer?"
-              className="w-full p-5 bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-2xl text-white text-fresco-lg border-none focus:ring-2 focus:ring-fresco-graphite outline-none resize-none placeholder-white/40"
+              className="w-full p-5 bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-none text-white text-fresco-lg border-none focus:ring-2 focus:ring-fresco-graphite outline-none resize-none placeholder-white/40"
               rows={2}
             />
             <div className="mt-2">
@@ -405,7 +405,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
               <h3 className="text-fresco-lg font-medium text-fresco-black">Strategic Options</h3>
               <button
                 onClick={addOption}
-                className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-lg hover:border-fresco-black transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-none hover:border-fresco-black transition-colors"
               >
                 <Plus className="w-4 h-4" /> Add Option
               </button>
@@ -419,7 +419,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   className={cn(
-                    "bg-white dark:bg-gray-900 rounded-2xl border-2 transition-all",
+                    "bg-white dark:bg-gray-900 rounded-none border-2 transition-all",
                     option.isRecommended ? "border-fresco-black shadow-lg shadow-black/10" : "border-fresco-border hover:border-fresco-graphite-light"
                   )}
                 >
@@ -436,7 +436,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
                         <button
                           onClick={() => toggleRecommended(option.id)}
                           className={cn(
-                            "p-1.5 rounded-lg transition-colors",
+                            "p-1.5 rounded-none transition-colors",
                             option.isRecommended ? "text-fresco-black bg-fresco-light-gray" : "text-fresco-graphite-light hover:text-fresco-black"
                           )}
                           title={option.isRecommended ? "Recommended" : "Mark as recommended"}
@@ -465,7 +465,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
                   <div className="p-4 border-b border-fresco-border-light">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-fresco-xs font-medium text-fresco-black uppercase tracking-wider">Pros</span>
-                      <button onClick={() => addPro(option.id)} className="p-1 text-fresco-black hover:bg-fresco-light-gray rounded transition-colors">
+                      <button onClick={() => addPro(option.id)} className="p-1 text-fresco-black hover:bg-fresco-light-gray rounded-none transition-colors">
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
@@ -493,7 +493,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-fresco-xs font-medium text-fresco-graphite uppercase tracking-wider">Cons</span>
-                      <button onClick={() => addCon(option.id)} className="p-1 text-fresco-graphite hover:bg-fresco-light-gray rounded transition-colors">
+                      <button onClick={() => addCon(option.id)} className="p-1 text-fresco-graphite hover:bg-fresco-light-gray rounded-none transition-colors">
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
@@ -528,7 +528,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
               value={recommendation}
               onChange={(e) => handleRecommendationChange(e.target.value)}
               placeholder="Based on your analysis, what strategic direction do you recommend and why?"
-              className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
+              className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
               rows={4}
             />
           </div>
@@ -554,14 +554,14 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors">
+                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                       <EyeOff className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
           
                 {recommendedOption && (
-                  <div className="mb-6 p-4 bg-fresco-light-gray border border-fresco-black rounded-xl">
+                  <div className="mb-6 p-4 bg-fresco-light-gray border border-fresco-black rounded-none">
                     <div className="flex items-center gap-2 mb-2">
                       <Star className="w-4 h-4 text-fresco-black fill-current" />
                       <span className="text-fresco-xs font-medium text-fresco-black uppercase tracking-wider">Recommended</span>
@@ -573,7 +573,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
                 <div className="mb-8">
                   <span className="fresco-label block mb-4">Strategic Analysis</span>
                   {aiContent.insights.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <Map className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                       <p className="text-fresco-sm text-fresco-graphite-light">Define your options<br/>then analyse</p>
                     </div>
@@ -599,7 +599,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
                 ) : (
                   <div className="mb-8">
                     <span className="fresco-label block mb-4">Strategic Direction</span>
-                    <div className="p-6 bg-fresco-light-gray rounded-xl text-center">
+                    <div className="p-6 bg-fresco-light-gray rounded-none text-center">
                       <p className="text-fresco-sm text-fresco-graphite-light">Generate to reveal your strategic direction</p>
                     </div>
                   </div>
@@ -610,7 +610,7 @@ export function StrategySketchbookSession({ sessionId, workspaceId, onBack, onSt
                     <span className="fresco-label block mb-4">Next Moves</span>
                     <div className="space-y-2">
                       {aiContent.necessaryMoves.map((move, i) => (
-                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-lg">
+                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-none">
                           <ArrowRight className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0 mt-0.5" />
                           <p className="text-fresco-sm text-fresco-graphite-soft">{move}</p>
                         </motion.div>

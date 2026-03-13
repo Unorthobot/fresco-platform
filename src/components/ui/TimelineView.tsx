@@ -61,7 +61,7 @@ export function TimelineView({ sessions, onSessionClick, className }: TimelineVi
         >
           {/* Date header */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-fresco-light-gray flex items-center justify-center">
+            <div className="w-8 h-8 rounded-none bg-fresco-light-gray flex items-center justify-center">
               <Clock className="w-4 h-4 text-fresco-graphite" />
             </div>
             <h3 className="text-fresco-sm font-medium text-fresco-black">{group.date}</h3>
@@ -94,7 +94,7 @@ export function TimelineView({ sessions, onSessionClick, className }: TimelineVi
                   {/* Session card */}
                   <div
                     onClick={() => onSessionClick?.(session.id)}
-                    className="group p-4 bg-white dark:bg-gray-900 rounded-xl border border-fresco-border dark:border-gray-700 hover:border-fresco-graphite-light hover:shadow-sm cursor-pointer transition-all"
+                    className="group p-4 bg-white dark:bg-gray-900 rounded-none border border-fresco-border dark:border-gray-700 hover:border-fresco-graphite-light hover:shadow-sm cursor-pointer transition-all"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">

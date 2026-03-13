@@ -106,7 +106,7 @@ export function ConnectedInsights({ sessions, onSessionClick, className }: Conne
               transition={{ delay: index * 0.05 }}
               onClick={() => onSessionClick?.(insight.session.id)}
               className={cn(
-                "p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md",
+                "p-4 rounded-none border cursor-pointer transition-all hover:shadow-md",
                 insight.type === 'truth' 
                   ? "bg-fresco-black text-white border-fresco-black" 
                   : "bg-fresco-white border-fresco-border hover:border-fresco-graphite-light transition-colors",

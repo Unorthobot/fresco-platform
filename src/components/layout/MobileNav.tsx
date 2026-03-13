@@ -68,7 +68,7 @@ export function MobileNav({ activeSection, onNavigate }: MobileNavProps) {
                     key={item.id}
                     onClick={() => handleNavigate(item.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-fresco-base transition-colors",
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-none text-fresco-base transition-colors",
                       activeSection === item.id
                         ? "bg-fresco-light-gray dark:bg-gray-800 text-fresco-black font-medium"
                         : "text-fresco-graphite-mid hover:bg-fresco-light-gray dark:hover:bg-gray-800 hover:text-fresco-black"

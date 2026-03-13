@@ -50,7 +50,7 @@ export function FloatingGenerateButton({
             onClick={onClick}
             disabled={isGenerating}
             className={cn(
-              "relative px-8 py-4 bg-gradient-to-r from-fresco-black to-fresco-graphite text-white rounded-2xl text-fresco-lg font-medium shadow-2xl transition-all flex items-center gap-3 group",
+              "relative px-8 py-4 bg-gradient-to-r from-fresco-black to-fresco-graphite text-white rounded-none text-fresco-lg font-medium shadow-2xl transition-all flex items-center gap-3 group",
               isGenerating ? "opacity-90 cursor-wait" : "hover:shadow-3xl transition-shadow"
             )}
             animate={!isGenerating ? { 
@@ -65,7 +65,7 @@ export function FloatingGenerateButton({
             {/* Pulse ring - only when not generating */}
             {!isGenerating && (
               <motion.span
-                className="absolute inset-0 rounded-2xl bg-fresco-black"
+                className="absolute inset-0 rounded-none bg-fresco-black"
                 animate={{ scale: [1, 1.05, 1], opacity: [0.5, 0, 0.5] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
@@ -300,7 +300,7 @@ export function CollapsibleOutputPanel({ hasContent, children, title = 'Output' 
                   <h2 className="text-fresco-lg font-medium text-fresco-black">{title}</h2>
                   <button 
                     onClick={() => setIsExpanded(false)}
-                    className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors"
+                    className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors"
                   >
                     <EyeOff className="w-4 h-4" />
                   </button>
@@ -343,7 +343,7 @@ export function WizardModeControls({
       <button
         onClick={onToggle}
         className={cn(
-          "px-3 py-1.5 rounded-lg text-fresco-xs font-medium transition-all",
+          "px-3 py-1.5 rounded-none text-fresco-xs font-medium transition-all",
           isWizardMode 
             ? "bg-fresco-black text-white" 
             : "bg-fresco-light-gray text-fresco-graphite-mid hover:bg-fresco-border transition-colors"
@@ -361,7 +361,7 @@ export function WizardModeControls({
           <button
             onClick={onPrevious}
             disabled={currentStep === 1}
-            className="p-2 rounded-lg bg-fresco-light-gray hover:bg-fresco-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-none bg-fresco-light-gray hover:bg-fresco-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -371,7 +371,7 @@ export function WizardModeControls({
           <button
             onClick={onNext}
             disabled={currentStep === totalSteps || !canGoNext}
-            className="p-2 rounded-lg bg-fresco-light-gray hover:bg-fresco-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-none bg-fresco-light-gray hover:bg-fresco-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -464,7 +464,7 @@ export function ContextualExample({ stepLabel, example, tip }: ContextualExample
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="mt-3 p-4 bg-fresco-light-gray rounded-xl border border-fresco-border">
+            <div className="mt-3 p-4 bg-fresco-light-gray rounded-none border border-fresco-border">
               <p className="text-fresco-xs font-medium text-fresco-black mb-2">Example for {stepLabel}:</p>
               <p className="text-fresco-sm text-fresco-graphite italic">"{example}"</p>
               {tip && (
@@ -658,7 +658,7 @@ export function ToolkitStep({
       animate={{ opacity: 1, x: 0, y: 0 }}
       exit={isWizardMode ? { opacity: 0, x: -50 } : { opacity: 0, y: -20 }}
       className={cn(
-        "rounded-2xl border-2 p-6 transition-all",
+        "rounded-none border-2 p-6 transition-all",
         isComplete 
           ? "border-fresco-black/30 bg-fresco-light-gray" 
           : isActive 
@@ -705,7 +705,7 @@ export function ToolkitStep({
           placeholder={placeholder}
           rows={rows}
           className={cn(
-            "w-full p-4 rounded-xl text-fresco-base border-2 focus:ring-0 outline-none resize-none transition-colors",
+            "w-full p-4 rounded-none text-fresco-base border-2 focus:ring-0 outline-none resize-none transition-colors",
             isComplete
               ? "bg-white border-fresco-border focus:border-fresco-black"
               : "bg-fresco-light-gray border-transparent focus:border-fresco-black"
@@ -801,7 +801,7 @@ export function ClarityScore({ inputs, hasAIOutput, hasSentenceOfTruth }: Clarit
   };
 
   return (
-    <div className="p-4 bg-fresco-light-gray rounded-xl">
+    <div className="p-4 bg-fresco-light-gray rounded-none">
       <div className="flex items-center justify-between mb-3">
         <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider">Clarity Score</span>
         <span className={cn("text-fresco-2xl font-bold", getScoreColor())}>{score}</span>
@@ -856,7 +856,7 @@ export function DynamicPrompt({ basePrompt, lensHint, lens }: DynamicPromptProps
       <motion.p 
         initial={{ opacity: 0, y: -5 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-fresco-sm text-fresco-black mt-2 p-2 bg-fresco-light-gray rounded-lg flex items-start gap-2"
+        className="text-fresco-sm text-fresco-black mt-2 p-2 bg-fresco-light-gray rounded-none flex items-start gap-2"
       >
         <Lightbulb className="w-4 h-4 flex-shrink-0 mt-0.5 text-fresco-graphite" />
         <span><strong className="capitalize">{lens.replace('_', ' ')} lens:</strong> {lensHint}</span>

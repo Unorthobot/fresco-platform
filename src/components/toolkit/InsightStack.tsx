@@ -596,10 +596,10 @@ export function InsightStack({ sessionId, workspaceId, onBack }: InsightStackPro
             <div className="flex items-center justify-between mb-4">
               <span className="fresco-label">Insights</span>
               <div className="flex items-center gap-1">
-                <button onClick={generateContent} disabled={isGenerating} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors disabled:opacity-50">
+                <button onClick={generateContent} disabled={isGenerating} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors disabled:opacity-50">
                   <RefreshCw className={cn("w-4 h-4", isGenerating && "animate-spin")} />
                 </button>
-                <button onClick={handleAddManualInsight} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors">
+                <button onClick={handleAddManualInsight} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>

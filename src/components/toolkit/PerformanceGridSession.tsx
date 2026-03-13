@@ -348,7 +348,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
             </div>
             
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-fresco-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-none bg-fresco-black flex items-center justify-center">
                 <BarChart2 className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -378,7 +378,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
               value={subject}
               onChange={(e) => handleSubjectChange(e.target.value)}
               placeholder="e.g., Q4 Marketing Campaign, Product Launch, Sales Performance..."
-              className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-lg border-none focus:ring-2 focus:ring-fresco-black outline-none"
+              className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-lg border-none focus:ring-2 focus:ring-fresco-black outline-none"
             />
             {TOOLKIT_EXAMPLES.performance_grid?.subject && (
               <ContextualExample
@@ -392,19 +392,19 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
           {/* Performance Summary */}
           {validMetrics.length > 0 && (
             <div className="mb-8 grid grid-cols-4 gap-4">
-              <div className="p-4 bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-xl text-white text-center">
+              <div className="p-4 bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-none text-white text-center">
                 <div className="text-fresco-4xl font-bold">{overallScore}%</div>
                 <div className="text-fresco-xs text-white/60">Overall Score</div>
               </div>
-              <div className="p-4 bg-fresco-light-gray rounded-xl text-center">
+              <div className="p-4 bg-fresco-light-gray rounded-none text-center">
                 <div className="text-fresco-4xl font-bold text-fresco-black">{goodCount}</div>
                 <div className="text-fresco-xs text-fresco-graphite-light">On Target</div>
               </div>
-              <div className="p-4 bg-fresco-off-white rounded-xl text-center">
+              <div className="p-4 bg-fresco-off-white rounded-none text-center">
                 <div className="text-fresco-4xl font-bold text-fresco-graphite">{warningCount}</div>
                 <div className="text-fresco-xs text-fresco-graphite-light">At Risk</div>
               </div>
-              <div className="p-4 bg-white dark:bg-gray-900 rounded-xl text-center">
+              <div className="p-4 bg-white dark:bg-gray-900 rounded-none text-center">
                 <div className="text-fresco-4xl font-bold text-fresco-graphite-light">{badCount}</div>
                 <div className="text-fresco-xs text-fresco-graphite-light">Below Target</div>
               </div>
@@ -417,7 +417,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
               <h3 className="text-fresco-lg font-medium text-fresco-black">Metrics</h3>
               <button
                 onClick={addMetric}
-                className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-lg hover:border-fresco-black transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-none hover:border-fresco-black transition-colors"
               >
                 <Plus className="w-4 h-4" /> Add Metric
               </button>
@@ -472,7 +472,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
                         value={metric.target}
                         onChange={(e) => updateMetric(metric.id, { target: e.target.value })}
                         placeholder="Target"
-                        className="w-full bg-white/50 rounded-lg px-3 py-1.5 text-fresco-sm border border-fresco-border focus:outline-none focus:ring-1 focus:ring-fresco-black"
+                        className="w-full bg-white/50 rounded-none px-3 py-1.5 text-fresco-sm border border-fresco-border focus:outline-none focus:ring-1 focus:ring-fresco-black"
                       />
                     </div>
                     
@@ -483,7 +483,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
                         value={metric.actual}
                         onChange={(e) => updateMetric(metric.id, { actual: e.target.value })}
                         placeholder="Actual"
-                        className="w-full bg-white/50 rounded-lg px-3 py-1.5 text-fresco-sm border border-fresco-border focus:outline-none focus:ring-1 focus:ring-fresco-black"
+                        className="w-full bg-white/50 rounded-none px-3 py-1.5 text-fresco-sm border border-fresco-border focus:outline-none focus:ring-1 focus:ring-fresco-black"
                       />
                     </div>
                     
@@ -509,7 +509,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
                             key={trend}
                             onClick={() => updateMetric(metric.id, { trend })}
                             className={cn(
-                              "p-1.5 rounded-lg transition-colors",
+                              "p-1.5 rounded-none transition-colors",
                               metric.trend === trend ? color : "text-fresco-graphite-light hover:bg-fresco-light-gray"
                             )}
                           >
@@ -543,7 +543,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
               value={actions}
               onChange={(e) => handleActionsChange(e.target.value)}
               placeholder="Based on results, what actions should be taken to improve performance?"
-              className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
+              className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
               rows={4}
             />
           </div>
@@ -569,14 +569,14 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors">
+                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                       <EyeOff className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
           
                 {/* Performance Score */}
-                <div className="mb-6 p-4 bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-xl text-white text-center">
+                <div className="mb-6 p-4 bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-none text-white text-center">
                   <div className={cn(
                     "text-fresco-5xl font-bold",
                     overallScore >= 80 ? "text-white" : overallScore >= 60 ? "text-white/80" : "text-white/60"
@@ -590,7 +590,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
                 <div className="mb-8">
                   <span className="fresco-label block mb-4">Performance Analysis</span>
                   {aiContent.insights.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <BarChart2 className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                       <p className="text-fresco-sm text-fresco-graphite-light">Add your metrics<br/>then analyse</p>
               </div>
@@ -617,7 +617,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
           ) : (
             <div className="mb-8">
               <span className="fresco-label block mb-4">Key Finding</span>
-              <div className="p-6 bg-fresco-light-gray rounded-xl text-center">
+              <div className="p-6 bg-fresco-light-gray rounded-none text-center">
                 <p className="text-fresco-sm text-fresco-graphite-light">Generate to reveal your key finding</p>
               </div>
             </div>
@@ -629,7 +629,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
               <span className="fresco-label block mb-4">Optimisation Actions</span>
               <div className="space-y-2">
                 {aiContent.necessaryMoves.map((move, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-lg">
+                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-none">
                     <CheckCircle2 className="w-4 h-4 text-fresco-black flex-shrink-0 mt-0.5" />
                     <p className="text-fresco-sm text-fresco-graphite-soft">{move}</p>
                   </motion.div>

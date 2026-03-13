@@ -362,7 +362,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
             </div>
             
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-fresco-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-none bg-fresco-black flex items-center justify-center">
                 <MessageCircle className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -385,7 +385,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
             </div>
           </div>
           
-          <div className="mb-8 p-6 bg-gradient-to-br from-fresco-light-gray to-fresco-off-white rounded-2xl border-2 border-fresco-border">
+          <div className="mb-8 p-6 bg-gradient-to-br from-fresco-light-gray to-fresco-off-white rounded-none border-2 border-fresco-border">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-5 h-5 text-fresco-graphite" />
               <span className="text-fresco-sm font-medium text-fresco-black">Target Audience</span>
@@ -395,13 +395,13 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
               value={audienceName}
               onChange={(e) => handleAudienceNameChange(e.target.value)}
               placeholder="Who are you trying to persuade?"
-              className="w-full p-4 bg-white/70 rounded-xl text-fresco-lg font-medium border border-fresco-border focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none mb-4"
+              className="w-full p-4 bg-white/70 rounded-none text-fresco-lg font-medium border border-fresco-border focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none mb-4"
             />
             <textarea
               value={currentBeliefs}
               onChange={(e) => handleCurrentBeliefsChange(e.target.value)}
               placeholder="What do they currently believe? What's their worldview?"
-              className="w-full p-4 bg-white/70 rounded-xl text-fresco-base border border-fresco-border focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
+              className="w-full p-4 bg-white/70 rounded-none text-fresco-base border border-fresco-border focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
               rows={3}
             />
             {TOOLKIT_EXAMPLES.persuasion_canvas?.audience && (
@@ -413,7 +413,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
             )}
           </div>
           
-          <div className="mb-8 p-6 bg-gradient-to-br from-fresco-light-gray to-fresco-off-white rounded-2xl border-2 border-fresco-border">
+          <div className="mb-8 p-6 bg-gradient-to-br from-fresco-light-gray to-fresco-off-white rounded-none border-2 border-fresco-border">
             <div className="flex items-center gap-2 mb-4">
               <Target className="w-5 h-5 text-fresco-graphite" />
               <span className="text-fresco-sm font-medium text-fresco-black">Desired Change</span>
@@ -422,7 +422,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
               value={desiredChange}
               onChange={(e) => handleDesiredChangeChange(e.target.value)}
               placeholder="What do you want them to believe, feel, or do differently?"
-              className="w-full p-4 bg-white/70 rounded-xl text-fresco-base border border-fresco-border focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
+              className="w-full p-4 bg-white/70 rounded-none text-fresco-base border border-fresco-border focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
               rows={3}
             />
             {TOOLKIT_EXAMPLES.persuasion_canvas?.change && (
@@ -447,7 +447,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                     <button
                       key={type}
                       onClick={() => addBarrier(type as Barrier['type'])}
-                      className={cn("flex items-center gap-1 px-3 py-1.5 rounded-lg text-fresco-xs border transition-colors", config.color)}
+                      className={cn("flex items-center gap-1 px-3 py-1.5 rounded-none text-fresco-xs border transition-colors", config.color)}
                     >
                       <Icon className="w-3 h-3" />
                       {config.label}
@@ -463,7 +463,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                 const typeBarriers = barriers.filter(b => b.type === type);
                 return (
                   <div key={type} className="space-y-3">
-                    <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg", config.color.split(' ')[0])}>
+                    <div className={cn("flex items-center gap-2 px-3 py-2 rounded-none", config.color.split(' ')[0])}>
                       <Icon className="w-4 h-4" />
                       <span className="text-fresco-sm font-medium">{config.label}s</span>
                       <span className="text-fresco-xs opacity-60">({typeBarriers.length})</span>
@@ -473,7 +473,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                         key={barrier.id}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className={cn("p-3 rounded-xl border group", config.color)}
+                        className={cn("p-3 rounded-none border group", config.color)}
                       >
                         <div className="flex items-start gap-2">
                           <input
@@ -490,7 +490,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                       </motion.div>
                     ))}
                     {typeBarriers.length === 0 && (
-                      <div className="p-4 rounded-xl border-2 border-dashed text-center opacity-50">
+                      <div className="p-4 rounded-none border-2 border-dashed text-center opacity-50">
                         <p className="text-fresco-xs">No {type}s added</p>
                       </div>
                     )}
@@ -513,7 +513,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                     <button
                       key={type}
                       onClick={() => addTactic(type as Tactic['leverType'])}
-                      className={cn("flex items-center gap-1 px-3 py-1.5 rounded-lg text-fresco-xs border transition-colors", config.color)}
+                      className={cn("flex items-center gap-1 px-3 py-1.5 rounded-none text-fresco-xs border transition-colors", config.color)}
                     >
                       <Icon className="w-3 h-3" />
                       {config.label}
@@ -529,7 +529,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                 const typeTactics = tactics.filter(t => t.leverType === type);
                 return (
                   <div key={type} className="space-y-3">
-                    <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg", config.color.split(' ')[0])}>
+                    <div className={cn("flex items-center gap-2 px-3 py-2 rounded-none", config.color.split(' ')[0])}>
                       <Icon className="w-4 h-4" />
                       <span className="text-fresco-sm font-medium">{config.label}</span>
                       <span className="text-fresco-xs opacity-60">({typeTactics.length})</span>
@@ -539,7 +539,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                         key={tactic.id}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className={cn("p-3 rounded-xl border group", config.color)}
+                        className={cn("p-3 rounded-none border group", config.color)}
                       >
                         <div className="flex items-start gap-2">
                           <input
@@ -556,7 +556,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                       </motion.div>
                     ))}
                     {typeTactics.length === 0 && (
-                      <div className="p-4 rounded-xl border-2 border-dashed text-center opacity-50">
+                      <div className="p-4 rounded-none border-2 border-dashed text-center opacity-50">
                         <p className="text-fresco-xs">No tactics added</p>
                       </div>
                     )}
@@ -573,7 +573,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
               value={coreMessage}
               onChange={(e) => handleCoreMessageChange(e.target.value)}
               placeholder="In one powerful sentence, what do you want them to remember?"
-              className="w-full p-4 bg-gradient-to-r from-fresco-black to-fresco-graphite rounded-xl text-fresco-lg text-white placeholder-white/40 border-none focus:ring-2 focus:ring-fresco-graphite outline-none resize-none"
+              className="w-full p-4 bg-gradient-to-r from-fresco-black to-fresco-graphite rounded-none text-fresco-lg text-white placeholder-white/40 border-none focus:ring-2 focus:ring-fresco-graphite outline-none resize-none"
               rows={2}
             />
           </div>
@@ -599,18 +599,18 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors">
+                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                       <EyeOff className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
           
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                  <div className="p-3 bg-fresco-light-gray rounded-xl text-center">
+                  <div className="p-3 bg-fresco-light-gray rounded-none text-center">
                     <div className="text-fresco-2xl font-bold text-fresco-black">{barriers.length}</div>
                     <div className="text-fresco-xs text-fresco-graphite-light">Barriers</div>
                   </div>
-                  <div className="p-3 bg-fresco-off-white rounded-xl text-center">
+                  <div className="p-3 bg-fresco-off-white rounded-none text-center">
                     <div className="text-fresco-2xl font-bold text-fresco-graphite">{tactics.length}</div>
                     <div className="text-fresco-xs text-fresco-graphite-light">Tactics</div>
                   </div>
@@ -619,7 +619,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
                 <div className="mb-8">
                   <span className="fresco-label block mb-4">Persuasion Elements</span>
                   {aiContent.insights.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <MessageCircle className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                       <p className="text-fresco-sm text-fresco-graphite-light">Map your audience<br/>then generate plan</p>
                     </div>
@@ -645,7 +645,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
           ) : (
             <div className="mb-8">
               <span className="fresco-label block mb-4">Core Message</span>
-              <div className="p-6 bg-fresco-light-gray rounded-xl text-center">
+              <div className="p-6 bg-fresco-light-gray rounded-none text-center">
                 <p className="text-fresco-sm text-fresco-graphite-light">Generate to craft your core message</p>
               </div>
             </div>
@@ -656,7 +656,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
               <span className="fresco-label block mb-4">Communication Plan</span>
               <div className="space-y-2">
                 {aiContent.necessaryMoves.map((move, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-lg">
+                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-none">
                     <ArrowRight className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0 mt-0.5" />
                     <p className="text-fresco-sm text-fresco-graphite-soft">{move}</p>
                   </motion.div>

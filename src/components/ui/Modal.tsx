@@ -90,14 +90,14 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className={cn("relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full", sizeClasses[size])}
+            className={cn("relative bg-white dark:bg-gray-900 rounded-none shadow-xl w-full", sizeClasses[size])}
           >
             {title && (
               <div className="flex items-center justify-between p-6 border-b border-fresco-border-light dark:border-gray-700">
                 <h2 id="modal-title" className="text-fresco-lg font-medium text-fresco-black dark:text-white">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-2 text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white rounded-lg hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors"
+                  className="p-2 text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white rounded-none hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors"
                   aria-label="Close modal"
                 >
                   <X className="w-5 h-5" />
@@ -134,14 +134,14 @@ export function ConfirmDialog({
       <div className="flex gap-3">
         <button
           onClick={onClose}
-          className="flex-1 h-10 text-fresco-sm text-fresco-graphite-mid dark:text-gray-400 border border-fresco-border dark:border-gray-600 rounded-xl hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors"
+          className="flex-1 h-10 text-fresco-sm text-fresco-graphite-mid dark:text-gray-400 border border-fresco-border dark:border-gray-600 rounded-none hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors"
         >
           {cancelLabel}
         </button>
         <button
           onClick={() => { onConfirm(); onClose(); }}
           className={cn(
-            "flex-1 h-10 text-fresco-sm font-medium rounded-xl transition-colors",
+            "flex-1 h-10 text-fresco-sm font-medium rounded-none transition-colors",
             variant === 'danger' ? "text-white bg-red-500 hover:bg-red-600 transition-colors" : "text-white bg-fresco-black dark:bg-white dark:text-fresco-black hover:bg-fresco-graphite dark:hover:bg-gray-200"
           )}
         >

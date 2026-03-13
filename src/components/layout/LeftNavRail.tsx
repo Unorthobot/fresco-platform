@@ -182,7 +182,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
                               onNavigate?.('workspaces');
                             }}
                             className={cn(
-                              'flex items-center gap-2.5 w-full px-3 py-2 text-fresco-sm rounded-md transition-all',
+                              'flex items-center gap-2.5 w-full px-3 py-2 text-fresco-sm rounded-none transition-all',
                               activeWorkspace?.id === workspace.id
                                 ? 'text-fresco-black bg-fresco-light-gray font-medium'
                                 : 'text-fresco-graphite-mid hover:text-fresco-black hover:bg-fresco-light-gray'
@@ -198,7 +198,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
                                 e.stopPropagation();
                                 setDeleteConfirm(workspace.id);
                               }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-fresco-graphite-light hover:text-red-500 rounded transition-colors"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-fresco-graphite-light hover:text-red-500 rounded-none transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -215,7 +215,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
                     
                     <button
                       onClick={handleCreateWorkspace}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 mt-1 text-fresco-sm text-fresco-graphite-light hover:text-fresco-black rounded-md transition-colors"
+                      className="flex items-center gap-2.5 w-full px-3 py-2 mt-1 text-fresco-sm text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                       <span>New Workspace</span>

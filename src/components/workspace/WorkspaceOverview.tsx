@@ -67,7 +67,7 @@ function WorkspaceClarityScore({ sessions }: { sessions: Session[] }) {
   };
 
   return (
-    <div className="p-4 bg-fresco-light-gray rounded-xl">
+    <div className="p-4 bg-fresco-light-gray rounded-none">
       <div className="flex items-center justify-between mb-3">
         <span className={cn("text-fresco-3xl font-bold", getScoreColor())}>{score}</span>
         <span className="text-fresco-xs text-fresco-graphite-light">/100</span>
@@ -303,7 +303,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 top-full mt-2 w-80 bg-fresco-white rounded-xl shadow-lg border border-fresco-border z-50 overflow-hidden"
+                    className="absolute right-0 top-full mt-2 w-80 bg-fresco-white rounded-none shadow-lg border border-fresco-border z-50 overflow-hidden"
                   >
                     {/* Suggestions */}
                     {suggestedToolkits.length > 0 && (
@@ -316,7 +316,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                           <button
                             key={suggestion.type}
                             onClick={() => handleSelectToolkit(suggestion.type)}
-                            className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white transition-colors text-left"
+                            className="w-full flex items-center gap-3 p-2 rounded-none hover:bg-white transition-colors text-left"
                           >
                             <img 
                               src={CATEGORY_ICONS[TOOLKITS[suggestion.type].category]} 
@@ -345,7 +345,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                               <button
                                 key={toolkit.type}
                                 onClick={() => handleSelectToolkit(toolkit.type)}
-                                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-fresco-light-gray transition-colors text-left"
+                                className="w-full flex items-center justify-between p-2 rounded-none hover:bg-fresco-light-gray transition-colors text-left"
                               >
                                 <div>
                                   <div className="text-fresco-sm text-fresco-black">{TOOLKITS[toolkit.type].name}</div>
@@ -375,7 +375,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
           <div className="lg:col-span-8">
             {/* View Tabs */}
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-1 p-1 bg-fresco-light-gray rounded-xl">
+              <div className="flex items-center gap-1 p-1 bg-fresco-light-gray rounded-none">
                 {[
                   { id: 'sessions', label: 'Sessions', icon: <Layout className="w-4 h-4" /> },
                   { id: 'synthesis', label: 'Synthesis', icon: <Sparkles className="w-4 h-4" /> },
@@ -387,7 +387,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                     key={tab.id}
                     onClick={() => setActiveView(tab.id as any)}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-lg text-fresco-sm font-medium transition-colors",
+                      "flex items-center gap-2 px-4 py-2 rounded-none text-fresco-sm font-medium transition-colors",
                       activeView === tab.id
                         ? "bg-white dark:bg-gray-800 text-fresco-black shadow-sm"
                         : "text-fresco-graphite-light hover:text-fresco-graphite transition-colors"
@@ -433,7 +433,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                           >
                             <button 
                               onClick={() => onOpenSession?.(session.id)} 
-                              className="w-full bg-fresco-white rounded-xl border border-fresco-border p-5 text-left hover:shadow-md hover:border-fresco-graphite-light transition-all group"
+                              className="w-full bg-fresco-white rounded-none border border-fresco-border p-5 text-left hover:shadow-md hover:border-fresco-graphite-light transition-all group"
                             >
                               <div className="flex items-start justify-between">
                                 <div className="flex-1 min-w-0 pr-10">
@@ -475,7 +475,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                             {hoveredSession === session.id && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); setDeleteConfirm(session.id); }}
-                                className="absolute right-14 top-1/2 -translate-y-1/2 p-2 text-fresco-graphite-light hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors z-10"
+                                className="absolute right-14 top-1/2 -translate-y-1/2 p-2 text-fresco-graphite-light hover:text-red-500 hover:bg-red-50 rounded-none transition-colors z-10"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -566,7 +566,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                   ).length;
                   
                   return (
-                    <div key={category} className="p-3 bg-fresco-light-gray rounded-lg">
+                    <div key={category} className="p-3 bg-fresco-light-gray rounded-none">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <img src={CATEGORY_ICONS[category]} alt="" className="w-4 h-4 icon-themed" />

@@ -624,7 +624,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
             </div>
             
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-fresco-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-none bg-fresco-black flex items-center justify-center">
                 <Layers className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -664,7 +664,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                   animate={{ opacity: 1, x: 0, y: 0 }}
                   exit={isWizardMode ? { opacity: 0, x: -50 } : { opacity: 0, y: -20 }}
                   className={cn(
-                    "border-2 rounded-2xl overflow-hidden transition-all",
+                    "border-2 rounded-none overflow-hidden transition-all",
                     isActive ? "border-fresco-black shadow-lg" :
                     isComplete ? "border-fresco-black/50 bg-fresco-light-gray/50" :
                     isUnlocked ? "border-fresco-border hover:border-fresco-graphite-light" :
@@ -723,7 +723,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                             onChange={(e) => handleStepChange(step.stepNumber, e.target.value)}
                             placeholder={step.placeholder}
                             className={cn(
-                              "w-full p-4 rounded-xl text-fresco-base border-2 focus:ring-0 outline-none resize-none transition-all",
+                              "w-full p-4 rounded-none text-fresco-base border-2 focus:ring-0 outline-none resize-none transition-all",
                               isComplete 
                                 ? "bg-white dark:bg-gray-900 border-fresco-border dark:border-gray-700 focus:border-fresco-black"
                                 : "bg-fresco-light-gray border-transparent focus:border-fresco-black"
@@ -758,9 +758,9 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                           {files.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-2">
                               {files.map((file, i) => (
-                                <div key={i} className="group flex items-center gap-2 px-3 py-1.5 bg-fresco-light-gray rounded-lg">
+                                <div key={i} className="group flex items-center gap-2 px-3 py-1.5 bg-fresco-light-gray rounded-none">
                                   {file.preview ? (
-                                    <img src={file.preview} alt="" className="w-6 h-6 rounded object-cover" />
+                                    <img src={file.preview} alt="" className="w-6 h-6 rounded-none object-cover" />
                                   ) : (
                                     <FileText className="w-4 h-4 text-fresco-graphite-mid" />
                                   )}
@@ -783,7 +783,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                             <button
                               onClick={() => isRecording === step.stepNumber ? stopRecording() : startRecording(step.stepNumber)}
                               className={cn(
-                                "flex items-center gap-2 px-3 py-2 rounded-lg text-fresco-sm font-medium transition-all",
+                                "flex items-center gap-2 px-3 py-2 rounded-none text-fresco-sm font-medium transition-all",
                                 isRecording === step.stepNumber 
                                   ? "bg-fresco-graphite text-white animate-pulse" 
                                   : "bg-fresco-light-gray text-fresco-graphite-mid hover:bg-fresco-graphite-light hover:text-white"
@@ -799,7 +799,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                             {/* File Upload */}
                             <button
                               onClick={() => handleFileSelect(step.stepNumber)}
-                              className="flex items-center gap-2 px-3 py-2 bg-fresco-light-gray rounded-lg text-fresco-sm font-medium text-fresco-graphite-mid hover:bg-fresco-graphite-light hover:text-white transition-all"
+                              className="flex items-center gap-2 px-3 py-2 bg-fresco-light-gray rounded-none text-fresco-sm font-medium text-fresco-graphite-mid hover:bg-fresco-graphite-light hover:text-white transition-all"
                             >
                               <Upload className="w-4 h-4" /> Upload
                             </button>
@@ -848,7 +848,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => setIsOutputPanelExpanded(false)}
-                      className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors"
+                      className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors"
                       title="Hide output panel"
                     >
                       <EyeOff className="w-4 h-4" />
@@ -864,7 +864,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                       {allInsights.length > 0 && (
                         <button 
                           onClick={() => speakText(allInsights.join('. '))}
-                          className={cn("p-1.5 rounded transition-colors", isSpeaking ? "text-fresco-black bg-fresco-light-gray" : "text-fresco-graphite-light hover:text-fresco-black")}
+                          className={cn("p-1.5 rounded-none transition-colors", isSpeaking ? "text-fresco-black bg-fresco-light-gray" : "text-fresco-graphite-light hover:text-fresco-black")}
                           title="Listen to insights"
                         >
                           {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -877,7 +877,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                   </div>
             
                   {allInsights.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <Layers className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                       <p className="text-fresco-sm text-fresco-graphite-light">Complete at least 3 steps<br/>to extract insights</p>
                     </div>
@@ -893,7 +893,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                           {/* Deep Dive button */}
                           <button
                             onClick={() => { setDeepDiveInsight(insight); setShowDeepDive(true); }}
-                            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1.5 text-fresco-graphite-light hover:text-fresco-black hover:bg-fresco-light-gray rounded transition-all"
+                            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1.5 text-fresco-graphite-light hover:text-fresco-black hover:bg-fresco-light-gray rounded-none transition-all"
                             title="Deep dive into this insight"
                           >
                             <Zap className="w-4 h-4" />
@@ -907,7 +907,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                       value={insight} 
                       onChange={(e) => handleManualInsightChange(i, e.target.value)} 
                       placeholder="Add your insight..."
-                      className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-sm border-none focus:ring-2 focus:ring-fresco-black outline-none"
+                      className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-sm border-none focus:ring-2 focus:ring-fresco-black outline-none"
                     />
                     <button onClick={() => handleRemoveManualInsight(i)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-fresco-graphite-light hover:text-red-500 transition-colors">
                       <Trash2 className="w-4 h-4" />
@@ -960,7 +960,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
           ) : (
             <div className="mb-8">
               <span className="fresco-label block mb-4">Sentence of Truth</span>
-              <div className="p-6 bg-fresco-light-gray rounded-xl text-center">
+              <div className="p-6 bg-fresco-light-gray rounded-none text-center">
                 <p className="text-fresco-sm text-fresco-graphite-light">
                   Generate insights to discover your truth
                 </p>
@@ -975,7 +975,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                 <span className="fresco-label">Necessary Moves</span>
                 <button 
                   onClick={() => speakText(aiContent.necessaryMoves.join('. '))}
-                  className={cn("p-1.5 rounded transition-colors", isSpeaking ? "text-fresco-black bg-fresco-light-gray" : "text-fresco-graphite-light hover:text-fresco-black")}
+                  className={cn("p-1.5 rounded-none transition-colors", isSpeaking ? "text-fresco-black bg-fresco-light-gray" : "text-fresco-graphite-light hover:text-fresco-black")}
                   title="Listen"
                 >
                   {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -988,7 +988,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-lg"
+                    className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-none"
                   >
                     <div className="w-6 h-6 rounded-full bg-fresco-black text-white flex items-center justify-center flex-shrink-0 text-fresco-xs font-medium">
                       {i + 1}

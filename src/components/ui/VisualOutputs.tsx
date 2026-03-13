@@ -218,7 +218,7 @@ export function FlowDiagram({ steps, startLabel = 'Start', endLabel = 'End' }: F
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
             className={cn(
-              "w-full max-w-[140px] px-3 py-2 rounded-lg text-xs text-center border-2",
+              "w-full max-w-[140px] px-3 py-2 rounded-none text-xs text-center border-2",
               step.hasFriction 
                 ? "bg-red-50 border-red-300 text-red-700" 
                 : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300"

@@ -63,7 +63,7 @@ export function JourneyMap({ sessions, onSessionClick, onToolkitStart, className
             {/* House header */}
             <div className="flex items-center gap-3 mb-4">
               <div className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center",
+                "w-10 h-10 rounded-none flex items-center justify-center",
                 houseComplete ? "bg-fresco-black" : "bg-fresco-light-gray"
               )}>
                 {houseComplete ? (
@@ -110,7 +110,7 @@ export function JourneyMap({ sessions, onSessionClick, onToolkitStart, className
                     
                     {/* Toolkit card */}
                     <div className={cn(
-                      "p-4 rounded-xl transition-all",
+                      "p-4 rounded-none transition-all",
                       isComplete 
                         ? "bg-fresco-light-gray hover:bg-fresco-warm-gray cursor-pointer transition-colors" 
                         : "bg-fresco-white border border-dashed border-fresco-border hover:border-fresco-graphite-light transition-colors"

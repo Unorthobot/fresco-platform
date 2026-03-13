@@ -128,7 +128,7 @@ export function MilestoneCelebration({ type, isVisible, onClose, details }: Mile
               </motion.div>
               
               {/* Icon badge */}
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-fresco-black flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-none bg-fresco-black flex items-center justify-center">
                 <Icon className="w-8 h-8 text-white" />
               </div>
               

@@ -35,7 +35,7 @@ export function ExampleToggle({ stepLabel, example, tip, className }: ExampleTog
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="mt-3 p-4 bg-fresco-light-gray rounded-xl">
+            <div className="mt-3 p-4 bg-fresco-light-gray rounded-none">
               <p className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider mb-2">
                 Example for {stepLabel}
               </p>

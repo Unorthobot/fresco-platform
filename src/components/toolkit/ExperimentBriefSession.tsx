@@ -356,7 +356,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
             </div>
             
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-fresco-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-none bg-fresco-black flex items-center justify-center">
                 <FlaskConical className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -380,7 +380,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
           </div>
           
           {/* Hypothesis Card */}
-          <div className="mb-8 p-6 bg-fresco-light-gray rounded-2xl border-2 border-fresco-border">
+          <div className="mb-8 p-6 bg-fresco-light-gray rounded-none border-2 border-fresco-border">
             <div className="flex items-center gap-2 mb-4">
               <Target className="w-5 h-5 text-fresco-graphite" />
               <span className="text-fresco-sm font-medium text-fresco-black">Hypothesis</span>
@@ -390,7 +390,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
               value={hypothesis}
               onChange={(e) => handleHypothesisChange(e.target.value)}
               placeholder="We believe that [X] because [Y]. If we [do Z], we expect [outcome]."
-              className="w-full p-4 bg-white dark:bg-gray-900 rounded-xl text-fresco-lg border border-fresco-border dark:border-gray-700 focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none mb-4"
+              className="w-full p-4 bg-white dark:bg-gray-900 rounded-none text-fresco-lg border border-fresco-border dark:border-gray-700 focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none mb-4"
               rows={3}
             />
             <InputQualityIndicator value={hypothesis} minLength={20} goodLength={80} />
@@ -403,7 +403,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
             )}
             
             {/* Confidence Slider */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl p-4 mt-4">
+            <div className="bg-white dark:bg-gray-900 rounded-none p-4 mt-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-fresco-sm text-fresco-graphite-mid">Current Confidence Level</span>
                 <span className="text-fresco-2xl font-bold text-fresco-black">{confidence}%</span>
@@ -435,14 +435,14 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
               value={testDesign}
               onChange={(e) => handleTestDesignChange(e.target.value)}
               placeholder="To test this, we will..."
-              className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
+              className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
               rows={4}
             />
           </div>
           
           {/* Success Criteria */}
           <div className="grid grid-cols-2 gap-6 mb-8">
-            <div className="p-5 bg-fresco-light-gray rounded-xl border border-fresco-border">
+            <div className="p-5 bg-fresco-light-gray rounded-none border border-fresco-border">
               <div className="flex items-center gap-2 mb-3">
                 <CheckCircle className="w-5 h-5 text-fresco-graphite" />
                 <span className="text-fresco-sm font-medium text-fresco-black">Success Looks Like</span>
@@ -451,12 +451,12 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
                 value={successLooksLike}
                 onChange={(e) => handleSuccessChange(e.target.value)}
                 placeholder="The hypothesis is validated when..."
-                className="w-full p-3 bg-white dark:bg-gray-900 rounded-lg text-fresco-sm border border-fresco-border dark:border-gray-700 focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
+                className="w-full p-3 bg-white dark:bg-gray-900 rounded-none text-fresco-sm border border-fresco-border dark:border-gray-700 focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
                 rows={4}
               />
             </div>
             
-            <div className="p-5 bg-fresco-light-gray rounded-xl border border-fresco-border">
+            <div className="p-5 bg-fresco-light-gray rounded-none border border-fresco-border">
               <div className="flex items-center gap-2 mb-3">
                 <XCircle className="w-5 h-5 text-fresco-graphite" />
                 <span className="text-fresco-sm font-medium text-fresco-black">Failure Looks Like</span>
@@ -465,7 +465,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
                 value={failureLooksLike}
                 onChange={(e) => handleFailureChange(e.target.value)}
                 placeholder="The hypothesis is invalidated when..."
-                className="w-full p-3 bg-white dark:bg-gray-900 rounded-lg text-fresco-sm border border-fresco-border dark:border-gray-700 focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
+                className="w-full p-3 bg-white dark:bg-gray-900 rounded-none text-fresco-sm border border-fresco-border dark:border-gray-700 focus:ring-2 focus:ring-fresco-black focus:border-fresco-black outline-none resize-none"
                 rows={4}
               />
             </div>
@@ -478,7 +478,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
                 <h3 className="text-fresco-lg font-medium text-fresco-black">Risks</h3>
                 <p className="text-fresco-sm text-fresco-graphite-light">What could invalidate this experiment?</p>
               </div>
-              <button onClick={addRisk} className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-lg hover:border-fresco-black transition-colors">
+              <button onClick={addRisk} className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-none hover:border-fresco-black transition-colors">
                 <Plus className="w-4 h-4" /> Add Risk
               </button>
             </div>
@@ -489,13 +489,13 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
                   key={risk.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 p-4 bg-fresco-light-gray rounded-xl group"
+                  className="flex items-center gap-3 p-4 bg-fresco-light-gray rounded-none group"
                 >
                   <select
                     value={risk.severity}
                     onChange={(e) => updateRisk(risk.id, { severity: e.target.value as Risk['severity'] })}
                     className={cn(
-                      "px-3 py-1.5 rounded-lg text-fresco-xs font-medium border-none focus:outline-none cursor-pointer",
+                      "px-3 py-1.5 rounded-none text-fresco-xs font-medium border-none focus:outline-none cursor-pointer",
                       risk.severity === 'high' ? "bg-fresco-black/10 text-fresco-black" :
                       risk.severity === 'medium' ? "bg-fresco-graphite/10 text-fresco-graphite" :
                       "bg-fresco-light-gray text-fresco-graphite-mid"
@@ -527,7 +527,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
               value={assumptions}
               onChange={(e) => handleAssumptionsChange(e.target.value)}
               placeholder="What are you assuming to be true for this experiment to be valid?"
-              className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
+              className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
               rows={3}
             />
           </div>
@@ -553,14 +553,14 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors">
+                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                       <EyeOff className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
           
                 {/* Confidence Gauge */}
-                <div className="mb-6 p-4 bg-fresco-light-gray rounded-xl text-center">
+                <div className="mb-6 p-4 bg-fresco-light-gray rounded-none text-center">
                   <div className={cn("text-fresco-4xl font-bold", getConfidenceColor())}>{confidence}%</div>
                   <div className="text-fresco-xs text-fresco-graphite-light">Confidence Level</div>
                 </div>
@@ -569,7 +569,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
                 <div className="mb-8">
                   <span className="fresco-label block mb-4">Experiment Design</span>
                   {aiContent.insights.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <FlaskConical className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                       <p className="text-fresco-sm text-fresco-graphite-light">Define your hypothesis<br/>then generate brief</p>
                     </div>
@@ -596,7 +596,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
                 ) : (
                   <div className="mb-8">
                     <span className="fresco-label block mb-4">Core Hypothesis</span>
-                    <div className="p-6 bg-fresco-light-gray rounded-xl text-center">
+                    <div className="p-6 bg-fresco-light-gray rounded-none text-center">
                       <p className="text-fresco-sm text-fresco-graphite-light">Generate to crystallise your hypothesis</p>
                     </div>
                   </div>
@@ -608,7 +608,7 @@ export function ExperimentBriefSession({ sessionId, workspaceId, onBack, onStart
                     <span className="fresco-label block mb-4">Test Plan</span>
                     <div className="space-y-2">
                       {aiContent.necessaryMoves.map((move, i) => (
-                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-lg">
+                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-none">
                           <div className="w-6 h-6 rounded-full bg-fresco-black text-white flex items-center justify-center flex-shrink-0 text-fresco-xs font-medium">
                             {i + 1}
                           </div>

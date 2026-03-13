@@ -50,14 +50,14 @@ export function ThinkingLensHint({ lens, hint, compact = false, className }: Thi
         exit={{ opacity: 0, y: 5 }}
         transition={{ duration: 0.2 }}
         className={cn(
-          "flex items-start gap-3 rounded-xl",
+          "flex items-start gap-3 rounded-none",
           compact ? "p-2" : "p-4",
           config.bgColor,
           className
         )}
       >
         <div className={cn(
-          "flex-shrink-0 rounded-lg flex items-center justify-center",
+          "flex-shrink-0 rounded-none flex items-center justify-center",
           compact ? "w-6 h-6" : "w-8 h-8",
           config.color,
           "bg-white/50"
@@ -106,7 +106,7 @@ export function ThinkingLensBadge({ lens }: { lens: ThinkingModeId }) {
 
   return (
     <span className={cn(
-      "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-fresco-xs font-medium",
+      "inline-flex items-center gap-1.5 px-2 py-1 rounded-none text-fresco-xs font-medium",
       config.bgColor,
       config.color
     )}>
@@ -125,13 +125,13 @@ export function ThinkingLensPanel({ lens, hint }: { lens: ThinkingModeId; hint?:
 
   return (
     <div className={cn(
-      "p-4 rounded-xl border",
+      "p-4 rounded-none border",
       config.bgColor,
       `border-current/20`
     )}>
       <div className="flex items-center gap-3 mb-2">
         <div className={cn(
-          "w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-800",
+          "w-10 h-10 rounded-none flex items-center justify-center bg-white dark:bg-gray-800",
           config.color
         )}>
           <Icon className="w-5 h-5" />
@@ -145,7 +145,7 @@ export function ThinkingLensPanel({ lens, hint }: { lens: ThinkingModeId; hint?:
       </div>
       
       {hint && (
-        <div className="mt-3 p-3 bg-white/50 rounded-lg">
+        <div className="mt-3 p-3 bg-white/50 rounded-none">
           <p className="text-fresco-sm text-fresco-graphite-mid flex items-start gap-2">
             <Lightbulb className="w-4 h-4 flex-shrink-0 mt-0.5 text-fresco-graphite" />
             {hint}

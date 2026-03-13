@@ -43,7 +43,7 @@ export function InsightCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "group relative bg-fresco-white dark:bg-gray-900 rounded-xl border border-fresco-border dark:border-gray-700",
+        "group relative bg-fresco-white dark:bg-gray-900 rounded-none border border-fresco-border dark:border-gray-700",
         "shadow-sm hover:shadow-md transition-all duration-200",
         className
       )}
@@ -59,7 +59,7 @@ export function InsightCard({
           )}
           
           {/* Index badge */}
-          <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-fresco-light-gray dark:bg-gray-800 flex items-center justify-center">
+          <div className="flex-shrink-0 w-7 h-7 rounded-none bg-fresco-light-gray dark:bg-gray-800 flex items-center justify-center">
             <span className="text-fresco-xs font-medium text-fresco-graphite">{index + 1}</span>
           </div>
           
@@ -70,20 +70,20 @@ export function InsightCard({
                 <textarea
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="w-full p-2 text-fresco-sm border border-fresco-border dark:border-gray-600 rounded-lg focus:border-fresco-black dark:focus:border-white outline-none resize-none bg-transparent dark:text-white"
+                  className="w-full p-2 text-fresco-sm border border-fresco-border dark:border-gray-600 rounded-none focus:border-fresco-black dark:focus:border-white outline-none resize-none bg-transparent dark:text-white"
                   rows={3}
                   autoFocus
                 />
                 <div className="flex gap-2 justify-end">
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="p-1.5 text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white rounded transition-colors"
+                    className="p-1.5 text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white rounded-none transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleSave}
-                    className="p-1.5 text-fresco-black hover:bg-fresco-light-gray dark:hover:bg-gray-800 rounded transition-colors"
+                    className="p-1.5 text-fresco-black hover:bg-fresco-light-gray dark:hover:bg-gray-800 rounded-none transition-colors"
                   >
                     <Check className="w-4 h-4" />
                   </button>
@@ -108,7 +108,7 @@ export function InsightCard({
               {onEdit && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="p-1.5 text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white hover:bg-fresco-light-gray dark:hover:bg-gray-800 rounded transition-colors"
+                  className="p-1.5 text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white hover:bg-fresco-light-gray dark:hover:bg-gray-800 rounded-none transition-colors"
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
@@ -116,7 +116,7 @@ export function InsightCard({
               {onDelete && (
                 <button
                   onClick={onDelete}
-                  className="p-1.5 text-fresco-graphite-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded transition-colors"
+                  className="p-1.5 text-fresco-graphite-light hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded-none transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -140,7 +140,7 @@ export function InsightsEmptyState() {
       animate={{ opacity: 1 }}
       className="text-center py-12 px-6"
     >
-      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-fresco-light-gray dark:bg-gray-800 flex items-center justify-center">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-none bg-fresco-light-gray dark:bg-gray-800 flex items-center justify-center">
         <Lightbulb className="w-8 h-8 text-fresco-graphite-light dark:text-gray-400" />
       </div>
       <h3 className="text-fresco-lg font-medium text-fresco-graphite mb-2">

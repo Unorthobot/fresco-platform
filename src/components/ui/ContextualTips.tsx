@@ -81,11 +81,11 @@ export function ContextualTip({ trigger, className }: ContextualTipsProps) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         className={cn(
-          "flex items-start gap-3 p-4 bg-fresco-light-gray dark:bg-gray-800 rounded-xl",
+          "flex items-start gap-3 p-4 bg-fresco-light-gray dark:bg-gray-800 rounded-none",
           className
         )}
       >
-        <div className="w-8 h-8 rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-none bg-white dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
           <Lightbulb className="w-4 h-4 text-fresco-graphite dark:text-gray-300" />
         </div>
         <div className="flex-1 min-w-0">

@@ -103,7 +103,7 @@ export default function DecisionGate({ currentDecision, onDecision, isVisible }:
               key={d.type}
               onClick={() => handleSelect(d.type)}
               className={cn(
-                'flex items-center gap-2.5 p-3 rounded-lg border transition-all text-left',
+                'flex items-center gap-2.5 p-3 rounded-none border transition-all text-left',
                 isActive ? d.activeBg : cn(d.bg, d.color)
               )}
             >
@@ -151,7 +151,7 @@ export default function DecisionGate({ currentDecision, onDecision, isVisible }:
                     onChange={(e) => setRationale(e.target.value)}
                     placeholder="Why this decision? (optional)"
                     rows={2}
-                    className="w-full px-3 py-2 text-fresco-sm bg-fresco-light-gray border border-fresco-border-light rounded-lg resize-none focus:outline-none focus:border-fresco-black transition-colors"
+                    className="w-full px-3 py-2 text-fresco-sm bg-fresco-light-gray border border-fresco-border-light rounded-none resize-none focus:outline-none focus:border-fresco-black transition-colors"
                   />
                   <div>
                     <p className="text-fresco-xs text-fresco-graphite-light mb-2">
@@ -180,7 +180,7 @@ export default function DecisionGate({ currentDecision, onDecision, isVisible }:
             {!committed ? (
               <button
                 onClick={handleCommit}
-                className="w-full py-2.5 bg-fresco-black text-white text-fresco-sm font-medium rounded-lg hover:bg-fresco-graphite transition-colors"
+                className="w-full py-2.5 bg-fresco-black text-white text-fresco-sm font-medium rounded-none hover:bg-fresco-graphite transition-colors"
               >
                 Record Decision
               </button>
@@ -189,7 +189,7 @@ export default function DecisionGate({ currentDecision, onDecision, isVisible }:
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className={cn(
-                  'flex items-center justify-center gap-2 py-2.5 rounded-lg text-fresco-sm font-medium',
+                  'flex items-center justify-center gap-2 py-2.5 rounded-none text-fresco-sm font-medium',
                   activeDecision?.activeBg
                 )}
               >

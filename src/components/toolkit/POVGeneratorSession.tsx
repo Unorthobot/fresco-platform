@@ -276,7 +276,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
             </div>
             
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-fresco-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-none bg-fresco-black flex items-center justify-center">
                 <Target className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -302,7 +302,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-10 p-6 bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-2xl text-white relative overflow-hidden"
+            className="mb-10 p-6 bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-none text-white relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="relative">
@@ -383,13 +383,13 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
                   exit={isWizardMode ? { opacity: 0, x: -50 } : { opacity: 0, y: -20 }}
                   transition={{ delay: isWizardMode ? 0 : index * 0.1 }}
                   className={cn(
-                    "bg-white dark:bg-gray-900 rounded-2xl border-2 p-6 transition-colors",
+                    "bg-white dark:bg-gray-900 rounded-none border-2 p-6 transition-colors",
                     isComplete ? "border-fresco-border bg-fresco-light-gray/50" : "border-fresco-border hover:border-fresco-graphite-light"
                   )}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", isComplete ? "bg-fresco-black" : colorClass)}>
+                      <div className={cn("w-10 h-10 rounded-none flex items-center justify-center", isComplete ? "bg-fresco-black" : colorClass)}>
                         {isComplete ? <Check className="w-5 h-5 text-white" /> : <Icon className="w-5 h-5 text-white" />}
                       </div>
                       <div>
@@ -413,7 +413,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
                     onChange={(e) => handleStepChange(step.stepNumber, e.target.value)}
                     placeholder={step.placeholder}
                     className={cn(
-                      "w-full p-4 rounded-xl text-fresco-base border-2 focus:ring-0 outline-none resize-none transition-colors",
+                      "w-full p-4 rounded-none text-fresco-base border-2 focus:ring-0 outline-none resize-none transition-colors",
                       isComplete
                         ? "bg-white dark:bg-gray-900 border-fresco-border dark:border-gray-700 focus:border-fresco-black"
                         : "bg-fresco-light-gray border-transparent focus:border-fresco-black"
@@ -482,7 +482,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => setIsOutputPanelExpanded(false)}
-                      className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors"
+                      className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors"
                     >
                       <EyeOff className="w-4 h-4" />
                     </button>
@@ -493,7 +493,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
                 <div className="mb-8">
                   <span className="fresco-label block mb-4">POV Synthesis</span>
                   {aiContent.insights.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <Target className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                       <p className="text-fresco-sm text-fresco-graphite-light">Fill in your POV components<br/>then synthesise</p>
                     </div>
@@ -525,7 +525,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
                 ) : (
                   <div className="mb-8">
                     <span className="fresco-label block mb-4">Core POV Statement</span>
-                    <div className="p-6 bg-fresco-light-gray rounded-xl text-center">
+                    <div className="p-6 bg-fresco-light-gray rounded-none text-center">
                       <p className="text-fresco-sm text-fresco-graphite-light">Generate to discover your POV</p>
                     </div>
                   </div>
@@ -542,7 +542,7 @@ export function POVGeneratorSession({ sessionId, workspaceId, onBack, onStartToo
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.1 }}
-                          className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-lg"
+                          className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-none"
                         >
                           <ArrowRight className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0 mt-0.5" />
                           <p className="text-fresco-sm text-fresco-graphite-soft">{move}</p>

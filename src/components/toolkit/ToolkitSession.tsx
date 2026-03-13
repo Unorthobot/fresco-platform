@@ -469,7 +469,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
             <div className="flex items-center justify-between mb-4">
               <span className="fresco-label">{outputLabels.primary}</span>
               <div className="flex items-center gap-1">
-                <button onClick={handleAddManualInsight} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors">
+                <button onClick={handleAddManualInsight} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>

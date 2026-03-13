@@ -63,7 +63,7 @@ export function ComparisonView({ sessions, onClose, className }: ComparisonViewP
             key={index}
             value={selectedSessions[index] || ''}
             onChange={(e) => handleSelect(index as 0 | 1, e.target.value)}
-            className="w-full p-3 bg-fresco-light-gray rounded-xl text-fresco-sm border-none focus:ring-2 focus:ring-fresco-black outline-none"
+            className="w-full p-3 bg-fresco-light-gray rounded-none text-fresco-sm border-none focus:ring-2 focus:ring-fresco-black outline-none"
           >
             <option value="">Select session...</option>
             {sessions.map(session => (
@@ -89,7 +89,7 @@ export function ComparisonView({ sessions, onClose, className }: ComparisonViewP
               <>
                 {/* Sentence of Truth */}
                 <div className={cn(
-                  "p-4 rounded-xl",
+                  "p-4 rounded-none",
                   session.sentenceOfTruth?.content 
                     ? "bg-fresco-black text-white" 
                     : "bg-fresco-light-gray"
@@ -112,7 +112,7 @@ export function ComparisonView({ sessions, onClose, className }: ComparisonViewP
                 </div>
 
                 {/* Insights */}
-                <div className="bg-fresco-white border border-fresco-border rounded-xl p-4">
+                <div className="bg-fresco-white border border-fresco-border rounded-none p-4">
                   <div className="text-fresco-xs font-medium uppercase tracking-wider text-fresco-graphite-light mb-3">
                     Insights ({session.aiOutputs?.insights?.length || 0})
                   </div>
@@ -139,7 +139,7 @@ export function ComparisonView({ sessions, onClose, className }: ComparisonViewP
 
                 {/* Actions */}
                 {session.aiOutputs?.necessaryMoves?.length > 0 && (
-                  <div className="bg-fresco-light-gray rounded-xl p-4">
+                  <div className="bg-fresco-light-gray rounded-none p-4">
                     <div className="text-fresco-xs font-medium uppercase tracking-wider text-fresco-graphite-light mb-3">
                       Actions ({session.aiOutputs.necessaryMoves.length})
                     </div>
@@ -154,7 +154,7 @@ export function ComparisonView({ sessions, onClose, className }: ComparisonViewP
                 )}
               </>
             ) : (
-              <div className="h-48 flex items-center justify-center bg-fresco-light-gray/50 rounded-xl border-2 border-dashed border-fresco-border">
+              <div className="h-48 flex items-center justify-center bg-fresco-light-gray/50 rounded-none border-2 border-dashed border-fresco-border">
                 <p className="text-fresco-sm text-fresco-graphite-light">
                   Select a session
                 </p>

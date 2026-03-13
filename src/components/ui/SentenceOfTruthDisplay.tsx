@@ -63,7 +63,7 @@ export function SentenceOfTruthDisplay({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "relative overflow-hidden rounded-2xl",
+        "relative overflow-hidden rounded-none",
         className
       )}
     >
@@ -84,7 +84,7 @@ export function SentenceOfTruthDisplay({
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-none bg-white/10 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -101,14 +101,14 @@ export function SentenceOfTruthDisplay({
           <div className="flex items-center gap-1">
             <button
               onClick={handleSpeak}
-              className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-none transition-colors"
               title="Listen"
             >
               {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
             <button
               onClick={handleCopy}
-              className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-none transition-colors"
               title="Copy"
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -116,7 +116,7 @@ export function SentenceOfTruthDisplay({
             {onLockToggle && (
               <button
                 onClick={onLockToggle}
-                className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-none transition-colors"
                 title={isLocked ? "Unlock" : "Lock"}
               >
                 {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
@@ -140,7 +140,7 @@ export function SentenceOfTruthDisplay({
               <textarea
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="w-full bg-white/10 text-white text-fresco-base leading-relaxed font-light p-4 rounded-xl border border-white/20 focus:border-white/40 outline-none resize-none"
+                className="w-full bg-white/10 text-white text-fresco-base leading-relaxed font-light p-4 rounded-none border border-white/20 focus:border-white/40 outline-none resize-none"
                 rows={3}
                 autoFocus
               />
@@ -153,7 +153,7 @@ export function SentenceOfTruthDisplay({
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-white text-fresco-black rounded-lg text-fresco-sm font-medium"
+                  className="px-4 py-2 bg-white text-fresco-black rounded-none text-fresco-sm font-medium"
                 >
                   Save
                 </button>

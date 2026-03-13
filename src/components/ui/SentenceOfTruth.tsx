@@ -74,17 +74,17 @@ export function SentenceOfTruth({
             
             <div className="flex items-center justify-end gap-1 pt-3 border-t border-fresco-border-light dark:border-gray-700">
               {isEditable && !isLocked && (
-                <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 px-2 py-1 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white rounded hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors">
+                <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 px-2 py-1 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white rounded-none hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors">
                   <Edit3 className="w-3.5 h-3.5" /><span>Edit</span>
                 </button>
               )}
               {!isEmpty && (
-                <button onClick={handleCopy} className="flex items-center gap-1.5 px-2 py-1 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white rounded hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors">
+                <button onClick={handleCopy} className="flex items-center gap-1.5 px-2 py-1 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white rounded-none hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors">
                   {copied ? <><Check className="w-3.5 h-3.5 text-emerald-600" /><span className="text-emerald-600">Copied</span></> : <><Copy className="w-3.5 h-3.5" /><span>Copy</span></>}
                 </button>
               )}
               {onToggleLock && !isEmpty && (
-                <button onClick={onToggleLock} className={cn('flex items-center gap-1.5 px-2 py-1 text-fresco-xs rounded hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors', isLocked ? 'text-fresco-black' : 'text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white')}>
+                <button onClick={onToggleLock} className={cn('flex items-center gap-1.5 px-2 py-1 text-fresco-xs rounded-none hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors', isLocked ? 'text-fresco-black' : 'text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white')}>
                   {isLocked ? <><Lock className="w-3.5 h-3.5" /><span>Locked</span></> : <><Unlock className="w-3.5 h-3.5" /><span>Lock</span></>}
                 </button>
               )}

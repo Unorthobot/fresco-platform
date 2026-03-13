@@ -37,7 +37,7 @@ export function ToolkitProgress({ sections, currentSection, onSectionClick }: To
             key={index}
             onClick={() => onSectionClick?.(index)}
             className={cn(
-              "px-3 py-1.5 text-fresco-xs rounded-lg transition-colors",
+              "px-3 py-1.5 text-fresco-xs rounded-none transition-colors",
               section.isComplete
                 ? "bg-fresco-black text-white"
                 : currentSection === index

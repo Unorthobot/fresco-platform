@@ -245,19 +245,19 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-none shadow-2xl overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-fresco-border-light dark:border-gray-700">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-fresco-light-gray dark:bg-gray-800 rounded-lg">
+                <div className="p-2 bg-fresco-light-gray dark:bg-gray-800 rounded-none">
                   <FileText className="w-5 h-5 text-fresco-black dark:text-white" />
                 </div>
                 <h3 className="text-fresco-lg font-medium text-fresco-black dark:text-white">Export Session</h3>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 text-fresco-graphite-light hover:text-fresco-black dark:text-gray-500 dark:hover:text-white rounded-lg hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors"
+                className="p-2 text-fresco-graphite-light hover:text-fresco-black dark:text-gray-500 dark:hover:text-white rounded-none hover:bg-fresco-light-gray dark:hover:bg-gray-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -272,7 +272,7 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2"
+                    className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-none flex items-center gap-2"
                   >
                     <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                     <span className="text-sm text-green-700 dark:text-green-300">{status}</span>
@@ -302,7 +302,7 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                         value={emailTo}
                         onChange={(e) => setEmailTo(e.target.value)}
                         placeholder="email@example.com"
-                        className="w-full px-3 py-2 border border-fresco-border dark:border-gray-600 rounded-lg text-fresco-base dark:bg-gray-800 dark:text-white focus:outline-none focus:border-fresco-black dark:focus:border-white"
+                        className="w-full px-3 py-2 border border-fresco-border dark:border-gray-600 rounded-none text-fresco-base dark:bg-gray-800 dark:text-white focus:outline-none focus:border-fresco-black dark:focus:border-white"
                       />
                     </div>
                     <div>
@@ -311,7 +311,7 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                         type="text"
                         value={emailSubject}
                         onChange={(e) => setEmailSubject(e.target.value)}
-                        className="w-full px-3 py-2 border border-fresco-border dark:border-gray-600 rounded-lg text-fresco-base dark:bg-gray-800 dark:text-white focus:outline-none focus:border-fresco-black dark:focus:border-white"
+                        className="w-full px-3 py-2 border border-fresco-border dark:border-gray-600 rounded-none text-fresco-base dark:bg-gray-800 dark:text-white focus:outline-none focus:border-fresco-black dark:focus:border-white"
                       />
                     </div>
                     <div className="flex justify-end gap-2">
@@ -324,7 +324,7 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                       <button
                         onClick={handleSendEmail}
                         disabled={!emailTo}
-                        className="px-4 py-2 bg-fresco-black dark:bg-white text-white dark:text-black rounded-lg text-fresco-sm font-medium hover:bg-fresco-graphite-dark dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-4 py-2 bg-fresco-black dark:bg-white text-white dark:text-black rounded-none text-fresco-sm font-medium hover:bg-fresco-graphite-dark dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <Send className="w-4 h-4" />
                         Send
@@ -347,13 +347,13 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                     <button 
                       onClick={handleDownloadPDF}
                       disabled={isExporting}
-                      className={`w-full flex items-center gap-4 p-4 border-2 rounded-xl transition-all group ${
+                      className={`w-full flex items-center gap-4 p-4 border-2 rounded-none transition-all group ${
                         isPro 
                           ? 'border-fresco-border dark:border-gray-600 hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800' 
                           : 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10'
                       }`}
                     >
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                      <div className={`w-10 h-10 rounded-none flex items-center justify-center transition-colors ${
                         isPro 
                           ? 'bg-fresco-light-gray dark:bg-gray-700 group-hover:bg-white dark:group-hover:bg-gray-600' 
                           : 'bg-amber-100 dark:bg-amber-900/30'
@@ -374,13 +374,13 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                     <button 
                       onClick={handleDownloadDOCX}
                       disabled={isExporting}
-                      className={`w-full flex items-center gap-4 p-4 border-2 rounded-xl transition-all group mt-2 ${
+                      className={`w-full flex items-center gap-4 p-4 border-2 rounded-none transition-all group mt-2 ${
                         isPro 
                           ? 'border-fresco-border dark:border-gray-600 hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800' 
                           : 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10'
                       }`}
                     >
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                      <div className={`w-10 h-10 rounded-none flex items-center justify-center transition-colors ${
                         isPro 
                           ? 'bg-fresco-light-gray dark:bg-gray-700 group-hover:bg-white dark:group-hover:bg-gray-600' 
                           : 'bg-amber-100 dark:bg-amber-900/30'
@@ -404,9 +404,9 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                   
                   <button 
                     onClick={() => setShowEmailForm(true)} 
-                    className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
+                    className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-none hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
+                    <div className="w-10 h-10 rounded-none bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
                       <Mail className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
                     </div>
                     <div className="text-left flex-1">
@@ -417,9 +417,9 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                   
                   <button 
                     onClick={handleCopy} 
-                    className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
+                    className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-none hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
+                    <div className="w-10 h-10 rounded-none bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
                       <Copy className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
                     </div>
                     <div className="text-left flex-1">
@@ -431,9 +431,9 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                   {includeJSON && (
                     <button 
                       onClick={handleDownloadJSON} 
-                      className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
+                      className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-none hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
+                      <div className="w-10 h-10 rounded-none bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
                         <FileJson className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
                       </div>
                       <div className="text-left flex-1">
@@ -445,9 +445,9 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
                   
                   <button 
                     onClick={handlePrint} 
-                    className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-xl hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
+                    className="w-full flex items-center gap-4 p-4 border-2 border-fresco-border dark:border-gray-600 rounded-none hover:border-fresco-black dark:hover:border-white hover:bg-fresco-light-gray/50 dark:hover:bg-gray-800 transition-all group"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
+                    <div className="w-10 h-10 rounded-none bg-fresco-light-gray dark:bg-gray-700 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
                       <Printer className="w-5 h-5 text-fresco-graphite-mid dark:text-gray-300" />
                     </div>
                     <div className="text-left flex-1">
@@ -462,7 +462,7 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
               {!showEmailForm && (
                 <div className="mt-6 pt-4 border-t border-fresco-border-light dark:border-gray-700">
                   <p className="text-fresco-xs text-fresco-graphite-light dark:text-gray-500 mb-2">Preview</p>
-                  <div className="p-3 bg-fresco-light-gray dark:bg-gray-800 rounded-lg max-h-32 overflow-y-auto">
+                  <div className="p-3 bg-fresco-light-gray dark:bg-gray-800 rounded-none max-h-32 overflow-y-auto">
                     <p className="text-fresco-xs text-fresco-graphite-mid dark:text-gray-400 font-mono whitespace-pre-wrap">
                       {generateMarkdown(data).slice(0, 300)}...
                     </p>

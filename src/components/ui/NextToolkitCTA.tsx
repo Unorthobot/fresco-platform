@@ -54,11 +54,11 @@ export function NextToolkitCTA({ currentToolkit, isReady, onStartToolkit, onView
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative mt-6 p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl"
+          className="relative mt-6 p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-none"
         >
           <button 
             onClick={() => setIsDismissed(true)} 
-            className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded text-white"
+            className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-none text-white"
           >
             <X className="w-4 h-4" />
           </button>
@@ -69,7 +69,7 @@ export function NextToolkitCTA({ currentToolkit, isReady, onStartToolkit, onView
               <p className="text-fresco-sm text-white/90 mb-3">You've completed all 9 FRESCO toolkits. View your workspace synthesis for the full picture.</p>
               <button
                 onClick={onViewWorkspace}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-fresco-black rounded-lg text-fresco-sm font-medium hover:bg-fresco-light-gray transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-white text-fresco-black rounded-none text-fresco-sm font-medium hover:bg-fresco-light-gray transition-colors"
               >
                 <Layout className="w-4 h-4" /> View Workspace Synthesis
               </button>
@@ -90,11 +90,11 @@ export function NextToolkitCTA({ currentToolkit, isReady, onStartToolkit, onView
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="relative mt-6 p-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl"
+        className="relative mt-6 p-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-none"
       >
         <button 
           onClick={() => setIsDismissed(true)} 
-          className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded text-white"
+          className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-none text-white"
         >
           <X className="w-4 h-4" />
         </button>
@@ -105,7 +105,7 @@ export function NextToolkitCTA({ currentToolkit, isReady, onStartToolkit, onView
             <p className="text-fresco-sm text-white/90 mb-3">{message}</p>
             <button
               onClick={() => onStartToolkit?.(nextToolkit)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-fresco-black rounded-lg text-fresco-sm font-medium hover:bg-fresco-light-gray transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white text-fresco-black rounded-none text-fresco-sm font-medium hover:bg-fresco-light-gray transition-colors"
             >
               Continue to {nextToolkitData.name} <ArrowRight className="w-4 h-4" />
             </button>

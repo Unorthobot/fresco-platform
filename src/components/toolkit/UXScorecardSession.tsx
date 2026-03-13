@@ -430,7 +430,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
             </div>
             
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-fresco-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-none bg-fresco-black flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -460,7 +460,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
               value={experienceName}
               onChange={(e) => handleExperienceChange(e.target.value)}
               placeholder="e.g., Mobile checkout flow, Onboarding experience..."
-              className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-lg border-none focus:ring-2 focus:ring-fresco-black outline-none"
+              className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-lg border-none focus:ring-2 focus:ring-fresco-black outline-none"
             />
             {TOOLKIT_EXAMPLES.ux_scorecard?.experience && (
               <ContextualExample
@@ -474,7 +474,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
           {/* Score Overview */}
           <div className="grid grid-cols-2 gap-8 mb-10">
             {/* Radar Chart */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-fresco-border dark:border-gray-700 p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-none border-2 border-fresco-border dark:border-gray-700 p-6">
               <h3 className="text-fresco-sm font-medium text-fresco-black mb-4 text-center">Score Distribution</h3>
               {criteria.length >= 3 ? (
                 <RadarChart />
@@ -486,7 +486,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
             </div>
             
             {/* Overall Score */}
-            <div className="bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-2xl p-6 text-white flex flex-col items-center justify-center">
+            <div className="bg-gradient-to-br from-fresco-black to-fresco-graphite rounded-none p-6 text-white flex flex-col items-center justify-center">
               <span className="text-fresco-sm uppercase tracking-wider text-white/60 mb-4">Overall Score</span>
               <div className={cn("text-[72px] font-bold leading-none", 
                 Number(overallScore) >= 8 ? "text-white" :
@@ -527,7 +527,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="bg-white dark:bg-gray-900 rounded-xl border-2 border-fresco-border dark:border-gray-700 p-5"
+                  className="bg-white dark:bg-gray-900 rounded-none border-2 border-fresco-border dark:border-gray-700 p-5"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-fresco-base font-medium text-fresco-black">{criterion.name}</span>
@@ -568,7 +568,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
                     value={criterion.notes}
                     onChange={(e) => handleNotesChange(criterion.id, e.target.value)}
                     placeholder="Add notes about this score..."
-                    className="w-full p-3 bg-fresco-light-gray rounded-lg text-fresco-sm border-none focus:ring-1 focus:ring-fresco-black outline-none"
+                    className="w-full p-3 bg-fresco-light-gray rounded-none text-fresco-sm border-none focus:ring-1 focus:ring-fresco-black outline-none"
                   />
                 </motion.div>
               ))}
@@ -581,7 +581,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
                   onChange={(e) => setNewCriterionName(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addCriterion()}
                   placeholder="Add new criterion..."
-                  className="flex-1 p-4 bg-fresco-light-gray rounded-xl text-fresco-sm border-none focus:ring-2 focus:ring-fresco-black outline-none"
+                  className="flex-1 p-4 bg-fresco-light-gray rounded-none text-fresco-sm border-none focus:ring-2 focus:ring-fresco-black outline-none"
                 />
                 <button
                   onClick={addCriterion}
@@ -601,7 +601,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
               value={priorities}
               onChange={(e) => handlePrioritiesChange(e.target.value)}
               placeholder="Based on your evaluation, what should be improved first?"
-              className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
+              className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
               rows={4}
             />
           </div>
@@ -627,14 +627,14 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors">
+                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                       <EyeOff className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
           
                 {/* Score Summary */}
-                <div className="mb-6 p-4 bg-fresco-light-gray rounded-xl text-center">
+                <div className="mb-6 p-4 bg-fresco-light-gray rounded-none text-center">
                   <div className={cn("text-fresco-4xl font-bold", parseFloat(overallScore) >= 7 ? "text-fresco-black" : parseFloat(overallScore) >= 5 ? "text-fresco-graphite" : "text-fresco-graphite-light")}>{overallScore}</div>
                   <div className="text-fresco-xs text-fresco-graphite-light">Overall Score</div>
                 </div>
@@ -643,7 +643,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
                 <div className="mb-8">
                   <span className="fresco-label block mb-4">UX Evaluation</span>
                   {aiContent.insights.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <BarChart3 className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                       <p className="text-fresco-sm text-fresco-graphite-light">Score your criteria<br/>then generate analysis</p>
                     </div>
@@ -670,7 +670,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
                 ) : (
                   <div className="mb-8">
                     <span className="fresco-label block mb-4">Overall Assessment</span>
-                    <div className="p-6 bg-fresco-light-gray rounded-xl text-center">
+                    <div className="p-6 bg-fresco-light-gray rounded-none text-center">
                       <p className="text-fresco-sm text-fresco-graphite-light">Generate to reveal your overall assessment</p>
                     </div>
                   </div>
@@ -682,7 +682,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
                     <span className="fresco-label block mb-4">Priority Fixes</span>
                     <div className="space-y-2">
                       {aiContent.necessaryMoves.map((move, i) => (
-                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-lg">
+                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-none">
                           <div className={cn("w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-fresco-xs font-medium text-white",
                             i === 0 ? "bg-fresco-black" : i === 1 ? "bg-fresco-graphite" : "bg-fresco-graphite-mid"
                           )}>

@@ -326,7 +326,7 @@ export function HomeDashboard({
               <div className="space-y-2">
                 <button 
                   onClick={() => onStartToolkit?.('insight_stack')} 
-                  className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                  className="w-full text-left p-3 rounded-none border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Insight Stack™</span>
@@ -336,7 +336,7 @@ export function HomeDashboard({
                 </button>
                 <button 
                   onClick={() => canUseToolkit('pov_generator') ? onStartToolkit?.('pov_generator') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('pov_generator') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
+                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('pov_generator') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">POV Generator™</span>
@@ -352,7 +352,7 @@ export function HomeDashboard({
                 </button>
                 <button 
                   onClick={() => canUseToolkit('mental_model_mapper') ? onStartToolkit?.('mental_model_mapper') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('mental_model_mapper') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
+                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('mental_model_mapper') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Mental Model Mapper™</span>
@@ -379,7 +379,7 @@ export function HomeDashboard({
               <div className="space-y-2">
                 <button 
                   onClick={() => onStartToolkit?.('flow_board')} 
-                  className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                  className="w-full text-left p-3 rounded-none border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Flow Board™</span>
@@ -389,7 +389,7 @@ export function HomeDashboard({
                 </button>
                 <button 
                   onClick={() => canUseToolkit('experiment_brief') ? onStartToolkit?.('experiment_brief') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('experiment_brief') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
+                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('experiment_brief') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Experiment Brief™</span>
@@ -405,7 +405,7 @@ export function HomeDashboard({
                 </button>
                 <button 
                   onClick={() => canUseToolkit('strategy_sketchbook') ? onStartToolkit?.('strategy_sketchbook') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('strategy_sketchbook') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
+                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('strategy_sketchbook') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Strategy Sketchbook™</span>
@@ -432,7 +432,7 @@ export function HomeDashboard({
               <div className="space-y-2">
                 <button 
                   onClick={() => onStartToolkit?.('ux_scorecard')} 
-                  className="w-full text-left p-3 rounded-xl border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                  className="w-full text-left p-3 rounded-none border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">UX Scorecard™</span>
@@ -442,7 +442,7 @@ export function HomeDashboard({
                 </button>
                 <button 
                   onClick={() => canUseToolkit('persuasion_canvas') ? onStartToolkit?.('persuasion_canvas') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('persuasion_canvas') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
+                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('persuasion_canvas') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Persuasion Canvas™</span>
@@ -458,7 +458,7 @@ export function HomeDashboard({
                 </button>
                 <button 
                   onClick={() => canUseToolkit('performance_grid') ? onStartToolkit?.('performance_grid') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all group ${!canUseToolkit('performance_grid') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
+                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('performance_grid') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-fresco-sm font-medium text-fresco-black">Performance Grid™</span>

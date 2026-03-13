@@ -81,14 +81,14 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            className="bg-white rounded-none shadow-2xl max-w-md w-full overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with gradient */}
             <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-6 text-white">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/20 rounded-xl">
+                  <div className="p-2 bg-white/20 rounded-none">
                     <Icon className="w-6 h-6" />
                   </div>
                   <div>
@@ -97,7 +97,7 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                  className="p-1 hover:bg-white/20 rounded-none transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -122,7 +122,7 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
                 </div>
               </div>
 
-              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-6">
+              <div className="bg-amber-50 border border-amber-100 rounded-none p-4 mb-6">
                 <div className="flex items-start gap-3">
                   <Crown className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
@@ -135,14 +135,14 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
               <div className="flex gap-3">
                 <button
                   onClick={onClose}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-none font-medium hover:bg-gray-50 transition-colors"
                 >
                   Maybe later
                 </button>
                 <button
                   onClick={() => handleUpgrade('pro')}
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-none font-medium hover:from-amber-600 hover:to-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     'Loading...'

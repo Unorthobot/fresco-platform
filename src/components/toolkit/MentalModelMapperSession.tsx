@@ -382,7 +382,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
             </div>
             
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-fresco-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-none bg-fresco-black flex items-center justify-center">
                 <Brain className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -413,7 +413,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
               value={domain}
               onChange={(e) => handleDomainChange(e.target.value)}
               placeholder="What domain or decision space are we mapping?"
-              className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-lg border-none focus:ring-2 focus:ring-fresco-black outline-none"
+              className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-lg border-none focus:ring-2 focus:ring-fresco-black outline-none"
             />
             <InputQualityIndicator value={domain} minLength={10} goodLength={40} />
             {TOOLKIT_EXAMPLES.mental_model_mapper?.domain && (
@@ -435,7 +435,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
               <div className="flex items-center gap-2">
                 <button
                   onClick={addBelief}
-                  className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-lg hover:border-fresco-black transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-none hover:border-fresco-black transition-colors"
                 >
                   <Plus className="w-4 h-4" /> Add Belief
                 </button>
@@ -444,7 +444,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
             
             {/* Connections explanation banner */}
             {beliefs.length >= 2 && (
-              <div className="mb-4 p-3 bg-fresco-light-gray rounded-xl flex items-start gap-3">
+              <div className="mb-4 p-3 bg-fresco-light-gray rounded-none flex items-start gap-3">
                 <Link2 className="w-5 h-5 text-fresco-graphite-mid flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-fresco-sm text-fresco-graphite-soft">
@@ -455,7 +455,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                 <button
                   onClick={() => setShowConnections(!showConnections)}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-fresco-xs font-medium transition-colors flex-shrink-0",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-none text-fresco-xs font-medium transition-colors flex-shrink-0",
                     showConnections ? "bg-fresco-black text-white" : "bg-white dark:bg-gray-800 text-fresco-graphite-mid border border-fresco-border dark:border-gray-700"
                   )}
                 >
@@ -479,7 +479,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
             <div className="grid grid-cols-2 gap-4">
               {/* Connecting mode banner */}
               {connectingFrom && (
-                <div className="col-span-2 p-3 bg-fresco-black text-white rounded-xl flex items-center justify-between mb-2">
+                <div className="col-span-2 p-3 bg-fresco-black text-white rounded-none flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Link2 className="w-4 h-4" />
                     <span className="text-fresco-sm">
@@ -488,7 +488,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                   </div>
                   <button 
                     onClick={() => setConnectingFrom(null)}
-                    className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-fresco-xs transition-colors"
+                    className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-none text-fresco-xs transition-colors"
                   >
                     Cancel
                   </button>
@@ -507,7 +507,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
                     className={cn(
-                      "relative p-4 rounded-xl border-2 transition-all",
+                      "relative p-4 rounded-none border-2 transition-all",
                       colors.bg, colors.border,
                       isConnecting && "ring-2 ring-fresco-black ring-offset-2",
                       connectingFrom && !isConnecting && "cursor-pointer hover:ring-2 hover:ring-fresco-black hover:ring-offset-2",
@@ -538,7 +538,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                         <button
                           onClick={(e) => { e.stopPropagation(); setConnectingFrom(isConnecting ? null : belief.id); }}
                           className={cn(
-                            "p-1.5 rounded-lg transition-colors",
+                            "p-1.5 rounded-none transition-colors",
                             isConnecting ? "bg-fresco-black text-white" : "text-fresco-graphite-light hover:text-fresco-black hover:bg-white/50"
                           )}
                           title={isConnecting ? "Cancel — click elsewhere to link" : "Link to another belief"}
@@ -579,7 +579,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                               <span 
                                 key={connId} 
                                 className={cn(
-                                  "px-2 py-0.5 rounded text-fresco-xs truncate max-w-[150px] border",
+                                  "px-2 py-0.5 rounded-none text-fresco-xs truncate max-w-[150px] border",
                                   connColors.bg, connColors.border, connColors.text
                                 )}
                                 title={connBelief.content}
@@ -596,7 +596,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
               })}
               
               {beliefs.length === 0 && (
-                <div className="col-span-2 py-12 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                <div className="col-span-2 py-12 text-center border-2 border-dashed border-fresco-border rounded-none">
                   <Circle className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                   <p className="text-fresco-sm text-fresco-graphite-light mb-4">Add beliefs that operate in this domain</p>
                   <button onClick={addBelief} className="fresco-btn fresco-btn-primary fresco-btn-sm">
@@ -611,7 +611,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-fresco-lg font-medium text-fresco-black">Blind Spots & Gaps</h3>
-              <button onClick={addGap} className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-lg hover:border-fresco-black transition-colors">
+              <button onClick={addGap} className="flex items-center gap-2 px-4 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black border border-fresco-border rounded-none hover:border-fresco-black transition-colors">
                 <Plus className="w-4 h-4" /> Add Gap
               </button>
             </div>
@@ -622,7 +622,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                   key={gap.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center gap-3 p-4 bg-fresco-light-gray border border-fresco-border rounded-xl group"
+                  className="flex items-center gap-3 p-4 bg-fresco-light-gray border border-fresco-border rounded-none group"
                 >
                   <Lightbulb className="w-5 h-5 text-fresco-graphite flex-shrink-0" />
                   <input
@@ -647,7 +647,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
               value={modelSummary}
               onChange={(e) => handleSummaryChange(e.target.value)}
               placeholder="Name and describe the mental model that emerges from these beliefs..."
-              className="w-full p-4 bg-fresco-light-gray rounded-xl text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
+              className="w-full p-4 bg-fresco-light-gray rounded-none text-fresco-base border-none focus:ring-2 focus:ring-fresco-black outline-none resize-none"
               rows={4}
             />
           </div>
@@ -673,7 +673,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded transition-colors">
+                    <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                       <EyeOff className="w-4 h-4" />
                     </button>
                   </div>
@@ -681,15 +681,15 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
           
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="p-3 bg-fresco-light-gray rounded-xl text-center">
+                  <div className="p-3 bg-fresco-light-gray rounded-none text-center">
                     <div className="text-fresco-2xl font-bold text-fresco-black">{beliefs.length}</div>
                     <div className="text-fresco-xs text-fresco-graphite-light">Beliefs</div>
                   </div>
-                  <div className="p-3 bg-fresco-light-gray rounded-xl text-center">
+                  <div className="p-3 bg-fresco-light-gray rounded-none text-center">
                     <div className="text-fresco-2xl font-bold text-fresco-black">{beliefs.reduce((sum, b) => sum + b.connections.length, 0)}</div>
                     <div className="text-fresco-xs text-fresco-graphite-light">Connections</div>
                   </div>
-                  <div className="p-3 bg-fresco-light-gray rounded-xl text-center">
+                  <div className="p-3 bg-fresco-light-gray rounded-none text-center">
                     <div className="text-fresco-2xl font-bold text-fresco-black">{gaps.length}</div>
                     <div className="text-fresco-xs text-fresco-graphite-light">Gaps</div>
                   </div>
@@ -699,7 +699,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                 <div className="mb-8">
                   <span className="fresco-label block mb-4">Model Components</span>
                   {aiContent.insights.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-xl">
+                    <div className="py-8 text-center border-2 border-dashed border-fresco-border rounded-none">
                       <Brain className="w-8 h-8 text-fresco-graphite-light mx-auto mb-3" />
                       <p className="text-fresco-sm text-fresco-graphite-light">Map your beliefs<br/>then analyse</p>
                     </div>
@@ -726,7 +726,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                 ) : (
                   <div className="mb-8">
                     <span className="fresco-label block mb-4">Mental Model Summary</span>
-                    <div className="p-6 bg-fresco-light-gray rounded-xl text-center">
+                    <div className="p-6 bg-fresco-light-gray rounded-none text-center">
                       <p className="text-fresco-sm text-fresco-graphite-light">Generate to reveal your mental model</p>
                     </div>
                   </div>
@@ -738,7 +738,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                     <span className="fresco-label block mb-4">Model Applications</span>
                     <div className="space-y-2">
                       {aiContent.necessaryMoves.map((move, i) => (
-                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-lg">
+                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 p-3 bg-fresco-light-gray rounded-none">
                           <ArrowRight className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0 mt-0.5" />
                           <p className="text-fresco-sm text-fresco-graphite-soft">{move}</p>
                         </motion.div>

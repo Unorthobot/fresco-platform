@@ -84,7 +84,7 @@ export function EmptyState({ variant, onAction, actionLabel, className }: EmptyS
       </motion.div>
       
       {/* Icon badge */}
-      <div className="w-14 h-14 mx-auto mb-6 rounded-2xl bg-fresco-light-gray dark:bg-gray-800 flex items-center justify-center">
+      <div className="w-14 h-14 mx-auto mb-6 rounded-none bg-fresco-light-gray dark:bg-gray-800 flex items-center justify-center">
         <Icon className="w-7 h-7 text-fresco-graphite dark:text-gray-300" />
       </div>
       
@@ -97,7 +97,7 @@ export function EmptyState({ variant, onAction, actionLabel, className }: EmptyS
       </p>
       
       {/* Tips */}
-      <div className="text-left bg-fresco-light-gray/50 dark:bg-gray-800/50 rounded-xl p-5 mb-8">
+      <div className="text-left bg-fresco-light-gray/50 dark:bg-gray-800/50 rounded-none p-5 mb-8">
         <p className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider mb-3">
           Quick tips
         </p>
@@ -147,7 +147,7 @@ export function InlineEmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-      <div className="w-12 h-12 mb-3 rounded-xl bg-fresco-light-gray dark:bg-gray-800 flex items-center justify-center">
+      <div className="w-12 h-12 mb-3 rounded-none bg-fresco-light-gray dark:bg-gray-800 flex items-center justify-center">
         <IconComponent className="w-6 h-6 text-fresco-graphite-light dark:text-gray-400" />
       </div>
       <p className="text-fresco-sm text-fresco-graphite-mid mb-4">{message}</p>
