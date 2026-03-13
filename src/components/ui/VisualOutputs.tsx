@@ -457,7 +457,7 @@ export function InsightStackViz({ completedSteps, totalSteps, insights }: Insigh
             animate={{ height, opacity: 1 }}
             transition={{ delay: i * 0.1 }}
             className={cn(
-              "w-8 rounded-t-lg",
+              "w-8 rounded-none",
               isComplete ? "bg-fresco-black" : "bg-gray-200"
             )}
             style={{ height }}

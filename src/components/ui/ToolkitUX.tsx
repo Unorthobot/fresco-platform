@@ -587,7 +587,7 @@ export function CompletionCelebration({ isVisible, onClose, message = "Insights 
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl px-12 py-8 text-center"
+              className="bg-white dark:bg-gray-900 rounded-none shadow-2xl px-12 py-8 text-center"
             >
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}

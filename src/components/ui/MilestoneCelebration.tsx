@@ -108,7 +108,7 @@ export function MilestoneCelebration({ type, isVisible, onClose, details }: Mile
             exit={{ scale: 0.5, y: 50 }}
             transition={{ type: "spring", damping: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative bg-fresco-white rounded-3xl shadow-2xl p-8 max-w-sm mx-4 text-center overflow-hidden"
+            className="relative bg-fresco-white rounded-none shadow-2xl p-8 max-w-sm mx-4 text-center overflow-hidden"
           >
             {/* Background glow */}
             <div className="absolute inset-0 bg-gradient-to-br from-fresco-light-gray to-white" />

@@ -424,7 +424,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
             </div>
             
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-3 px-4 py-2 bg-fresco-light-gray rounded-t-xl text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider">
+            <div className="grid grid-cols-12 gap-3 px-4 py-2 bg-fresco-light-gray rounded-none text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider">
               <div className="col-span-1">Status</div>
               <div className="col-span-3">Metric</div>
               <div className="col-span-2">Target</div>
@@ -435,7 +435,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
             </div>
             
             {/* Table Rows */}
-            <div className="border-2 border-t-0 border-fresco-border rounded-b-xl overflow-hidden">
+            <div className="border-2 border-t-0 border-fresco-border rounded-none overflow-hidden">
               {metrics.map((metric, index) => {
                 const status = getPerformanceStatus(metric);
                 
