@@ -1,6 +1,6 @@
 'use client';
 
-// FRESCO POV Generator™ - Live POV Statement Builder
+// FRESCO Position Builder™ - Build a clear, defensible position
 // Combines User + Need + Truth into a formatted statement in real-time
 // Enhanced UX: Floating generate, progress indicator, wizard mode, celebrations
 

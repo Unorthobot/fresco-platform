@@ -31,7 +31,7 @@ interface WeatherData {
 // Toolkit descriptions for hint text (kept concise for consistent 2-line display)
 const TOOLKIT_HINTS: Record<string, string> = {
   insight_stack: 'Extract patterns and tensions from complexity to uncover the core truth',
-  pov_generator: 'Crystallise your perspective into a clear, defensible point of view',
+  pov_generator: 'Build a clear, defensible position before anyone challenges you',
   mental_model_mapper: 'Surface the assumptions driving decisions in your space',
   flow_board: 'Visualise user journeys step by step and identify friction points',
   experiment_brief: 'Structure hypotheses and validation criteria for focused testing',
@@ -339,7 +339,7 @@ export function HomeDashboard({
                   className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('pov_generator') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">POV Generator™</span>
+                    <span className="text-fresco-sm font-medium text-fresco-black">Position Builder™</span>
                     {!canUseToolkit('pov_generator') ? (
                       <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
                         <Lock className="w-3 h-3" />Pro

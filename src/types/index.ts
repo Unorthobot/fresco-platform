@@ -225,8 +225,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
   
   pov_generator: {
     id: 'pov_generator',
-    name: 'POV Generator',
-    subtitle: 'Clarify what you believe and why.',
+    name: 'Position Builder',
+    subtitle: 'Build a clear, defensible position on any situation.',
     category: 'investigate',
     purpose: 'Transform insights into a sharp, defensible point of view.',
     primaryModes: ['critical', 'first_principles', 'systems', 'product', 'strategic'],

@@ -23,8 +23,8 @@ const TOOLKIT_FLOW: Record<ToolkitType, ToolkitType | null> = {
 
 // Custom messages for each transition
 const TRANSITION_MESSAGES: Record<ToolkitType, string> = {
-  insight_stack: 'Your insights are ready. Continue to POV Generator to crystallise your point of view.',
-  pov_generator: 'Your POV is defined. Continue to Belief Mapper to surface the assumptions driving decisions.',
+  insight_stack: 'Your insights are ready. Continue to Position Builder to turn them into a clear position.',
+  pov_generator: 'Your position is defined. Continue to Belief Mapper to surface the assumptions driving decisions.',
   mental_model_mapper: 'Your assumptions are mapped. Continue to Flow Board to design the solution journey.',
   flow_board: 'Your flow is designed. Continue to Experiment Brief to structure your hypothesis.',
   experiment_brief: 'Your experiment is briefed. Continue to Strategy Sketchbook to compare strategic options.',

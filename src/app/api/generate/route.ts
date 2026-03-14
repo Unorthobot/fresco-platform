@@ -160,7 +160,7 @@ async function callClaudeAPI(body: GenerateRequest) {
     insight_stack: `The user is working through an Insight Stack - a 5-step process for extracting insights from complexity.
 Generate insights that reveal patterns they haven't articulated, a Sentence of Truth that captures the core realisation, and Necessary Moves as concrete next steps.`,
     
-    pov_generator: `The user is working through a POV Generator - crystallising a defensible point of view.
+    pov_generator: `The user is working through a Position Builder - developing a clear, defensible position.
 They have provided: User (who), Need (what they need), Truth (the underlying reason), and optionally a Consequence.
 
 Generate POV Synthesis points that sharpen their thinking, and MOST IMPORTANTLY: a Core POV Statement that is a GRAMMATICALLY POLISHED, PROFESSIONALLY WRITTEN version of their POV that flows naturally as a single coherent statement. This should take their raw inputs and transform them into an articulate, presentation-ready statement they could confidently share with stakeholders. Also include Strategic Implications that flow from this POV.`,
