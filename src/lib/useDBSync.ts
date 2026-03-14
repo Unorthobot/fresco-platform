@@ -135,8 +135,7 @@ export function useDBSyncComplete() {
 export function generateSessionTitle(toolkitName: string, step1Response?: string): string {
   if (!step1Response || step1Response.trim().length < 10) return toolkitName;
   // Take first sentence or first 50 chars of step 1
-  const first = step1Response.trim().split(/[.!?
-]/)[0].trim();
+  const first = step1Response.trim().split(/[.!?]/)[0].trim();
   if (first.length > 6 && first.length <= 60) return first;
   return first.slice(0, 57) + '...';
 }
