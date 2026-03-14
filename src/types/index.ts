@@ -340,16 +340,16 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
   
   mental_model_mapper: {
     id: 'mental_model_mapper',
-    name: 'Mental Model Mapper',
-    subtitle: 'Map the hidden structures of understanding.',
+    name: 'Belief Mapper',
+    subtitle: 'Uncover the assumptions driving decisions in your space.',
     category: 'investigate',
     purpose: 'Uncover and visualise the mental models that shape decisions.',
     primaryModes: ['systems', 'philosophical', 'behavioral', 'critical'],
     steps: [
       {
         stepNumber: 1,
-        label: 'What space are we mapping?',
-        prompt: 'What domain, topic, or decision are you trying to understand better? Be specific.',
+        label: 'What are we trying to understand?',
+        prompt: 'What situation, team, market, or decision are you trying to get clearer on? The more specific, the better.',
         lensHints: {
           automatic: '',
           critical: 'Define boundaries clearly.',
@@ -374,8 +374,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       },
       {
         stepNumber: 2,
-        label: 'What do people believe here?',
-        prompt: 'What assumptions, mental shortcuts, or unspoken rules operate in this space? Include beliefs you disagree with.',
+        label: 'What do people assume here?',
+        prompt: 'What do people take for granted in this situation? List the unspoken rules, shortcuts, and assumptions — even ones you think are wrong.',
         lensHints: {
           automatic: '',
           critical: 'Which beliefs are tested vs assumed?',
@@ -400,8 +400,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       },
       {
         stepNumber: 3,
-        label: 'How do these beliefs connect?',
-        prompt: 'Which beliefs reinforce each other? Which conflict? Are there chains of cause and effect?',
+        label: 'How do these assumptions affect each other?',
+        prompt: 'Pick two or three assumptions and ask: does one cause the other? Do any of them contradict each other? What happens when they collide?',
         lensHints: {
           automatic: '',
           critical: 'Where do beliefs conflict?',
@@ -426,8 +426,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       },
       {
         stepNumber: 4,
-        label: "What's missing or wrong?",
-        prompt: 'What beliefs are absent that should exist? What assumptions have never been questioned?',
+        label: "What's being ignored or taken for granted?",
+        prompt: 'What important thing is nobody saying? What assumption has never been tested? What would change everything if it turned out to be wrong?',
         lensHints: {
           automatic: '',
           critical: 'What is not being questioned?',
@@ -452,8 +452,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       },
       {
         stepNumber: 5,
-        label: 'What model should guide decisions?',
-        prompt: 'Given everything above — what is the clearer, more accurate mental model that should replace the old one?',
+        label: 'What should guide decisions instead?',
+        prompt: 'Based on everything above — what is the clearer way of thinking that should replace the old assumptions? Write it as a simple rule or principle.',
         lensHints: {
           automatic: '',
           critical: 'Is this model defensible?',
@@ -473,7 +473,7 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
           philosophical: 'Does this model capture essence?',
           behavioral: 'Does this model predict behaviour?',
         },
-        placeholder: 'e.g. Enterprise sales is a trust-building process, not a persuasion process. The rep\'s job is to reduce risk, not increase urgency.',
+        placeholder: 'e.g. The best salespeople don\'t push harder — they reduce the fear of being wrong. Focus on making the buyer feel safe, not excited.',
         minHeight: 180,
       },
     ],
@@ -543,8 +543,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
   
   persuasion_canvas: {
     id: 'persuasion_canvas',
-    name: 'Persuasion Canvas',
-    subtitle: 'Map the forces of influence.',
+    name: 'Influence Map',
+    subtitle: 'Understand what moves people and how to reach them.',
     category: 'validate',
     purpose: 'Analyse and design persuasive systems.',
     primaryModes: ['behavioral', 'ethical', 'narrative', 'design'],
