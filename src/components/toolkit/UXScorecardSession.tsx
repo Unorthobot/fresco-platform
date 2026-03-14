@@ -664,7 +664,7 @@ export function UXScorecardSession({ sessionId, workspaceId, onBack, onStartTool
                   <div className="mb-8">
                     <SentenceOfTruthDisplay
                       sentence={aiContent.sentenceOfTruth}
-                      toolkitName="UX Scorecard"
+                      toolkitName="Experience Scorecard"
                       isLocked={session?.sentenceOfTruth?.isLocked}
                       onLockToggle={() => toggleSentenceLock(sessionId)}
                       onEdit={(val) => db.setSentenceOfTruth(sessionId, val)}

@@ -197,7 +197,7 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       {
         stepNumber: 5,
         label: "What's the real truth here?",
-        prompt: "Based on everything above — what is the one deeper truth this is pointing to? Don't be safe. Say what the evidence actually shows.",
+        prompt: "Try completing this sentence: 'The evidence shows that...' Don't be safe — say what the data and patterns are actually pointing to.",
         lensHints: {
           automatic: '',
           critical: 'Ensure evidence supports your insight.',
@@ -285,8 +285,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       },
       {
         stepNumber: 3,
-        label: 'What truth makes this undeniable?',
-        prompt: 'What deeper truth about this person or situation makes your POV hard to argue with?',
+        label: 'What makes this hard to argue with?',
+        prompt: 'What fact, pattern, or reality makes your position difficult to dismiss? Think: what would you say to a sceptic?',
         lensHints: {
           automatic: '',
           critical: 'Test for contradictions.',
@@ -341,7 +341,7 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
   mental_model_mapper: {
     id: 'mental_model_mapper',
     name: 'Belief Mapper',
-    subtitle: 'Uncover the assumptions driving decisions in your space.',
+    subtitle: 'Surface the unspoken assumptions that drive decisions — so you can question them.',
     category: 'investigate',
     purpose: 'Uncover and visualise the mental models that shape decisions.',
     primaryModes: ['systems', 'philosophical', 'behavioral', 'critical'],
@@ -401,7 +401,7 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
       {
         stepNumber: 3,
         label: 'How do these assumptions affect each other?',
-        prompt: 'Pick two or three assumptions and ask: does one cause the other? Do any of them contradict each other? What happens when they collide?',
+        prompt: 'Pick any two assumptions and ask: does believing one make the other more or less likely? Try starting with: "Because people believe X, they also tend to..."',
         lensHints: {
           automatic: '',
           critical: 'Where do beliefs conflict?',
@@ -488,7 +488,7 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
     purpose: 'Visualise and design solution flows.',
     primaryModes: ['design', 'systems', 'strategic', 'futures', 'lateral'],
     steps: [
-      { stepNumber: 1, label: 'Where does this start?', prompt: 'Describe the current starting point. What is the situation, trigger, or entry point for this flow?', lensHints: { automatic: '', critical: 'What actually happens vs what should happen?', systems: 'What inputs enter the system?', design: 'What is the user\'s starting experience?', product: 'What triggers this flow?', analytical: '', first_principles: '', strategic: '', futures: '', scientific: '', economic: '', ethical: '', narrative: '', lateral: '', computational: '', philosophical: '', behavioral: '' }, placeholder: 'e.g. A new user lands on the app after clicking a paid ad. They have no account yet and don\'t know what the product does.', minHeight: 140 },
+      { stepNumber: 1, label: 'Where does this start?', prompt: 'Describe the starting point. What is the situation or moment when this flow begins?', lensHints: { automatic: '', critical: 'What actually happens vs what should happen?', systems: 'What inputs enter the system?', design: 'What is the user\'s starting experience?', product: 'What triggers this flow?', analytical: '', first_principles: '', strategic: '', futures: '', scientific: '', economic: '', ethical: '', narrative: '', lateral: '', computational: '', philosophical: '', behavioral: '' }, placeholder: 'e.g. A new user lands on the app after clicking a paid ad. They have no account yet and don\'t know what the product does.', minHeight: 140 },
       { stepNumber: 2, label: 'What are the key steps?', prompt: 'List the major stages in order. What actually happens between start and end?', lensHints: { automatic: '', critical: 'Which steps are necessary vs habitual?', systems: 'How do steps connect and depend on each other?', design: 'What does the user experience at each step?', product: 'Which steps create or destroy value?', analytical: '', first_principles: '', strategic: '', futures: '', scientific: '', economic: '', ethical: '', narrative: '', lateral: '', computational: '', philosophical: '', behavioral: '' }, placeholder: 'e.g. 1. Landing page → 2. Signup form → 3. Email verification → 4. Onboarding checklist → 5. First core action', minHeight: 180 },
       { stepNumber: 3, label: 'Where does it break down?', prompt: 'Where do people slow down, drop off, or get confused? What causes the most friction?', lensHints: { automatic: '', critical: 'What assumptions create friction?', systems: 'Where do bottlenecks occur?', design: 'Where do users struggle or abandon?', product: 'What technical constraints cause friction?', analytical: '', first_principles: '', strategic: '', futures: '', scientific: '', economic: '', ethical: '', narrative: '', lateral: '', computational: '', philosophical: '', behavioral: '' }, placeholder: 'e.g. 60% drop off at email verification. Onboarding checklist has 8 steps — most users complete 2. First core action is buried.', minHeight: 160 },
       { stepNumber: 4, label: 'What does success look like?', prompt: 'Describe the ideal version of this flow. What does a perfect run look like?', lensHints: { automatic: '', critical: 'How will you know success is achieved?', systems: 'What outputs indicate system success?', design: 'What does the ideal user experience feel like?', product: 'What metrics define success?', analytical: '', first_principles: '', strategic: '', futures: '', scientific: '', economic: '', ethical: '', narrative: '', lateral: '', computational: '', philosophical: '', behavioral: '' }, placeholder: 'e.g. User signs up, verifies in one click, completes 1 core action within 5 minutes, and comes back the next day.', minHeight: 140 },
@@ -498,7 +498,7 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
   experiment_brief: {
     id: 'experiment_brief',
     name: 'Experiment Brief',
-    subtitle: 'Design experiments that reveal truth.',
+    subtitle: 'Test your assumptions before you commit time or money.',
     category: 'innovate',
     purpose: 'Structure experiments to test assumptions.',
     primaryModes: ['scientific', 'product', 'analytical', 'first_principles'],
@@ -528,8 +528,8 @@ export const TOOLKITS: Record<ToolkitType, ToolkitDefinition> = {
   // VALIDATE TOOLKITS
   ux_scorecard: {
     id: 'ux_scorecard',
-    name: 'UX Scorecard',
-    subtitle: 'Measure what matters.',
+    name: 'Experience Scorecard',
+    subtitle: 'Score any experience, product, or process against what actually matters.',
     category: 'validate',
     purpose: 'Evaluate user experience systematically.',
     primaryModes: ['design', 'product', 'analytical', 'behavioral'],

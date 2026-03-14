@@ -435,7 +435,7 @@ export function HomeDashboard({
                   className="w-full text-left p-3 rounded-none border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">UX Scorecard™</span>
+                    <span className="text-fresco-sm font-medium text-fresco-black">Experience Scorecard™</span>
                     <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
                   </div>
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.ux_scorecard}</p>
@@ -461,7 +461,7 @@ export function HomeDashboard({
                   className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('performance_grid') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Performance Grid™</span>
+                    <span className="text-fresco-sm font-medium text-fresco-black">Results Tracker™</span>
                     {!canUseToolkit('performance_grid') ? (
                       <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
                         <Lock className="w-3 h-3" />Pro

@@ -611,7 +611,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
             <div className="mb-8">
               <SentenceOfTruthDisplay
                 sentence={aiContent.sentenceOfTruth}
-                toolkitName="Performance Grid"
+                toolkitName="Results Tracker"
                 isLocked={session?.sentenceOfTruth?.isLocked}
                 onLockToggle={() => toggleSentenceLock(sessionId)}
                 onEdit={(val) => db.setSentenceOfTruth(sessionId, val)}
