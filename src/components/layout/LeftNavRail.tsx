@@ -196,9 +196,11 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
                           >
                             <Folder className="w-4 h-4 flex-shrink-0" />
                             <span className="truncate flex-1">{workspace.title}</span>
-                            {workspace.teamId && hoveredWorkspace !== workspace.id && (
-                              <span title="Shared workspace">
-                                <Users className="w-3 h-3 flex-shrink-0 text-fresco-graphite-light" />
+                            {workspace.teamId && (
+                              <span className="w-3.5 flex-shrink-0" title={hoveredWorkspace !== workspace.id ? "Shared workspace" : undefined}>
+                                {hoveredWorkspace !== workspace.id && (
+                                  <Users className="w-3 h-3 text-fresco-graphite-light" />
+                                )}
                               </span>
                             )}
                           </button>
