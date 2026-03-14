@@ -197,7 +197,9 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
                             <Folder className="w-4 h-4 flex-shrink-0" />
                             <span className="truncate flex-1">{workspace.title}</span>
                             {workspace.teamId && (
-                              <Users className="w-3 h-3 flex-shrink-0 text-fresco-graphite-light" title="Shared workspace" />
+                              <span title="Shared workspace">
+                                <Users className="w-3 h-3 flex-shrink-0 text-fresco-graphite-light" />
+                              </span>
                             )}
                           </button>
                           
