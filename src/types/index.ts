@@ -586,6 +586,8 @@ export interface Workspace {
   createdAt: Date;
   updatedAt: Date;
   userId: string;
+  teamId?: string;
+  team?: { id: string; name: string } | null;
   sessions?: ToolkitSession[];
 }
 

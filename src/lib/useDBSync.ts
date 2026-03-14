@@ -46,6 +46,8 @@ export function useDBSync() {
             createdAt: new Date(ws.createdAt),
             updatedAt: new Date(ws.updatedAt),
             userId: ws.userId,
+            teamId: ws.teamId || undefined,
+            team: ws.team || null,
           })),
           sessions: allSessions.map((s: any) => ({
             id: s.id,
@@ -145,14 +147,14 @@ export function useDBWrite() {
   const store = useFrescoStore();
   const isAuthenticated = !!session?.user?.id;
 
-  const createWorkspace = async (title: string, description?: string) => {
-    const workspace = store.createWorkspace(title, description);
+  const createWorkspace = async (title: string, description?: string, teamId?: string) => {
+    const workspace = store.createWorkspace(title, description, teamId);
     if (isAuthenticated) {
       try {
         await fetch('/api/workspaces', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: workspace.id, title, description }),
+          body: JSON.stringify({ id: workspace.id, title, description, teamId }),
         });
       } catch (err) {
         console.error('Failed to save workspace to DB:', err);

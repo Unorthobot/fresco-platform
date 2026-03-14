@@ -13,6 +13,7 @@ import {
   Archive,
   Settings,
   User,
+  Users,
   Plus,
   ChevronDown,
   Trash2,
@@ -24,6 +25,7 @@ import { useDBWrite } from '@/lib/useDBSync';
 import type { Workspace } from '@/types';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { UsageIndicator } from '@/components/ui/UsageIndicator';
+import { NewWorkspaceModal } from '@/components/ui/NewWorkspaceModal';
 
 interface LeftNavRailProps {
   onNavigate?: (section: string) => void;
@@ -52,6 +54,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [hoveredWorkspace, setHoveredWorkspace] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
   
   // Escape key to close modal
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -67,11 +70,14 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   
   const handleCreateWorkspace = async () => {
     if (!canCreateWorkspace()) {
-      const limits = getUsageLimits();
       setShowUpgradeModal(true);
       return;
     }
-    const workspace = await db.createWorkspace('New Workspace', 'A new thinking space');
+    setShowNewWorkspaceModal(true);
+  };
+
+  const handleConfirmCreateWorkspace = async (title: string, teamId?: string) => {
+    const workspace = await db.createWorkspace(title, 'A new thinking space', teamId);
     setActiveWorkspace(workspace.id);
     setActiveSession(null);
     setActiveSection('workspaces');
@@ -189,7 +195,10 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
                             )}
                           >
                             <Folder className="w-4 h-4 flex-shrink-0" />
-                            <span className="truncate">{workspace.title}</span>
+                            <span className="truncate flex-1">{workspace.title}</span>
+                            {workspace.teamId && (
+                              <Users className="w-3 h-3 flex-shrink-0 text-fresco-graphite-light" title="Shared workspace" />
+                            )}
                           </button>
                           
                           {hoveredWorkspace === workspace.id && (
@@ -229,6 +238,15 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
         
         {/* Bottom Navigation */}
         <div className="py-4 px-3 border-t border-fresco-border-light">
+          {user?.subscription === 'studio' && (
+            <button
+              onClick={() => handleNavClick('team')}
+              className={cn('fresco-nav-item', isActive('team') && 'active')}
+            >
+              <Users className="w-[18px] h-[18px]" />
+              <span>Team</span>
+            </button>
+          )}
           <button
             onClick={() => handleNavClick('settings')}
             className={cn('fresco-nav-item', isActive('settings') && 'active')}
@@ -323,6 +341,14 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
         reason="workspaces"
         currentUsage={workspaces.length}
         limit={getUsageLimits().workspaces}
+      />
+
+      {/* New Workspace Modal */}
+      <NewWorkspaceModal
+        isOpen={showNewWorkspaceModal}
+        onClose={() => setShowNewWorkspaceModal(false)}
+        onConfirm={handleConfirmCreateWorkspace}
+        userSubscription={user?.subscription}
       />
     </>
   );

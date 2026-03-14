@@ -64,7 +64,7 @@ interface FrescoState {
   updateSettings: (settings: Partial<FrescoState['settings']>) => void;
   
   // Actions - Workspaces
-  createWorkspace: (title: string, description?: string) => Workspace;
+  createWorkspace: (title: string, description?: string, teamId?: string) => Workspace;
   updateWorkspace: (id: string, updates: Partial<Workspace>) => void;
   deleteWorkspace: (id: string) => void;
   setActiveWorkspace: (id: string | null) => void;
@@ -164,7 +164,7 @@ export const useFrescoStore = create<FrescoState>()(
       })),
       
       // Workspace Actions
-      createWorkspace: (title, description) => {
+      createWorkspace: (title, description, teamId?) => {
         const workspace: Workspace = {
           id: generateId(),
           title,
@@ -173,6 +173,7 @@ export const useFrescoStore = create<FrescoState>()(
           createdAt: new Date(),
           updatedAt: new Date(),
           userId: get().user?.id || 'demo-user',
+          teamId: teamId || undefined,
         };
         
         set((state) => ({

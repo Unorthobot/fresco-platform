@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Plus, ArrowRight, Edit3, Check, X, Trash2, Sparkles, ChevronDown, Layout, Clock, Link2 } from 'lucide-react';
+import { ChevronLeft, Plus, ArrowRight, Edit3, Check, X, Trash2, Sparkles, ChevronDown, Layout, Clock, Link2, Users } from 'lucide-react';
 import { useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { formatRelativeTime, truncate, cn } from '@/lib/utils';
@@ -280,7 +280,15 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                 </button>
               </div>
             )}
-            <p className="text-fresco-base text-fresco-graphite-mid mt-2">{workspaceSessions.length} sessions · Updated {formatRelativeTime(workspace.updatedAt)}</p>
+            <div className="flex items-center gap-4 mt-2">
+              <p className="text-fresco-base text-fresco-graphite-mid">{workspaceSessions.length} sessions · Updated {formatRelativeTime(workspace.updatedAt)}</p>
+              {workspace.teamId && workspace.team && (
+                <span className="flex items-center gap-1.5 text-fresco-xs text-fresco-graphite-mid bg-fresco-light-gray px-2.5 py-1 rounded-none">
+                  <Users className="w-3 h-3" />
+                  {workspace.team.name}
+                </span>
+              )}
+            </div>
           </div>
           
           {/* New Session Button with Dropdown */}

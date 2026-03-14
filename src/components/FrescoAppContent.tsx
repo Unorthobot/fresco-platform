@@ -14,15 +14,18 @@ import { ToolkitRouter } from '@/components/toolkit/ToolkitRouter';
 import { ArchivePage } from '@/components/ArchivePage';
 import { SettingsPage } from '@/components/SettingsPage';
 import { AccountPage } from '@/components/AccountPage';
+import { TeamPage } from '@/components/TeamPage';
 import { ToastProvider } from '@/components/ui/Toast';
 import { Onboarding, useOnboarding } from '@/components/ui/Onboarding';
+import { NewWorkspaceModal } from '@/components/ui/NewWorkspaceModal';
 import { type ToolkitType } from '@/types';
 
-type View = 'home' | 'workspace' | 'session' | 'archive' | 'settings' | 'account';
+type View = 'home' | 'workspace' | 'session' | 'archive' | 'settings' | 'account' | 'team';
 
 export default function FrescoAppContent() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const { data: session, status } = useSession();
   const { isSyncComplete } = useDBSync();
@@ -149,6 +152,10 @@ export default function FrescoAppContent() {
       setActiveSession(null);
       setActiveSection('account');
       setCurrentView('account');
+    } else if (section === 'team') {
+      setActiveSession(null);
+      setActiveSection('team');
+      setCurrentView('team');
     } else if (section === 'workspaces') {
       setActiveSession(null);
       setActiveSection('workspaces');
@@ -175,7 +182,11 @@ export default function FrescoAppContent() {
       setShowUpgradeModal(true);
       return;
     }
-    const workspace = await db.createWorkspace('New Workspace', 'A new thinking space for clarity.');
+    setShowNewWorkspaceModal(true);
+  };
+
+  const handleConfirmNewWorkspace = async (title: string, teamId?: string) => {
+    const workspace = await db.createWorkspace(title, 'A new thinking space for clarity.', teamId);
     setActiveWorkspace(workspace.id);
     setActiveSession(null);
     setActiveSection('workspaces');
@@ -245,7 +256,7 @@ export default function FrescoAppContent() {
         <LeftNavRail onNavigate={handleNavigate} />
       </div>
 
-      <MobileNav activeSection={activeSection} onNavigate={handleNavigate} />
+      <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} />
 
       <main id="main-content" className="md:ml-[220px] min-h-screen">
         <AnimatePresence mode="sync">
@@ -300,7 +311,17 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
 
-          {effectiveView !== 'home' && effectiveView !== 'archive' && effectiveView !== 'settings' && effectiveView !== 'account' && !activeWorkspaceId && (
+          {effectiveView === 'team' && (
+            <motion.div key="team" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+              <TeamPage
+                userId={user?.id || ''}
+                userSubscription={user?.subscription || 'free'}
+                onUpgrade={() => setShowUpgradeModal(true)}
+              />
+            </motion.div>
+          )}
+
+          {effectiveView !== 'home' && effectiveView !== 'archive' && effectiveView !== 'settings' && effectiveView !== 'account' && effectiveView !== 'team' && !activeWorkspaceId && (
             <motion.div key="fallback-home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <HomeDashboard
                 onNavigateToWorkspace={handleNavigateToWorkspace}
@@ -321,6 +342,13 @@ export default function FrescoAppContent() {
         reason="workspaces"
         currentUsage={workspaces.length}
         limit={getUsageLimits().workspaces}
+      />
+
+      <NewWorkspaceModal
+        isOpen={showNewWorkspaceModal}
+        onClose={() => setShowNewWorkspaceModal(false)}
+        onConfirm={handleConfirmNewWorkspace}
+        userSubscription={user?.subscription}
       />
     </div>
   );
