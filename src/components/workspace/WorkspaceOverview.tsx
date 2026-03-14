@@ -410,11 +410,18 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                   exit={{ opacity: 0, y: -10 }}
                 >
                   {workspaceSessions.length === 0 ? (
-                    <EmptyState 
-                      variant="session" 
-                      onAction={() => onStartToolkit?.('insight_stack')}
-                      actionLabel="Start Insight Stack"
-                    />
+                    <div className="border-2 border-dashed border-fresco-border p-10 text-center">
+                      <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">What are you trying to decide?</h3>
+                      <p className="text-fresco-sm text-fresco-graphite-mid mb-6 max-w-sm mx-auto">Start with Insight Stack to extract clarity from what you already know. It takes about 10 minutes.</p>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button onClick={() => onStartToolkit?.('insight_stack')} className="fresco-btn">
+                          Start with Insight Stack
+                        </button>
+                        <button onClick={() => setShowToolkitSelector(true)} className="fresco-btn-secondary">
+                          Browse all toolkits
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       {workspaceSessions.map((session, index) => {
@@ -439,7 +446,12 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                 <div className="flex-1 min-w-0 pr-10">
                                   <div className="flex items-center gap-2 mb-1">
                                     <img src={CATEGORY_ICONS[toolkit.category]} alt="" className="w-5 h-5 icon-themed" />
+                                    <div>
                                     <h3 className="text-fresco-base font-medium text-fresco-black">{toolkit.name}</h3>
+                                    {session.steps?.[0]?.content && (
+                                      <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5 line-clamp-1">{session.steps[0].content.slice(0, 60)}{session.steps[0].content.length > 60 ? '...' : ''}</p>
+                                    )}
+                                  </div>
                                     {session.sentenceOfTruth?.content && (
                                       <Sparkles className="w-4 h-4 text-fresco-graphite" />
                                     )}

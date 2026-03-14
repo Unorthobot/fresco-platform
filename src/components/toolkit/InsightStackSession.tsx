@@ -631,6 +631,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
               <div>
                 <h1 className="text-fresco-2xl font-medium text-fresco-black tracking-tight">{toolkit.name}</h1>
                 <p className="text-fresco-sm text-fresco-graphite-mid">Fill in all 5 steps → Generate Insights → Get your truth.</p>
+            <p className="text-fresco-xs text-fresco-graphite-light mt-1">This session ends with a GO / PIVOT / KILL decision.</p>
               </div>
             </div>
             
@@ -839,7 +840,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
                 {/* Insights */}
                 <div className="mb-8">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="fresco-label">Insights</span>
+                    <span className="fresco-label">What we found</span>
                     <div className="flex items-center gap-1">
                       {allInsights.length > 0 && (
                         <button 
@@ -952,7 +953,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
           {aiContent.necessaryMoves.length > 0 && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
-                <span className="fresco-label">Necessary Moves</span>
+                <span className="fresco-label">What to do next</span>
                 <button 
                   onClick={() => speakText(aiContent.necessaryMoves.join('. '))}
                   className={cn("p-1.5 rounded-none transition-colors", isSpeaking ? "text-fresco-black bg-fresco-light-gray" : "text-fresco-graphite-light hover:text-fresco-black")}

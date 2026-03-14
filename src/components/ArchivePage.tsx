@@ -48,9 +48,9 @@ export function ArchivePage({ onOpenSession }: ArchivePageProps) {
     <div className="min-h-screen fresco-grid-bg-subtle">
       <div className="px-6 md:px-12 py-16 border-b border-fresco-border-light">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl">
-          <span className="fresco-label block mb-3">Memory System</span>
+          <span className="fresco-label block mb-3">All Sessions</span>
           <h1 className="text-fresco-4xl font-medium text-fresco-black tracking-tight mb-4">Archive</h1>
-          <p className="text-fresco-lg text-fresco-graphite-mid">Your thinking history. Every insight preserved.</p>
+          <p className="text-fresco-lg text-fresco-graphite-mid">Every session you've run. Click any to reopen it.</p>
         </motion.div>
       </div>
 
@@ -101,12 +101,28 @@ export function ArchivePage({ onOpenSession }: ArchivePageProps) {
                   return (
                     <button key={session.id} onClick={() => onOpenSession?.(session.id, session.workspaceId)} className="w-full fresco-card-hover p-4 text-left group">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-fresco-base font-medium text-fresco-black">{TOOLKITS[session.toolkitType]?.name}</h3>
-                          <p className="text-fresco-sm text-fresco-graphite-light mt-1">{ws?.title} · {formatRelativeTime(session.updatedAt)}</p>
+                        <div className="flex-1 min-w-0 pr-4">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h3 className="text-fresco-base font-medium text-fresco-black">{TOOLKITS[session.toolkitType]?.name}</h3>
+                            {(session as any).decision && (
+                              <span className={[
+                                'text-fresco-xs font-medium px-2 py-0.5 rounded-full border',
+                                (session as any).decision === 'GO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                (session as any).decision === 'PIVOT' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                (session as any).decision === 'KILL' ? 'bg-red-50 text-red-600 border-red-200' :
+                                'bg-gray-50 text-gray-500 border-gray-200'
+                              ].join(' ')}>
+                                {(session as any).decision === 'DEFERRED' ? 'Pending' : (session as any).decision}
+                              </span>
+                            )}
+                          </div>
+                          {session.steps?.[0]?.content && (
+                            <p className="text-fresco-xs text-fresco-graphite-mid line-clamp-1 mb-1">{session.steps[0].content.slice(0, 80)}</p>
+                          )}
+                          <p className="text-fresco-xs text-fresco-graphite-light">{ws?.title} · {formatRelativeTime(session.updatedAt)}</p>
                           {session.sentenceOfTruth?.content && <p className="text-fresco-sm text-fresco-graphite-soft mt-2 italic">"{truncate(session.sentenceOfTruth.content, 80)}"</p>}
                         </div>
-                        <ArrowRight className="w-4 h-4 text-fresco-graphite-light opacity-0 group-hover:opacity-100" />
+                        <ArrowRight className="w-4 h-4 text-fresco-graphite-light opacity-0 group-hover:opacity-100 flex-shrink-0" />
                       </div>
                     </button>
                   );
@@ -121,6 +137,8 @@ export function ArchivePage({ onOpenSession }: ArchivePageProps) {
               <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Sessions</span><span className="text-fresco-base font-medium text-fresco-black">{sessions.length}</span></div>
               <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Workspaces</span><span className="text-fresco-base font-medium text-fresco-black">{workspaces.length}</span></div>
               <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Sentences of Truth</span><span className="text-fresco-base font-medium text-fresco-black">{sentencesOfTruth.length}</span></div>
+              <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Decisions made</span><span className="text-fresco-base font-medium text-fresco-black">{sessions.filter(s => (s as any).decision).length}</span></div>
+              <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Total insights</span><span className="text-fresco-base font-medium text-fresco-black">{sessions.reduce((acc, s) => acc + (s.insights?.length || 0), 0)}</span></div>
             </div>
           </div>
         </div>
