@@ -817,7 +817,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
         {isOutputPanelExpanded ? (
           <motion.div 
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: "100%", opacity: 1 }}
+            animate={{ width: 360, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="border-l border-fresco-border-light bg-fresco-off-white overflow-hidden"
