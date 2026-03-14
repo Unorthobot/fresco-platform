@@ -105,7 +105,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
       setActiveSection('home');
       onNavigate?.('home');
     } else {
-      setActiveSection(section as 'home' | 'workspaces' | 'archive' | 'toolkit' | 'settings' | 'account');
+      setActiveSection(section as 'home' | 'workspaces' | 'archive' | 'toolkit' | 'settings' | 'account' | 'team');
       onNavigate?.(section);
     }
   };

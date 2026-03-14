@@ -55,7 +55,7 @@ interface FrescoState {
   activeSessionId: string | null;
   
   // Navigation
-  activeSection: 'home' | 'workspaces' | 'archive' | 'toolkit' | 'settings' | 'account';
+  activeSection: 'home' | 'workspaces' | 'archive' | 'toolkit' | 'settings' | 'account' | 'team';
   
   // Actions - User
   setUser: (user: FrescoState['user']) => void;
