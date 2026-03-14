@@ -29,7 +29,7 @@ const TRANSITION_MESSAGES: Record<ToolkitType, string> = {
   flow_board: 'Your flow is designed. Continue to Experiment Brief to structure your hypothesis.',
   experiment_brief: 'Your experiment is briefed. Continue to Strategy Sketchbook to compare strategic options.',
   strategy_sketchbook: 'Your strategy is sketched. Continue to UX Scorecard to evaluate the experience.',
-  ux_scorecard: 'Your UX is scored. Continue to Persuasion Canvas to craft your influence strategy.',
+  ux_scorecard: 'Your UX is scored. Continue to Influence Map to plan how to reach your audience.',
   persuasion_canvas: 'Your persuasion strategy is ready. Continue to Performance Grid for final validation.',
   performance_grid: '',
 };

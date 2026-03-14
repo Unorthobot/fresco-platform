@@ -720,7 +720,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
                   <div className="mb-8">
                     <SentenceOfTruthDisplay
                       sentence={aiContent.sentenceOfTruth}
-                      toolkitName="Mental Model Mapper"
+                      toolkitName="Belief Mapper"
                       isLocked={session?.sentenceOfTruth?.isLocked}
                       onLockToggle={() => toggleSentenceLock(sessionId)}
                       onEdit={(val) => db.setSentenceOfTruth(sessionId, val)}

@@ -1,6 +1,6 @@
 'use client';
 
-// FRESCO Persuasion Canvas™ - Visual Influence Mapping
+// FRESCO Influence Map™ - Plan how to reach and move your audience
 // Audience persona, barrier cards, and message builder
 
 import { useState, useEffect, useCallback, useRef} from 'react';
@@ -639,7 +639,7 @@ export function PersuasionCanvasSession({ sessionId, workspaceId, onBack, onStar
             <div className="mb-8">
               <SentenceOfTruthDisplay
                 sentence={aiContent.sentenceOfTruth}
-                toolkitName="Persuasion Canvas"
+                toolkitName="Influence Map"
                 isLocked={session?.sentenceOfTruth?.isLocked}
                 onLockToggle={() => toggleSentenceLock(sessionId)}
                 onEdit={(val) => db.setSentenceOfTruth(sessionId, val)}
