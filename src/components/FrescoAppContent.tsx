@@ -95,6 +95,8 @@ export default function FrescoAppContent() {
       setCurrentView('settings');
     } else if (activeSection === 'account') {
       setCurrentView('account');
+    } else if (activeSection === 'team') {
+      setCurrentView('team');
     } else if (activeSessionId) {
       setCurrentView('session');
     } else if (activeWorkspaceId) {
