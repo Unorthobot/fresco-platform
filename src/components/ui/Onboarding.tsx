@@ -89,16 +89,18 @@ export function useOnboarding() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    // Always show onboarding on app load - treating every session as a new user
-    // Remove the localStorage check to always show
-    setShowOnboarding(true);
-    // Clear any previous completion flag
-    localStorage.removeItem('fresco-onboarding-complete');
+    const completed = localStorage.getItem('fresco-onboarding-complete');
+    if (!completed) {
+      setShowOnboarding(true);
+    }
   }, []);
 
   return {
     showOnboarding,
-    completeOnboarding: () => setShowOnboarding(false),
+    completeOnboarding: () => {
+      localStorage.setItem('fresco-onboarding-complete', 'true');
+      setShowOnboarding(false);
+    },
     resetOnboarding: () => { localStorage.removeItem('fresco-onboarding-complete'); setShowOnboarding(true); }
   };
 }
