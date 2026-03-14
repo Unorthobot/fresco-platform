@@ -1,6 +1,6 @@
 'use client';
 
-// FRESCO Mental Model Mapper™ - Visual Node & Relationship Builder
+// FRESCO Belief Mapper™ - Uncover assumptions driving decisions
 // Interactive belief mapping with connections
 
 import { useState, useEffect, useCallback, useRef} from 'react';
