@@ -354,7 +354,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
   if (!session) return <div className="flex items-center justify-center h-96"><p className="text-fresco-graphite-light">Session not found</p></div>;
 
   return (
-    <div className="flex h-full bg-fresco-white">
+    <div className="flex flex-col md:flex-row h-full bg-fresco-white">
       {/* Completion Celebration */}
       <GenerationSuccess 
         show={showCelebration} 
@@ -391,6 +391,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
               <div>
                 <h1 className="text-fresco-2xl font-medium text-fresco-black tracking-tight">{toolkit.name}</h1>
                 <p className="text-fresco-sm text-fresco-graphite-mid">{toolkit.subtitle}</p>
+              <p className="text-fresco-xs text-fresco-graphite-light mt-1">This session ends with a GO / PIVOT / KILL decision.</p>
               </div>
             </div>
             
@@ -666,15 +667,15 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
         {isOutputPanelExpanded ? (
           <motion.div 
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 360, opacity: 1 }}
+            animate={{ width: "100%", opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="border-l border-fresco-border-light bg-fresco-off-white overflow-hidden"
+            className="border-t md:border-t-0 md:border-l border-fresco-border-light bg-fresco-off-white overflow-hidden md:w-[360px] md:flex-shrink-0"
           >
-            <div className="w-[360px] h-full overflow-y-auto">
+            <div className="w-full md:w-[360px] h-full overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
+                  <h2 className="text-fresco-lg font-medium text-fresco-black">Your results</h2>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
                       <EyeOff className="w-4 h-4" />
@@ -789,7 +790,7 @@ export function MentalModelMapperSession({ sessionId, workspaceId, onBack, onSta
             className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-fresco-black text-white px-3 py-6 rounded-l-xl shadow-lg hover:bg-fresco-graphite transition-colors flex flex-col items-center gap-2"
           >
             <Eye className="w-5 h-5" />
-            <span className="text-fresco-xs font-medium" style={{ writingMode: 'vertical-rl' }}>Output</span>
+            <span className="text-fresco-xs font-medium" style={{ writingMode: 'vertical-rl' }}>Your results</span>
             {aiContent.insights.length > 0 && (
               <span className="w-5 h-5 bg-fresco-black rounded-full text-fresco-xs flex items-center justify-center">
                 {aiContent.insights.length}
