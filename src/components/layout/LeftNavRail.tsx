@@ -282,6 +282,12 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
       
         {/* Usage Indicator */}
         <UsageIndicator />
+
+        {/* Legal links — required for Google OAuth verification */}
+        <div className="px-4 pb-3 flex gap-3">
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors">Privacy</a>
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors">Terms</a>
+        </div>
       </nav>
       
       {/* Delete Confirmation Modal */}
