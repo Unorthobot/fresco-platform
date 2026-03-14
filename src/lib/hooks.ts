@@ -5,6 +5,20 @@ import { useState, useEffect } from 'react';
 import { useFrescoStore } from '@/lib/store';
 import type { ToolkitSession } from '@/types';
 
+// Hook to detect mobile viewport (< 768px)
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  return isMobile;
+}
+
 interface AIContent {
   insights: string[];
   sentenceOfTruth: string;

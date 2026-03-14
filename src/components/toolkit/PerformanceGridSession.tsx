@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { cn, debounce, formatRelativeTime } from '@/lib/utils';
 import { useDBWrite } from '@/lib/useDBSync';
+import { useIsMobile } from '@/lib/hooks';
 import { useFrescoStore } from '@/lib/store';
 import { useAIGeneration } from '@/lib/useAIGeneration';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
@@ -87,6 +88,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
   
   // AI generation with limits
   const { canGenerate, incrementUsage, showUpgradeModal, setShowUpgradeModal, currentUsage, limit } = useAIGeneration();
+  const isMobile = useIsMobile();
   
   const session = sessions.find((s) => s.id === sessionId);
   const workspace = workspaces.find((w) => w.id === workspaceId);
@@ -112,7 +114,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
   const [isWizardMode, setIsWizardMode] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [isOutputPanelExpanded, setIsOutputPanelExpanded] = useState(true);
+  const [isOutputPanelExpanded, setIsOutputPanelExpanded] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
   const [sessionDecision, setSessionDecision] = useState<DecisionType | null>(() => {
     const s = sessions.find((s: any) => s.id === sessionId);
     return (s as any)?.decision || null;
@@ -320,7 +322,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
   if (!session) return <div className="flex items-center justify-center h-96"><p className="text-fresco-graphite-light">Session not found</p></div>;
 
   return (
-    <div className="flex h-full bg-fresco-white">
+    <div className="flex flex-col md:flex-row h-full bg-fresco-white">
       {/* Completion Celebration */}
       <GenerationSuccess 
         show={showCelebration} 
@@ -339,11 +341,11 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
       />
       
       {/* Main Column */}
-      <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-[1000px] mx-auto px-8 py-10">
+      <div ref={mainScrollRef} className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-6 md:py-10">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <button type="button" onClick={() => { try { onBack?.(); } catch(e) { window.location.href = "/"; } }} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
                 <ChevronLeft className="w-4 h-4" /><span>Back to {workspace?.title || 'Workspace'}</span>
               </button>
@@ -562,15 +564,15 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
       <AnimatePresence>
         {isOutputPanelExpanded ? (
           <motion.div 
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 360, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
+            initial={isMobile ? { height: 0, opacity: 0 } : { width: 0, opacity: 0 }}
+            animate={isMobile ? { height: "auto", opacity: 1 } : { width: 360, opacity: 1 }}
+            exit={isMobile ? { height: 0, opacity: 0 } : { width: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="border-l border-fresco-border-light bg-fresco-off-white overflow-hidden"
+            className="border-t md:border-t-0 md:border-l border-fresco-border-light bg-fresco-off-white overflow-hidden"
           >
-            <div className="w-[360px] h-full overflow-y-auto">
+            <div className="w-full md:w-[360px] max-h-[60vh] md:max-h-none h-full overflow-y-auto">
               <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                   <h2 className="text-fresco-lg font-medium text-fresco-black">Your results</h2>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setIsOutputPanelExpanded(false)} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors">
@@ -676,17 +678,36 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
           </motion.div>
         ) : (
           <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={isMobile ? { opacity: 0, y: 20 } : { opacity: 0, x: 20 }}
+            animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 }}
             onClick={() => setIsOutputPanelExpanded(true)}
-            className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-fresco-black text-white px-3 py-6 rounded-l-xl shadow-lg hover:bg-fresco-graphite transition-colors flex flex-col items-center gap-2"
+            className={isMobile
+              ? "fixed bottom-0 left-0 right-0 z-40 bg-fresco-black text-white py-3 px-6 shadow-lg flex items-center justify-between"
+              : "fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-fresco-black text-white px-3 py-6 rounded-l-xl shadow-lg hover:bg-fresco-graphite transition-colors flex flex-col items-center gap-2"
+            }
           >
-            <Eye className="w-5 h-5" />
-            <span className="text-fresco-xs font-medium" style={{ writingMode: 'vertical-rl' }}>Your results</span>
-            {aiContent.insights.length > 0 && (
-              <span className="w-5 h-5 bg-fresco-light-gray0 rounded-full text-fresco-xs flex items-center justify-center">
-                {aiContent.insights.length}
-              </span>
+            {isMobile ? (
+              <>
+                <span className="text-fresco-sm font-medium text-white">View Results</span>
+                <div className="flex items-center gap-2">
+                  {aiContent.insights.length > 0 && (
+                    <span className="w-6 h-6 bg-white/20 rounded-full text-fresco-xs flex items-center justify-center">
+                      {aiContent.insights.length}
+                    </span>
+                  )}
+                  <Eye className="w-5 h-5" />
+                </div>
+              </>
+            ) : (
+              <>
+                <Eye className="w-5 h-5" />
+                <span className="text-fresco-xs font-medium" style={{ writingMode: 'vertical-rl' }}>Your results</span>
+                {aiContent.insights.length > 0 && (
+                  <span className="w-5 h-5 bg-fresco-light-gray0 rounded-full text-fresco-xs flex items-center justify-center">
+                    {aiContent.insights.length}
+                  </span>
+                )}
+              </>
             )}
           </motion.button>
         )}

@@ -27,20 +27,72 @@ export function ShareableInsightModal({ insight, source, author, isOpen, onClose
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
-    
-    // Use html2canvas if available, otherwise fallback to copy
+
     try {
-      const html2canvas = (await import('html2canvas' as any)).default;
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        backgroundColor: null,
-      });
-      
+      // Use native Canvas API - no external dependency needed
+      const card = cardRef.current;
+      const rect = card.getBoundingClientRect();
+      const scale = 2; // Retina quality
+
+      const canvas = document.createElement('canvas');
+      canvas.width = rect.width * scale;
+      canvas.height = rect.height * scale;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas not supported');
+
+      ctx.scale(scale, scale);
+
+      // Background fill based on style
+      const bgColors: Record<string, string> = {
+        minimal: '#ffffff',
+        bold: '#1a1a1a',
+        elegant: '#2d2d2d',
+      };
+      ctx.fillStyle = bgColors[style] || '#ffffff';
+      ctx.fillRect(0, 0, rect.width, rect.height);
+
+      // Padding
+      const pad = 32;
+      const textColor = style === 'minimal' ? '#1a1a1a' : '#ffffff';
+      const accentColor = style === 'minimal' ? '#9a9a9a' : 'rgba(255,255,255,0.5)';
+
+      // Quote text — word-wrap
+      ctx.fillStyle = textColor;
+      ctx.font = '300 18px -apple-system, BlinkMacSystemFont, sans-serif';
+      const maxWidth = rect.width - pad * 2;
+      const words = `"${insight}"`.split(' ');
+      let line = '';
+      let y = pad + 24;
+      const lineHeight = 28;
+      for (const word of words) {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          ctx.fillText(line, pad, y);
+          line = word;
+          y += lineHeight;
+        } else {
+          line = test;
+        }
+      }
+      if (line) { ctx.fillText(line, pad, y); y += lineHeight; }
+
+      // Attribution
+      y += 16;
+      ctx.fillStyle = accentColor;
+      ctx.font = '400 12px -apple-system, BlinkMacSystemFont, sans-serif';
+      if (source) ctx.fillText(`— ${source}`, pad, y);
+
+      // Fresco watermark
+      ctx.textAlign = 'right';
+      ctx.fillText('Fresco', rect.width - pad, y);
+      ctx.textAlign = 'left';
+
       const link = document.createElement('a');
       link.download = 'fresco-insight.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch {
+      // Fallback to clipboard copy
       handleCopy();
     }
   };

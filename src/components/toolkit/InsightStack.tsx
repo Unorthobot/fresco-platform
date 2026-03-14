@@ -479,7 +479,7 @@ export function InsightStack({ sessionId, workspaceId, onBack }: InsightStackPro
     <div className="flex h-full bg-fresco-white">
       {/* Main Column */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[720px] mx-auto px-8 py-10">
+        <div className="max-w-[720px] mx-auto px-4 md:px-8 py-6 md:py-10">
           {/* Header */}
           <div className="mb-10">
             <div className="flex items-center justify-between mb-8">

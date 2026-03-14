@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { cn, debounce, formatRelativeTime } from '@/lib/utils';
 import { useDBWrite } from '@/lib/useDBSync';
+import { useIsMobile } from '@/lib/hooks';
 import { useFrescoStore } from '@/lib/store';
 import { TOOLKITS, type ThinkingModeId, type ToolkitType } from '@/types';
 import { ThinkingLensSelector } from '@/components/ui/ThinkingLensSelector';
@@ -350,13 +351,13 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
   const categoryIcon = CATEGORY_ICONS[toolkit.category];
   
   return (
-    <div className="flex h-full bg-fresco-white">
+    <div className="flex flex-col md:flex-row h-full bg-fresco-white">
       {/* Main Column */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[720px] mx-auto px-8 py-10">
+      <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        <div className="max-w-[720px] mx-auto px-4 md:px-8 py-6 md:py-10">
           {/* Header */}
           <div className="mb-10">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
               <button type="button" onClick={() => onBack?.()} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
                 <ChevronLeft className="w-4 h-4" /><span>Back to {workspace?.title || 'Workspace'}</span>
               </button>
@@ -457,9 +458,9 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
       </div>
       
       {/* Output Panel */}
-      <div className="w-[340px] border-l border-fresco-border-light bg-fresco-off-white overflow-y-auto">
+      <div className="w-full md:w-[340px] max-h-[60vh] md:max-h-none border-t md:border-t-0 md:border-l border-fresco-border-light bg-fresco-off-white overflow-y-auto">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
             {isGenerating && <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-light"><Loader2 className="w-4 h-4 animate-spin" /><span>Thinking...</span></div>}
           </div>
@@ -566,7 +567,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowExportModal(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-gray-900 rounded-fresco-lg p-6 max-w-md w-full mx-4 shadow-fresco-lg">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                 <h3 className="text-fresco-lg font-medium text-fresco-black">Export Session</h3>
                 <button onClick={() => setShowExportModal(false)} className="p-1 text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white transition-colors"><X className="w-5 h-5" /></button>
               </div>
