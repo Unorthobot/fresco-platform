@@ -60,9 +60,9 @@ const OUTPUT_LABELS: Record<ToolkitType, { primary: string; secondary: string; a
   flow_board: { primary: 'Flow Analysis', secondary: 'Optimal Path', action: 'Flow Improvements' },
   experiment_brief: { primary: 'Experiment Design', secondary: 'Core Hypothesis', action: 'Test Plan' },
   strategy_sketchbook: { primary: 'Strategic Options', secondary: 'Strategic Direction', action: 'Next Moves' },
-  ux_scorecard: { primary: 'UX Evaluation', secondary: 'Overall Assessment', action: 'Priority Fixes' },
+  ux_scorecard: { primary: 'Score Summary', secondary: 'Key Findings', action: 'Top Priorities' },
   persuasion_canvas: { primary: 'Persuasion Elements', secondary: 'Core Message', action: 'Communication Plan' },
-  performance_grid: { primary: 'Performance Analysis', secondary: 'Key Finding', action: 'Optimisation Actions' },
+  performance_grid: { primary: 'Results Summary', secondary: 'Key Findings', action: 'Actions to Take' },
 };
 
 export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessionProps) {

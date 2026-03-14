@@ -32,13 +32,13 @@ interface WeatherData {
 const TOOLKIT_HINTS: Record<string, string> = {
   insight_stack: 'Extract patterns and tensions from complexity to uncover the core truth',
   pov_generator: 'Build a clear, defensible position before anyone challenges you',
-  mental_model_mapper: 'Surface the assumptions driving decisions in your space',
+  mental_model_mapper: 'Surface the unspoken assumptions that drive decisions in your space',
   flow_board: 'Visualise user journeys step by step and identify friction points',
   experiment_brief: 'Structure hypotheses and validation criteria for focused testing',
   strategy_sketchbook: 'Explore and compare strategic options before committing',
   ux_scorecard: 'Evaluate experiences with structured scoring and clear priorities',
   persuasion_canvas: 'Map influence strategies by understanding barriers and beliefs',
-  performance_grid: 'Track key metrics and identify optimisation opportunities',
+  performance_grid: 'Compare targets vs actual results and decide what to change',
 };
 
 export function HomeDashboard({
