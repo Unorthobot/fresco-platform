@@ -320,7 +320,7 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
   if (!session) return <div className="flex items-center justify-center h-96"><p className="text-fresco-graphite-light">Session not found</p></div>;
 
   return (
-    <div className="flex flex-col-reverse md:flex-row h-full bg-fresco-white">
+    <div className="flex h-full bg-fresco-white">
       {/* Completion Celebration */}
       <GenerationSuccess 
         show={showCelebration} 
@@ -566,9 +566,9 @@ export function PerformanceGridSession({ sessionId, workspaceId, onBack, onStart
             animate={{ width: "100%", opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="border-b md:border-b-0 md:border-l border-fresco-border-light bg-fresco-off-white overflow-hidden md:w-[360px] md:flex-shrink-0 max-h-[50vh] md:max-h-none"
+            className="border-l border-fresco-border-light bg-fresco-off-white overflow-hidden"
           >
-            <div className="w-full md:w-[360px] h-full overflow-y-auto">
+            <div className="w-[360px] h-full overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-fresco-lg font-medium text-fresco-black">Your results</h2>
