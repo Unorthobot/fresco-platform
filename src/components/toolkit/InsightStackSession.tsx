@@ -912,19 +912,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
               />
             )}
             
-            {/* "What if..." Perspective Prompt */}
-            {aiContent.insights.length > 0 && (
-              <div className="mt-6">
-                <WhatIfPrompt
-                  currentLens={session?.thinkingLens || 'automatic'}
-                  onTryPerspective={(newLens) => {
-                    handleLensChange(newLens);
-                    generateContent();
-                  }}
-                  isGenerating={isGenerating}
-                />
-              </div>
-            )}
+
           </div>
           
           {/* Sentence of Truth - Enhanced Display */}
