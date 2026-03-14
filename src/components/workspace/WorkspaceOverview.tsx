@@ -476,9 +476,29 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                     <img src={CATEGORY_ICONS[toolkit.category]} alt="" className="w-5 h-5 icon-themed" />
                                     <div>
                                     <h3 className="text-fresco-base font-medium text-fresco-black">{toolkit.name}</h3>
-                                    {session.steps?.[0]?.content && (
-                                      <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5 line-clamp-1">{session.steps[0].content.slice(0, 60)}{session.steps[0].content.length > 60 ? '...' : ''}</p>
-                                    )}
+                                    {session.steps?.[0]?.content && (() => {
+                                      const raw = session.steps![0].content;
+                                      let preview = raw;
+                                      // If the content is JSON, try to extract a human-readable string
+                                      if (raw.trimStart().startsWith('{') || raw.trimStart().startsWith('[')) {
+                                        try {
+                                          const parsed = JSON.parse(raw);
+                                          if (Array.isArray(parsed) && parsed[0]) {
+                                            // Array of objects (e.g. stakeholders) — use first item's name/title/label
+                                            const first = parsed[0];
+                                            preview = first.name || first.title || first.label || first.content || raw;
+                                          } else if (typeof parsed === 'object') {
+                                            preview = parsed.name || parsed.title || parsed.content || raw;
+                                          }
+                                        } catch { /* not valid JSON, use as-is */ }
+                                      }
+                                      const trimmed = preview.slice(0, 60);
+                                      return (
+                                        <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5 line-clamp-1">
+                                          {trimmed}{preview.length > 60 ? '...' : ''}
+                                        </p>
+                                      );
+                                    })()}
                                   </div>
                                     {session.sentenceOfTruth?.content && (
                                       <Sparkles className="w-4 h-4 text-fresco-graphite" />
