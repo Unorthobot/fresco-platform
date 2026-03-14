@@ -409,6 +409,26 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                 >
+                  {/* Cross-toolkit summary prompt */}
+                  {workspaceSessions.length >= 2 && workspaceSessions.some(s => s.sentenceOfTruth?.content) && activeView === 'sessions' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-4 p-4 bg-fresco-light-gray border border-fresco-border flex items-center justify-between gap-4"
+                    >
+                      <div>
+                        <p className="text-fresco-sm font-medium text-fresco-black">You have outputs across multiple sessions.</p>
+                        <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5">View a synthesis of everything you've found so far.</p>
+                      </div>
+                      <button
+                        onClick={() => setActiveView('synthesis')}
+                        className="fresco-btn-secondary text-fresco-sm whitespace-nowrap flex-shrink-0"
+                      >
+                        View Synthesis
+                      </button>
+                    </motion.div>
+                  )}
+
                   {workspaceSessions.length === 0 ? (
                     <div className="border-2 border-dashed border-fresco-border p-10 text-center">
                       <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">What are you trying to decide?</h3>
