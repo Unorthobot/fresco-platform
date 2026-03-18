@@ -148,6 +148,22 @@ export function HomeDashboard({
   return (
     <>
     <div className="min-h-screen fresco-grid-bg-subtle relative">
+
+      {/* Upgrade banner — free users only */}
+      {!isGuest && user?.subscription === 'free' && (
+        <div className="bg-fresco-black text-white px-6 py-3 flex items-center justify-between">
+          <p className="text-fresco-xs text-white/70">
+            Free plan · 3 workspaces · 10 AI generations/month
+          </p>
+          <button
+            onClick={() => setShowUpgradeModal(true)}
+            className="text-fresco-xs font-medium text-white flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+          >
+            Upgrade to Pro — $29/mo →
+          </button>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="px-6 md:px-12 py-12 border-b border-fresco-border-light relative">
         <div className="max-w-6xl flex flex-col lg:flex-row items-start justify-between gap-12">

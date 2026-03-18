@@ -84,20 +84,20 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
             className="bg-white rounded-none shadow-2xl max-w-md w-full overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-6 text-white">
+            {/* Header */}
+            <div className="bg-fresco-black p-6 text-white">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/20 rounded-none">
+                  <div className="p-2 bg-white/10 rounded-none">
                     <Icon className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold">{title}</h2>
+                    <h2 className="text-xl font-medium">{title}</h2>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-1 hover:bg-white/20 rounded-none transition-colors"
+                  className="p-1 hover:bg-white/10 rounded-none transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -114,20 +114,20 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
                   <span className="text-gray-500">Usage</span>
                   <span className="font-medium text-gray-900">{currentUsage}/{limit}</span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all"
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-fresco-black rounded-full transition-all"
                     style={{ width: `${Math.min((currentUsage / limit) * 100, 100)}%` }}
                   />
                 </div>
               </div>
 
-              <div className="bg-amber-50 border border-amber-100 rounded-none p-4 mb-6">
+              <div className="bg-fresco-light-gray border border-fresco-border rounded-none p-4 mb-6">
                 <div className="flex items-start gap-3">
-                  <Crown className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <Crown className="w-5 h-5 text-fresco-black flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium text-amber-900">Fresco Pro</p>
-                    <p className="text-sm text-amber-700">{benefit}</p>
+                    <p className="font-medium text-fresco-black">Fresco Pro</p>
+                    <p className="text-sm text-fresco-graphite-mid">{benefit}</p>
                   </div>
                 </div>
               </div>
@@ -135,14 +135,14 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
               <div className="flex gap-3">
                 <button
                   onClick={onClose}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-none font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2.5 border border-fresco-border text-fresco-graphite-mid rounded-none font-medium hover:bg-fresco-light-gray transition-colors"
                 >
                   Maybe later
                 </button>
                 <button
                   onClick={() => handleUpgrade('pro')}
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-none font-medium hover:from-amber-600 hover:to-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-fresco-black text-white rounded-none font-medium hover:bg-fresco-graphite transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     'Loading...'
