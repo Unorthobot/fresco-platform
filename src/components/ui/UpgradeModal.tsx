@@ -1,8 +1,9 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Crown, Sparkles, Zap, Users } from 'lucide-react';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Crown, Sparkles, Zap } from 'lucide-react';
+import { PricingModal } from '@/components/ui/PricingModal';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -13,159 +14,97 @@ interface UpgradeModalProps {
 }
 
 export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: UpgradeModalProps) {
-  const [loading, setLoading] = useState(false);
-
-  const handleUpgrade = async (plan: 'pro' | 'studio' = 'pro') => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/lemonsqueezy/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
-      });
-      if (res.status === 401) {
-        // Not logged in — save intent and redirect to login
-        sessionStorage.setItem('post_login_action', JSON.stringify({ type: 'checkout', plan }));
-        window.location.href = '/login';
-        return;
-      }
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error(data.error || 'No checkout URL');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      alert('Failed to start checkout. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [showPricing, setShowPricing] = useState(false);
 
   const content = {
     toolkits: {
       icon: Crown,
-      title: "This toolkit is Pro only",
-      description: "Upgrade to Pro to unlock all 9 thinking toolkits.",
-      benefit: "Get unlimited access to every toolkit, exports, and more.",
+      title: 'This toolkit is Pro only',
+      description: 'Upgrade to unlock all 9 thinking toolkits and every thinking mode.',
     },
     workspaces: {
       icon: Sparkles,
       title: "You've hit your workspace limit",
       description: `You have ${currentUsage} of ${limit} workspaces on the free plan.`,
-      benefit: "Upgrade to Pro for unlimited workspaces and advanced features.",
     },
     ai_generations: {
       icon: Zap,
       title: "You've used all your AI generations",
       description: `You've used ${currentUsage} of ${limit} AI generations this month.`,
-      benefit: "Upgrade to Pro for unlimited AI generations and priority access.",
     },
   };
 
-  const { icon: Icon, title, description, benefit } = content[reason];
+  const { icon: Icon, title, description } = content[reason];
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={onClose}
-        >
+    <>
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="bg-white rounded-none shadow-2xl max-w-md w-full overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            onClick={onClose}
           >
-            {/* Header */}
-            <div className="bg-fresco-black p-6 text-white">
-              <div className="flex items-start justify-between">
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 8 }}
+              transition={{ duration: 0.15 }}
+              className="bg-fresco-white border border-fresco-border rounded-none shadow-xl max-w-sm w-full overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="bg-fresco-black px-6 py-5 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 rounded-none">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-medium">{title}</h2>
-                  </div>
+                  <Icon className="w-5 h-5 text-white/70" />
+                  <h2 className="text-fresco-base font-medium text-white">{title}</h2>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-1 hover:bg-white/10 rounded-none transition-colors"
-                >
-                  <X className="w-5 h-5" />
+                <button onClick={onClose} className="p-1 text-white/50 hover:text-white transition-colors">
+                  <X className="w-4 h-4" />
                 </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <p className="text-gray-600 mb-4">{description}</p>
-              
-              {/* Progress bar */}
-              <div className="mb-6">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-500">Usage</span>
-                  <span className="font-medium text-gray-900">{currentUsage}/{limit}</span>
-                </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-fresco-black rounded-full transition-all"
-                    style={{ width: `${Math.min((currentUsage / limit) * 100, 100)}%` }}
-                  />
-                </div>
               </div>
 
-              <div className="bg-fresco-light-gray border border-fresco-border rounded-none p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <Crown className="w-5 h-5 text-fresco-black flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-fresco-black">Fresco Pro</p>
-                    <p className="text-sm text-fresco-graphite-mid">{benefit}</p>
+              {/* Body */}
+              <div className="px-6 py-6">
+                <p className="text-fresco-sm text-fresco-graphite-mid mb-6">{description}</p>
+
+                {/* Usage bar */}
+                <div className="mb-6">
+                  <div className="flex justify-between text-fresco-xs text-fresco-graphite-light mb-2">
+                    <span>Usage</span>
+                    <span>{currentUsage}/{limit}</span>
+                  </div>
+                  <div className="h-1.5 bg-fresco-light-gray rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-fresco-black rounded-full transition-all"
+                      style={{ width: `${Math.min((currentUsage / limit) * 100, 100)}%` }}
+                    />
                   </div>
                 </div>
-              </div>
 
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => handleUpgrade('pro')}
-                  disabled={loading}
-                  className="w-full px-4 py-2.5 bg-fresco-black text-white rounded-none font-medium hover:bg-fresco-graphite transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    'Loading...'
-                  ) : (
-                    <>
-                      <Crown className="w-4 h-4" />
-                      Upgrade to Pro — $29/mo
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleUpgrade('studio')}
-                  disabled={loading}
-                  className="w-full px-4 py-2.5 border border-fresco-border text-fresco-black rounded-none font-medium hover:bg-fresco-light-gray transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <Users className="w-4 h-4" />
-                  Upgrade to Studio — $79/mo
-                </button>
-                <button
-                  onClick={onClose}
-                  className="w-full px-4 py-2 text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors"
-                >
-                  Maybe later
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => { onClose(); setShowPricing(true); }}
+                    className="w-full py-2.5 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors"
+                  >
+                    See plans
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="w-full py-2 text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors"
+                  >
+                    Maybe later
+                  </button>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+
+      <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} />
+    </>
   );
 }

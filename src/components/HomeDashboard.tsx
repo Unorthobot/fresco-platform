@@ -10,6 +10,7 @@ import { formatRelativeTime } from '@/lib/utils';
 import { TOOLKITS, type ToolkitType } from '@/types';
 import { EmptyState } from '@/components/ui/EmptyStates';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
+import { PricingModal } from '@/components/ui/PricingModal';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { JourneyMap } from '@/components/ui/JourneyMap';
 import { TimelineView } from '@/components/ui/TimelineView';
@@ -52,6 +53,7 @@ export function HomeDashboard({
   
   const [mounted, setMounted] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [location, setLocation] = useState<string>('');
@@ -152,23 +154,15 @@ export function HomeDashboard({
       {/* Upgrade banner — free users only */}
       {!isGuest && user?.subscription === 'free' && (
         <div className="bg-fresco-black text-white px-6 py-3 flex items-center justify-between">
-          <p className="text-fresco-xs text-white/60">
+          <p className="text-fresco-xs text-white/50">
             Free plan · 3 workspaces · 10 AI generations/month
           </p>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowUpgradeModal(true)}
-              className="text-fresco-xs font-medium text-white hover:opacity-70 transition-opacity"
-            >
-              Pro — $29/mo →
-            </button>
-            <button
-              onClick={() => setShowUpgradeModal(true)}
-              className="text-fresco-xs text-white/60 hover:text-white hover:opacity-70 transition-opacity"
-            >
-              Studio — $79/mo →
-            </button>
-          </div>
+          <button
+            onClick={() => setShowPricingModal(true)}
+            className="text-fresco-xs font-medium text-white hover:opacity-70 transition-opacity"
+          >
+            Upgrade →
+          </button>
         </div>
       )}
 
@@ -508,6 +502,10 @@ export function HomeDashboard({
       reason="toolkits"
       currentUsage={0}
       limit={0}
+    />
+    <PricingModal
+      isOpen={showPricingModal}
+      onClose={() => setShowPricingModal(false)}
     />
     </>
   );

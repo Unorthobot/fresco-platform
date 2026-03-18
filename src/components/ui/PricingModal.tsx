@@ -1,46 +1,74 @@
 'use client';
 
 import { useState } from 'react';
-import { PRICING_PLANS, PlanType } from '@/lib/stripe';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Sparkles, Zap, Building2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { X, Check, Users, Zap } from 'lucide-react';
 
 interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPlan?: PlanType;
-  userEmail?: string;
 }
 
-export function PricingModal({ isOpen, onClose, currentPlan = 'starter', userEmail }: PricingModalProps) {
-  const [loading, setLoading] = useState<string | null>(null);
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+const PLANS = [
+  {
+    key: 'pro' as const,
+    name: 'Pro',
+    price: 29,
+    description: 'For individuals and power users.',
+    icon: Zap,
+    features: [
+      'Unlimited workspaces',
+      'Unlimited AI generations',
+      'All 9 toolkits',
+      'All 12 thinking modes',
+      'Advanced exports (PDF, DOCX)',
+      'Priority support',
+    ],
+    cta: 'Upgrade to Pro',
+    primary: true,
+  },
+  {
+    key: 'studio' as const,
+    name: 'Studio',
+    price: 79,
+    description: 'For teams who think together.',
+    icon: Users,
+    features: [
+      'Everything in Pro',
+      'Shared team workspaces',
+      'Invite members with one link',
+      'Owner, admin and member roles',
+      'Team admin dashboard',
+      'Dedicated support',
+    ],
+    cta: 'Upgrade to Studio',
+    primary: false,
+  },
+];
 
-  const handleUpgrade = async (planKey: PlanType) => {
-    setLoading(planKey);
+export function PricingModal({ isOpen, onClose }: PricingModalProps) {
+  const [loading, setLoading] = useState<'pro' | 'studio' | null>(null);
+
+  const handleUpgrade = async (plan: 'pro' | 'studio') => {
+    setLoading(plan);
     try {
-      const plan = planKey === 'studio' ? 'studio' : 'pro';
       const res = await fetch('/api/lemonsqueezy/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
       });
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
       const data = await res.json();
       if (data.url) window.location.href = data.url;
       else throw new Error(data.error || 'No checkout URL');
-    } catch (error) {
-      console.error('Upgrade failed:', error);
+    } catch {
       alert('Failed to start checkout. Please try again.');
     } finally {
       setLoading(null);
     }
-  };
-
-  const planIcons = {
-    starter: Sparkles,
-    pro: Zap,
-    studio: Building2,
   };
 
   return (
@@ -50,142 +78,68 @@ export function PricingModal({ isOpen, onClose, currentPlan = 'starter', userEma
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-none shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            initial={{ scale: 0.96, opacity: 0, y: 8 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.96, opacity: 0, y: 8 }}
+            transition={{ duration: 0.15 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-fresco-white border border-fresco-border rounded-none shadow-xl w-full max-w-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-fresco-border-light">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Upgrade Your Plan</h2>
-                <p className="text-sm text-gray-500">Choose the plan that fits your needs</p>
+                <h2 className="text-fresco-xl font-medium text-fresco-black">Upgrade Fresco</h2>
+                <p className="text-fresco-sm text-fresco-graphite-light mt-0.5">Cancel anytime. No lock-in.</p>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
+              <button onClick={onClose} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Billing Toggle */}
-            <div className="flex justify-center py-6">
-              <div className="bg-gray-100 p-1 rounded-none flex">
-                <button
-                  onClick={() => setBillingPeriod('monthly')}
-                  className={cn(
-                    'px-4 py-2 rounded-none text-sm font-medium transition-all',
-                    billingPeriod === 'monthly'
-                      ? 'bg-white shadow text-gray-900'
-                      : 'text-gray-500 hover:text-gray-700'
-                  )}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setBillingPeriod('yearly')}
-                  className={cn(
-                    'px-4 py-2 rounded-none text-sm font-medium transition-all',
-                    billingPeriod === 'yearly'
-                      ? 'bg-white shadow text-gray-900'
-                      : 'text-gray-500 hover:text-gray-700'
-                  )}
-                >
-                  Yearly <span className="text-green-600 text-xs">Save 20%</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Pricing Cards */}
-            <div className="grid md:grid-cols-3 gap-6 px-6 pb-8">
-              {(Object.entries(PRICING_PLANS) as [PlanType, typeof PRICING_PLANS.starter][]).map(([key, plan]) => {
-                const Icon = planIcons[key];
-                const isCurrentPlan = key === currentPlan;
-                const price = billingPeriod === 'yearly' ? Math.floor(plan.price * 0.8) : plan.price;
-
+            {/* Plan cards */}
+            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-fresco-border-light">
+              {PLANS.map(plan => {
+                const Icon = plan.icon;
                 return (
-                  <div
-                    key={key}
-                    className={cn(
-                      'relative rounded-none border-2 p-6 transition-all',
-                      key === 'pro'
-                        ? 'border-blue-500 bg-blue-50/50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    )}
-                  >
-                    {key === 'pro' && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span className="bg-blue-500 text-white text-xs font-medium px-3 py-1 rounded-full">
-                          Most Popular
-                        </span>
+                  <div key={plan.key} className="p-8 flex flex-col">
+                    {/* Plan name + price */}
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Icon className="w-4 h-4 text-fresco-graphite-mid" />
+                        <span className="text-fresco-xs uppercase tracking-widest text-fresco-graphite-light font-medium">{plan.name}</span>
                       </div>
-                    )}
-
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={cn(
-                        'p-2 rounded-none',
-                        key === 'pro' ? 'bg-blue-100' : 'bg-gray-100'
-                      )}>
-                        <Icon className={cn(
-                          'w-5 h-5',
-                          key === 'pro' ? 'text-blue-600' : 'text-gray-600'
-                        )} />
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-fresco-4xl font-medium text-fresco-black">${plan.price}</span>
+                        <span className="text-fresco-sm text-fresco-graphite-light">/month</span>
                       </div>
-                      <h3 className="font-semibold text-gray-900">{plan.name}</h3>
+                      <p className="text-fresco-sm text-fresco-graphite-mid mt-1">{plan.description}</p>
                     </div>
 
-                    <div className="mb-4">
-                      <span className="text-3xl font-bold text-gray-900">
-                        ${price}
-                      </span>
-                      {price > 0 && (
-                        <span className="text-gray-500 text-sm">
-                          /{billingPeriod === 'yearly' ? 'mo' : 'month'}
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-sm text-gray-600 mb-6">{plan.description}</p>
-
-                    <ul className="space-y-3 mb-6">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
-                          <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-gray-600">{feature}</span>
+                    {/* Features */}
+                    <ul className="space-y-3 mb-8 flex-1">
+                      {plan.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <Check className="w-4 h-4 text-fresco-black flex-shrink-0 mt-0.5" />
+                          <span className="text-fresco-sm text-fresco-graphite-soft">{f}</span>
                         </li>
                       ))}
                     </ul>
 
+                    {/* CTA */}
                     <button
-                      onClick={() => !isCurrentPlan && plan.priceId && handleUpgrade(key)}
-                      disabled={isCurrentPlan || loading !== null || !plan.priceId}
-                      className={cn(
-                        'w-full py-2.5 rounded-none font-medium transition-all',
-                        isCurrentPlan
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : key === 'pro'
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : plan.priceId
-                              ? 'bg-gray-900 text-white hover:bg-gray-800'
-                              : 'bg-gray-100 text-gray-600',
-                        loading === key && 'opacity-50 cursor-wait'
-                      )}
+                      onClick={() => handleUpgrade(plan.key)}
+                      disabled={loading !== null}
+                      className={
+                        plan.primary
+                          ? 'w-full py-3 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors disabled:opacity-50'
+                          : 'w-full py-3 border border-fresco-border text-fresco-black text-fresco-sm font-medium hover:bg-fresco-light-gray transition-colors disabled:opacity-50'
+                      }
                     >
-                      {loading === key ? (
-                        'Processing...'
-                      ) : isCurrentPlan ? (
-                        'Current Plan'
-                      ) : !plan.priceId ? (
-                        'Free'
-                      ) : (
-                        'Upgrade'
-                      )}
+                      {loading === plan.key ? 'Loading…' : plan.cta}
                     </button>
                   </div>
                 );
@@ -193,11 +147,13 @@ export function PricingModal({ isOpen, onClose, currentPlan = 'starter', userEma
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-100 px-6 py-4 text-center">
-              <p className="text-xs text-gray-500">
-                All plans include a 14-day free trial. Cancel anytime. 
-                <a href="/terms" className="text-blue-600 hover:underline ml-1">Terms apply</a>
+            <div className="px-8 py-4 border-t border-fresco-border-light flex items-center justify-between">
+              <p className="text-fresco-xs text-fresco-graphite-light">
+                Secure checkout via Lemon Squeezy
               </p>
+              <a href="/terms" className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
+                Terms apply
+              </a>
             </div>
           </motion.div>
         </motion.div>
