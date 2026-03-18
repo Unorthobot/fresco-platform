@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Crown, Sparkles, Zap } from 'lucide-react';
+import { X, Crown, Sparkles, Zap, Users } from 'lucide-react';
 import { useState } from 'react';
 
 interface UpgradeModalProps {
@@ -132,26 +132,34 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2.5 border border-fresco-border text-fresco-graphite-mid rounded-none font-medium hover:bg-fresco-light-gray transition-colors"
-                >
-                  Maybe later
-                </button>
+              <div className="flex flex-col gap-2">
                 <button
                   onClick={() => handleUpgrade('pro')}
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 bg-fresco-black text-white rounded-none font-medium hover:bg-fresco-graphite transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full px-4 py-2.5 bg-fresco-black text-white rounded-none font-medium hover:bg-fresco-graphite transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     'Loading...'
                   ) : (
                     <>
                       <Crown className="w-4 h-4" />
-                      Upgrade to Pro
+                      Upgrade to Pro — $29/mo
                     </>
                   )}
+                </button>
+                <button
+                  onClick={() => handleUpgrade('studio')}
+                  disabled={loading}
+                  className="w-full px-4 py-2.5 border border-fresco-border text-fresco-black rounded-none font-medium hover:bg-fresco-light-gray transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Users className="w-4 h-4" />
+                  Upgrade to Studio — $79/mo
+                </button>
+                <button
+                  onClick={onClose}
+                  className="w-full px-4 py-2 text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors"
+                >
+                  Maybe later
                 </button>
               </div>
             </div>

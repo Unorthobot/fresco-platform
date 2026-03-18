@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sun, Moon, Bell, Key, Shield, Download, Trash2, Check } from 'lucide-react';
+import { Sun, Moon, Bell, Shield, Download, Trash2, Check, Zap } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
@@ -78,35 +78,15 @@ export function SettingsPage() {
             </div>
           </div>
 
-          {/* AI Configuration */}
+          {/* AI Preferences */}
           <div className="fresco-card p-6">
-            <h2 className="text-fresco-lg font-medium text-fresco-black mb-6 flex items-center gap-2"><Key className="w-5 h-5" />AI Configuration</h2>
-            <div className="space-y-4">
+            <h2 className="text-fresco-lg font-medium text-fresco-black mb-6 flex items-center gap-2"><Zap className="w-5 h-5" />AI</h2>
+            <div className="flex items-center justify-between">
               <div>
-                <label className="text-fresco-sm text-fresco-black mb-2 block">Anthropic API Key</label>
-                <p className="text-fresco-sm text-fresco-graphite-light mb-3">
-                  Required for AI-powered insights. Get your key at{' '}
-                  <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-fresco-black dark:hover:text-white">
-                    console.anthropic.com
-                  </a>
-                </p>
-                <p className="text-fresco-sm text-fresco-graphite-light mb-3">
-                  Create a file called <code className="px-1.5 py-0.5 bg-fresco-light-gray dark:bg-gray-700 rounded-none text-fresco-black dark:text-white">.env.local</code> in your project folder with:
-                </p>
-                <pre className="p-3 bg-fresco-light-gray dark:bg-gray-800 rounded-fresco text-fresco-sm text-fresco-black dark:text-white mb-3 overflow-x-auto">
-                  ANTHROPIC_API_KEY=sk-ant-your-key-here
-                </pre>
-                <p className="text-fresco-sm text-fresco-graphite-light">
-                  Then restart the dev server with <code className="px-1.5 py-0.5 bg-fresco-light-gray dark:bg-gray-700 rounded-none text-fresco-black dark:text-white">npm run dev</code>
-                </p>
+                <p className="text-fresco-base text-fresco-black">Auto-generate insights</p>
+                <p className="text-fresco-sm text-fresco-graphite-light">Generate insights as you type</p>
               </div>
-              <div className="flex items-center justify-between pt-4 border-t border-fresco-border-light">
-                <div>
-                  <p className="text-fresco-base text-fresco-black">Auto-generate insights</p>
-                  <p className="text-fresco-sm text-fresco-graphite-light">Generate insights as you type</p>
-                </div>
-                <Toggle checked={settings.autoGenerate} onChange={(v) => { updateSettings({ autoGenerate: v }); showSaved(); }} />
-              </div>
+              <Toggle checked={settings.autoGenerate} onChange={(v) => { updateSettings({ autoGenerate: v }); showSaved(); }} />
             </div>
           </div>
 

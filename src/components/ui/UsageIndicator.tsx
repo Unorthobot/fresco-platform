@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useFrescoStore } from '@/lib/store';
-import { Folder, Zap, ArrowRight, Loader2 } from 'lucide-react';
+import { Folder, Zap } from 'lucide-react';
 
 export function UsageIndicator() {
   const { workspaces, user, getUsageLimits } = useFrescoStore();
   const limits = getUsageLimits();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<'pro' | 'studio' | null>(null);
 
   const workspaceCount = workspaces.length;
   const workspaceLimit = limits.workspaces;
@@ -20,13 +20,13 @@ export function UsageIndicator() {
   const workspacePercentage = (workspaceCount / workspaceLimit) * 100;
   const aiPercentage = (aiCount / aiLimit) * 100;
 
-  const handleUpgrade = async () => {
-    setLoading(true);
+  const handleUpgrade = async (plan: 'pro' | 'studio') => {
+    setLoading(plan);
     try {
       const res = await fetch('/api/lemonsqueezy/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: 'pro' }),
+        body: JSON.stringify({ plan }),
       });
       if (res.status === 401) {
         window.location.href = '/login';
@@ -35,7 +35,7 @@ export function UsageIndicator() {
       const data = await res.json();
       if (data.url) window.location.href = data.url;
     } catch { /* silent */ }
-    setLoading(false);
+    setLoading(null);
   };
 
   return (
@@ -86,15 +86,25 @@ export function UsageIndicator() {
         </div>
       </div>
 
-      {/* Upgrade CTA */}
-      <button
-        onClick={handleUpgrade}
-        disabled={loading}
-        className="w-full flex items-center justify-between px-3 py-2.5 bg-fresco-black text-white text-fresco-xs font-medium hover:bg-fresco-graphite transition-colors disabled:opacity-50"
-      >
-        <span>{loading ? 'Loading…' : 'Upgrade to Pro'}</span>
-        {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowRight className="w-3 h-3" />}
-      </button>
+      {/* Upgrade CTAs */}
+      <div className="pt-2 space-y-1">
+        <button
+          onClick={() => handleUpgrade('pro')}
+          disabled={loading === 'pro'}
+          className="fresco-nav-item text-fresco-black font-medium"
+        >
+          <span className="w-[18px] h-[18px] flex items-center justify-center text-fresco-xs">↑</span>
+          <span>{loading === 'pro' ? 'Loading…' : 'Upgrade to Pro — $29'}</span>
+        </button>
+        <button
+          onClick={() => handleUpgrade('studio')}
+          disabled={loading === 'studio'}
+          className="fresco-nav-item"
+        >
+          <span className="w-[18px] h-[18px] flex items-center justify-center text-fresco-xs">↑</span>
+          <span>{loading === 'studio' ? 'Loading…' : 'Upgrade to Studio — $79'}</span>
+        </button>
+      </div>
     </div>
   );
 }

@@ -152,15 +152,23 @@ export function HomeDashboard({
       {/* Upgrade banner — free users only */}
       {!isGuest && user?.subscription === 'free' && (
         <div className="bg-fresco-black text-white px-6 py-3 flex items-center justify-between">
-          <p className="text-fresco-xs text-white/70">
+          <p className="text-fresco-xs text-white/60">
             Free plan · 3 workspaces · 10 AI generations/month
           </p>
-          <button
-            onClick={() => setShowUpgradeModal(true)}
-            className="text-fresco-xs font-medium text-white flex items-center gap-1.5 hover:opacity-70 transition-opacity"
-          >
-            Upgrade to Pro — $29/mo →
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="text-fresco-xs font-medium text-white hover:opacity-70 transition-opacity"
+            >
+              Pro — $29/mo →
+            </button>
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="text-fresco-xs text-white/60 hover:text-white hover:opacity-70 transition-opacity"
+            >
+              Studio — $79/mo →
+            </button>
+          </div>
         </div>
       )}
 
