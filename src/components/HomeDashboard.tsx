@@ -127,7 +127,7 @@ export function HomeDashboard({
 
   const formatTime = (date: Date | null) => {
     if (!date) return '--:--';
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
   const formatDate = (date: Date | null) => {
