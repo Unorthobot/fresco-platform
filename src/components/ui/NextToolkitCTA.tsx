@@ -1,14 +1,11 @@
 'use client';
 
-// FRESCO Next Toolkit CTA Component
-// Shows a prompt to continue to the next toolkit in the journey
-
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, ArrowRight, X, PartyPopper, Layout } from 'lucide-react';
+import { Lightbulb, ArrowRight, X, PartyPopper, Layout, Lock } from 'lucide-react';
 import { TOOLKITS, type ToolkitType } from '@/types';
+import { useFrescoStore } from '@/lib/store';
 
-// Toolkit flow mapping
 const TOOLKIT_FLOW: Record<ToolkitType, ToolkitType | null> = {
   insight_stack: 'pov_generator',
   pov_generator: 'mental_model_mapper',
@@ -21,7 +18,6 @@ const TOOLKIT_FLOW: Record<ToolkitType, ToolkitType | null> = {
   performance_grid: null,
 };
 
-// Custom messages for each transition
 const TRANSITION_MESSAGES: Record<ToolkitType, string> = {
   insight_stack: 'Your insights are ready. Continue to Position Builder to turn them into a clear position.',
   pov_generator: 'Your position is defined. Continue to Belief Mapper to surface the assumptions driving decisions.',
@@ -43,30 +39,26 @@ interface NextToolkitCTAProps {
 
 export function NextToolkitCTA({ currentToolkit, isReady, onStartToolkit, onViewWorkspace }: NextToolkitCTAProps) {
   const [isDismissed, setIsDismissed] = useState(false);
-  
+  const { canUseToolkit } = useFrescoStore();
+
   const nextToolkit = TOOLKIT_FLOW[currentToolkit];
-  
-  // Don't show if dismissed, not ready, or no next toolkit
+
   if (isDismissed || !isReady || !nextToolkit) {
-    // Show completion message for last toolkit
     if (isReady && !nextToolkit && currentToolkit === 'performance_grid' && !isDismissed) {
       return (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative mt-6 p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-none"
+          className="relative mt-6 p-4 bg-fresco-black rounded-none"
         >
-          <button 
-            onClick={() => setIsDismissed(true)} 
-            className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-none text-white"
-          >
+          <button onClick={() => setIsDismissed(true)} className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-none text-white">
             <X className="w-4 h-4" />
           </button>
           <div className="flex items-start gap-3 pr-6">
             <PartyPopper className="w-5 h-5 flex-shrink-0 mt-0.5 text-white" />
             <div>
-              <p className="text-fresco-sm font-medium mb-2 text-white">Journey Complete! 🎉</p>
-              <p className="text-fresco-sm text-white/90 mb-3">You've completed all 9 FRESCO toolkits. View your workspace synthesis for the full picture.</p>
+              <p className="text-fresco-sm font-medium mb-2 text-white">Journey complete.</p>
+              <p className="text-fresco-sm text-white/70 mb-3">You've completed all 9 Fresco toolkits. View your workspace synthesis for the full picture.</p>
               <button
                 onClick={onViewWorkspace}
                 className="flex items-center gap-2 px-4 py-2 bg-white text-fresco-black rounded-none text-fresco-sm font-medium hover:bg-fresco-light-gray transition-colors"
@@ -80,35 +72,42 @@ export function NextToolkitCTA({ currentToolkit, isReady, onStartToolkit, onView
     }
     return null;
   }
-  
+
   const nextToolkitData = TOOLKITS[nextToolkit];
   const message = TRANSITION_MESSAGES[currentToolkit];
-  
+  const isLocked = !canUseToolkit(nextToolkit);
+
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="relative mt-6 p-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-none"
+        className="relative mt-6 p-4 bg-fresco-light-gray border border-fresco-border rounded-none"
       >
-        <button 
-          onClick={() => setIsDismissed(true)} 
-          className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-none text-white"
-        >
+        <button onClick={() => setIsDismissed(true)} className="absolute top-3 right-3 p-1 hover:bg-fresco-warm-gray rounded-none text-fresco-graphite-light">
           <X className="w-4 h-4" />
         </button>
         <div className="flex items-start gap-3 pr-6">
-          <Lightbulb className="w-5 h-5 flex-shrink-0 mt-0.5 text-white" />
+          <Lightbulb className="w-5 h-5 flex-shrink-0 mt-0.5 text-fresco-graphite-mid" />
           <div>
-            <p className="text-fresco-sm font-medium mb-2 text-white">Ready for the next step!</p>
-            <p className="text-fresco-sm text-white/90 mb-3">{message}</p>
-            <button
-              onClick={() => onStartToolkit?.(nextToolkit)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-fresco-black rounded-none text-fresco-sm font-medium hover:bg-fresco-light-gray transition-colors"
-            >
-              Continue to {nextToolkitData.name} <ArrowRight className="w-4 h-4" />
-            </button>
+            <p className="text-fresco-sm font-medium mb-1 text-fresco-black">Next step</p>
+            <p className="text-fresco-sm text-fresco-graphite-mid mb-3">{message}</p>
+            {isLocked ? (
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('fresco:upgrade', { detail: { reason: 'toolkits' } }))}
+                className="flex items-center gap-2 px-4 py-2 bg-fresco-black text-white rounded-none text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors"
+              >
+                <Lock className="w-3.5 h-3.5" /> Upgrade to unlock {nextToolkitData.name}
+              </button>
+            ) : (
+              <button
+                onClick={() => onStartToolkit?.(nextToolkit)}
+                className="flex items-center gap-2 px-4 py-2 bg-fresco-black text-white rounded-none text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors"
+              >
+                Continue to {nextToolkitData.name} <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </motion.div>

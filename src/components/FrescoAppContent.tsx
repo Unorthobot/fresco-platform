@@ -18,6 +18,7 @@ import { TeamPage } from '@/components/TeamPage';
 import { ToastProvider } from '@/components/ui/Toast';
 import { Onboarding, useOnboarding } from '@/components/ui/Onboarding';
 import { NewWorkspaceModal } from '@/components/ui/NewWorkspaceModal';
+import { PricingModal } from '@/components/ui/PricingModal';
 import { type ToolkitType } from '@/types';
 
 type View = 'home' | 'workspace' | 'session' | 'archive' | 'settings' | 'account' | 'team';
@@ -26,6 +27,7 @@ export default function FrescoAppContent() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const { data: session, status } = useSession();
   const { isSyncComplete } = useDBSync();
@@ -135,6 +137,13 @@ export default function FrescoAppContent() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentView]);
+
+  // Listen for upgrade events from nested components (e.g. NextToolkitCTA)
+  useEffect(() => {
+    const handler = () => setShowPricingModal(true);
+    window.addEventListener('fresco:upgrade', handler);
+    return () => window.removeEventListener('fresco:upgrade', handler);
+  }, []);
 
   const handleNavigate = (section: string) => {
     if (section === 'home') {
@@ -351,6 +360,11 @@ export default function FrescoAppContent() {
         onClose={() => setShowNewWorkspaceModal(false)}
         onConfirm={handleConfirmNewWorkspace}
         userSubscription={user?.subscription}
+      />
+
+      <PricingModal
+        isOpen={showPricingModal}
+        onClose={() => setShowPricingModal(false)}
       />
     </div>
   );
