@@ -122,10 +122,12 @@ const getToolkitCategory = (type: ToolkitType): ToolkitCategory => {
   const investigateToolkits: ToolkitType[] = ['insight_stack', 'pov_generator', 'mental_model_mapper'];
   const innovateToolkits: ToolkitType[] = ['flow_board', 'experiment_brief', 'strategy_sketchbook'];
   const validateToolkits: ToolkitType[] = ['ux_scorecard', 'persuasion_canvas', 'performance_grid'];
+  const evaluateToolkits: ToolkitType[] = ['decision_matrix', 'risk_radar', 'signal_checker'];
   
   if (investigateToolkits.includes(type)) return 'investigate';
   if (innovateToolkits.includes(type)) return 'innovate';
   if (validateToolkits.includes(type)) return 'validate';
+  if (evaluateToolkits.includes(type)) return 'evaluate';
   return 'investigate';
 };
 
@@ -475,7 +477,7 @@ export const useFrescoStore = create<FrescoState>()(
       canUseToolkit: (toolkitType: string) => {
         const state = get();
         const tier = state.user?.subscription || 'free';
-        const freeToolkits = ['insight_stack', 'flow_board', 'ux_scorecard'];
+        const freeToolkits = ['insight_stack', 'flow_board', 'ux_scorecard', 'signal_checker'];
         if (tier === 'free') return freeToolkits.includes(toolkitType);
         return true;
       },

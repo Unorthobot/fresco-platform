@@ -40,6 +40,9 @@ const TOOLKIT_HINTS: Record<string, string> = {
   ux_scorecard: 'Evaluate experiences with structured scoring and clear priorities',
   persuasion_canvas: 'Map influence strategies by understanding barriers and beliefs',
   performance_grid: 'Compare targets vs actual results and decide what to change',
+  decision_matrix: 'Score your options against weighted criteria to eliminate bias',
+  risk_radar: 'Surface and weight every risk before you commit to a path',
+  signal_checker: 'Audit your evidence — separate real signal from wishful thinking',
 };
 
 export function HomeDashboard({
@@ -323,17 +326,17 @@ export function HomeDashboard({
         </div>
       </div>
 
-      {/* The Three Houses */}
+      {/* The Four Houses */}
       <div className="px-6 md:px-12 py-12">
-        <div className="max-w-5xl">
+        <div className="max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
-            <h2 className="text-fresco-2xl font-medium text-fresco-black mb-2">The Three Houses</h2>
+            <h2 className="text-fresco-2xl font-medium text-fresco-black mb-2">The Four Houses</h2>
             <p className="text-fresco-base text-fresco-graphite-mid">
               Kill weak ideas earlier. Commit faster to strong ones.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {/* Investigate */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="fresco-card p-6 border-l-4 border-l-fresco-black">
               <div className="fresco-phase-icon">
@@ -489,6 +492,59 @@ export function HomeDashboard({
                     )}
                   </div>
                   <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.performance_grid}</p>
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Evaluate — the fourth house */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="fresco-card p-6 border-l-4 border-l-fresco-black/40">
+              <div className="fresco-phase-icon">
+                <img src="/04-evaluate.png" alt="Evaluate" className="w-5 h-5 icon-theme" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              </div>
+              <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">Evaluate</h3>
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Commit with confidence. Stress-test decisions before they cost you.</p>
+              <div className="space-y-2">
+                <button 
+                  onClick={() => canUseToolkit('signal_checker') ? onStartToolkit?.('signal_checker') : setShowUpgradeModal(true)}
+                  className="w-full text-left p-3 rounded-none border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-fresco-sm font-medium text-fresco-black">Signal Checker™</span>
+                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.signal_checker}</p>
+                </button>
+                <button 
+                  onClick={() => canUseToolkit('decision_matrix') ? onStartToolkit?.('decision_matrix') : setShowUpgradeModal(true)}
+                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('decision_matrix') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-fresco-sm font-medium text-fresco-black">Decision Matrix™</span>
+                    {!canUseToolkit('decision_matrix') ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <Lock className="w-3 h-3" />Pro
+                      </span>
+                    ) : (
+                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    )}
+                  </div>
+                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.decision_matrix}</p>
+                </button>
+                <button 
+                  onClick={() => canUseToolkit('risk_radar') ? onStartToolkit?.('risk_radar') : setShowUpgradeModal(true)}
+                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('risk_radar') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-fresco-sm font-medium text-fresco-black">Risk Radar™</span>
+                    {!canUseToolkit('risk_radar') ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <Lock className="w-3 h-3" />Pro
+                      </span>
+                    ) : (
+                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                    )}
+                  </div>
+                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.risk_radar}</p>
                 </button>
               </div>
             </motion.div>

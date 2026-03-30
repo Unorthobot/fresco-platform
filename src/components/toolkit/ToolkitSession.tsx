@@ -51,6 +51,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   investigate: '/01-investigate.png',
   innovate: '/02-innovate.png',
   validate: '/03-validate.png',
+  evaluate: '/04-evaluate.png',
 };
 
 // Output labels per toolkit type
@@ -64,6 +65,9 @@ const OUTPUT_LABELS: Record<ToolkitType, { primary: string; secondary: string; a
   ux_scorecard: { primary: 'Score Summary', secondary: 'Key Findings', action: 'Top Priorities' },
   persuasion_canvas: { primary: 'Persuasion Elements', secondary: 'Core Message', action: 'Communication Plan' },
   performance_grid: { primary: 'Results Summary', secondary: 'Key Findings', action: 'Actions to Take' },
+  decision_matrix: { primary: 'Scored Options', secondary: 'Recommended Decision', action: 'Conditions to Monitor' },
+  risk_radar: { primary: 'Risk Register', secondary: 'Critical Risk Summary', action: 'Mitigation Plan' },
+  signal_checker: { primary: 'Evidence Audit', secondary: 'Hypothesis Verdict', action: 'Next Validation Tests' },
 };
 
 export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessionProps) {

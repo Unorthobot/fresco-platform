@@ -15,6 +15,7 @@ import { StrategySketchbookSession } from './StrategySketchbookSession';
 import { UXScorecardSession } from './UXScorecardSession';
 import { PersuasionCanvasSession } from './PersuasionCanvasSession';
 import { PerformanceGridSession } from './PerformanceGridSession';
+import { ToolkitSession } from './ToolkitSession';
 
 interface ToolkitRouterProps {
   sessionId: string;
@@ -70,6 +71,12 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit }
     
     case 'performance_grid':
       return <PerformanceGridSession sessionId={sessionId} workspaceId={workspaceId} onBack={onBack} onStartToolkit={onStartToolkit} />;
+
+    // Evaluate house — all use the generic ToolkitSession
+    case 'decision_matrix':
+    case 'risk_radar':
+    case 'signal_checker':
+      return <ToolkitSession sessionId={sessionId} workspaceId={workspaceId} onBack={onBack} />;
     
     default:
       return (

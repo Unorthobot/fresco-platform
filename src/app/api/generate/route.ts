@@ -200,6 +200,52 @@ Generate Persuasion Elements that identify key levers, a Core Message that captu
     performance_grid: `The user is analysing performance - understanding what's working and what isn't.
 Generate Performance Analysis across key metrics, a Key Finding that captures the most important insight, and Optimisation Actions to improve performance.`,
 
+    // EVALUATE HOUSE
+    decision_matrix: `The user is running a Decision Matrix - scoring multiple options against weighted criteria to eliminate bias from a high-stakes decision.
+
+They have provided:
+- THE DECISION: What is being decided and what the options are
+- CRITERIA: The factors that matter, with weights (High/Medium/Low)  
+- SCORES: How each option rates against each criterion (with reasoning)
+- VERDICT: Their tally and whether the winner feels right
+
+Your job is to:
+1. Generate "Scored Options" — 2-4 analytical observations about the scoring pattern. Identify where scores might be biased, where the gap between options is decisive vs. marginal, and what the scores reveal about hidden priorities.
+2. Generate a "Recommended Decision" — ONE clear, direct statement naming the winning option and the most important reason to choose it. Not "consider option A" — say "Choose option A because..."
+3. Generate "Conditions to Monitor" — 2-4 specific signals that should cause the decision-maker to reconsider. Make these concrete and time-bound where possible.
+
+If the user's instinct conflicts with the matrix score, name that tension directly.`,
+
+    risk_radar: `The user is running a Risk Radar - mapping risks before committing to a path.
+
+They have provided:
+- THE COMMITMENT: What they're about to do and what success looks like
+- RISK LIST: Every risk they could identify (technical, market, team, financial, competitive)
+- LIKELIHOOD × IMPACT scores: Their risk scoring (L × I = Risk Score)
+- MITIGATION PLAN: Actions and trip-wires for critical risks
+
+Your job is to:
+1. Generate a "Risk Register" — 2-4 analytical observations about the risk landscape. Flag any critical risks that appear underscored, identify cascading risk chains (where one risk materialising triggers others), and note any blind spots.
+2. Generate a "Critical Risk Summary" — ONE statement that names the single most important risk and what happens if it materialises unmitigated.
+3. Generate a "Mitigation Plan" — 2-4 specific, prioritised mitigation actions. For each, state: what to do, by when, and what the success signal is.
+
+Be direct about risks the user may be rationalising away. The purpose of this tool is to surface uncomfortable truths.`,
+
+    signal_checker: `The user is running a Signal Checker - auditing their evidence to separate real validation from confirmation bias.
+
+They have provided:
+- THE HYPOTHESIS: What they believe is true and what's at stake if they're wrong
+- EVIDENCE: Every piece of evidence supporting the hypothesis, with sources and sample sizes
+- EVIDENCE GRADES: Their own grading (A/B/C) of each piece of evidence
+- FALSIFICATION CONDITIONS: What would make them change their mind
+
+Your job is to:
+1. Generate an "Evidence Audit" — 2-4 analytical observations about the evidence quality. Identify the weakest A-grade claims, the strongest actual evidence, and any classic validation traps (people saying yes vs. paying, small samples, biased sources). Be sceptical.
+2. Generate a "Hypothesis Verdict" — ONE clear statement: Confirmed (strong A-grade evidence), Promising (mixed evidence, proceed with caution), Weak (mostly B/C evidence, test before committing), or Unconfirmed (insufficient evidence to proceed). State the verdict directly.
+3. Generate "Next Validation Tests" — 2-4 specific tests that would upgrade the evidence grade. Each test should be faster and cheaper than the commitment they're considering.
+
+Your job is to be the honest voice in the room. If the evidence is weak, say so clearly.`,
+
     workspace_synthesis: `You are synthesising insights from MULTIPLE toolkit sessions in a workspace to provide a META-LEVEL VIEW of the entire project.
 
 The user has completed various thinking exercises and you have access to:

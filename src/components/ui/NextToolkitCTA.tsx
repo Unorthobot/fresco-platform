@@ -15,7 +15,10 @@ const TOOLKIT_FLOW: Record<ToolkitType, ToolkitType | null> = {
   strategy_sketchbook: 'ux_scorecard',
   ux_scorecard: 'persuasion_canvas',
   persuasion_canvas: 'performance_grid',
-  performance_grid: null,
+  performance_grid: 'decision_matrix',
+  decision_matrix: 'risk_radar',
+  risk_radar: 'signal_checker',
+  signal_checker: null,
 };
 
 const TRANSITION_MESSAGES: Record<ToolkitType, string> = {
@@ -27,7 +30,10 @@ const TRANSITION_MESSAGES: Record<ToolkitType, string> = {
   strategy_sketchbook: 'Your strategy is sketched. Continue to UX Scorecard to evaluate the experience.',
   ux_scorecard: 'Your experience is scored. Continue to Influence Map to plan how to reach your audience.',
   persuasion_canvas: 'Your persuasion strategy is ready. Continue to Performance Grid for final validation.',
-  performance_grid: '',
+  performance_grid: 'Validation complete. Move to the Evaluate house — start with Decision Matrix to commit to a path.',
+  decision_matrix: 'Your options are scored. Run the Risk Radar to stress-test the winning option.',
+  risk_radar: 'Risks mapped and mitigated. Run the Signal Checker to confirm your evidence is real.',
+  signal_checker: '',
 };
 
 interface NextToolkitCTAProps {
@@ -44,7 +50,7 @@ export function NextToolkitCTA({ currentToolkit, isReady, onStartToolkit, onView
   const nextToolkit = TOOLKIT_FLOW[currentToolkit];
 
   if (isDismissed || !isReady || !nextToolkit) {
-    if (isReady && !nextToolkit && currentToolkit === 'performance_grid' && !isDismissed) {
+    if (isReady && !nextToolkit && currentToolkit === 'signal_checker' && !isDismissed) {
       return (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -57,8 +63,8 @@ export function NextToolkitCTA({ currentToolkit, isReady, onStartToolkit, onView
           <div className="flex items-start gap-3 pr-6">
             <PartyPopper className="w-5 h-5 flex-shrink-0 mt-0.5 text-white" />
             <div>
-              <p className="text-fresco-sm font-medium mb-2 text-white">Journey complete.</p>
-              <p className="text-fresco-sm text-white/70 mb-3">You've completed all 9 Fresco toolkits. View your workspace synthesis for the full picture.</p>
+              <p className="text-fresco-sm font-medium mb-2 text-white">All four houses complete.</p>
+              <p className="text-fresco-sm text-white/70 mb-3">You've worked through all 12 Fresco toolkits. View your workspace synthesis for the full picture.</p>
               <button
                 onClick={onViewWorkspace}
                 className="flex items-center gap-2 px-4 py-2 bg-white text-fresco-black rounded-none text-fresco-sm font-medium hover:bg-fresco-light-gray transition-colors"

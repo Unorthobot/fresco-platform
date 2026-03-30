@@ -14,6 +14,7 @@ import { ConnectedInsights } from '@/components/ui/ConnectedInsights';
 import { WorkspaceSynthesis } from '@/components/ui/WorkspaceSynthesis';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { EmptyState } from '@/components/ui/EmptyStates';
+import { OrchestrationPanel } from './OrchestrationPanel';
 
 // Workspace Clarity Score Component
 function WorkspaceClarityScore({ sessions }: { sessions: Session[] }) {
@@ -127,14 +128,18 @@ const TOOLKIT_FLOW: Record<ToolkitType, ToolkitType | null> = {
   strategy_sketchbook: 'ux_scorecard',
   ux_scorecard: 'persuasion_canvas',
   persuasion_canvas: 'performance_grid',
-  performance_grid: null,
+  performance_grid: 'decision_matrix',
+  decision_matrix: 'risk_radar',
+  risk_radar: 'signal_checker',
+  signal_checker: null,
 };
 
 // House progression
 const HOUSE_FLOW: Record<ToolkitCategory, ToolkitCategory | null> = {
   investigate: 'innovate',
   innovate: 'validate',
-  validate: null,
+  validate: 'evaluate',
+  evaluate: null,
 };
 
 const ALL_TOOLKITS: { type: ToolkitType; category: ToolkitCategory }[] = [
@@ -147,18 +152,23 @@ const ALL_TOOLKITS: { type: ToolkitType; category: ToolkitCategory }[] = [
   { type: 'ux_scorecard', category: 'validate' },
   { type: 'persuasion_canvas', category: 'validate' },
   { type: 'performance_grid', category: 'validate' },
+  { type: 'decision_matrix', category: 'evaluate' },
+  { type: 'risk_radar', category: 'evaluate' },
+  { type: 'signal_checker', category: 'evaluate' },
 ];
 
 const CATEGORY_ICONS: Record<ToolkitCategory, string> = {
   investigate: '/01-investigate.png',
   innovate: '/02-innovate.png',
   validate: '/03-validate.png',
+  evaluate: '/04-evaluate.png',
 };
 
 const CATEGORY_LABELS: Record<ToolkitCategory, string> = {
   investigate: 'Investigate',
   innovate: 'Innovate',
   validate: 'Validate',
+  evaluate: 'Evaluate',
 };
 
 export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartToolkit }: WorkspaceOverviewProps) {
@@ -609,6 +619,16 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
 
           {/* Sidebar */}
           <div className="lg:col-span-4 space-y-8">
+            {/* Orchestration — what to do next */}
+            <div>
+              <span className="fresco-label block mb-4">Orchestration</span>
+              <OrchestrationPanel
+                workspaceTitle={workspace?.title}
+                sessions={workspaceSessions}
+                onStartToolkit={onStartToolkit}
+              />
+            </div>
+
             {/* Workspace Clarity Score */}
             <div>
               <span className="fresco-label block mb-4">Workspace Clarity</span>
@@ -619,7 +639,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
             <div>
               <span className="fresco-label block mb-4">Journey Progress</span>
               <div className="space-y-3">
-                {(['investigate', 'innovate', 'validate'] as ToolkitCategory[]).map((category) => {
+                {(['investigate', 'innovate', 'validate', 'evaluate'] as ToolkitCategory[]).map((category) => {
                   const categoryToolkits = ALL_TOOLKITS.filter(t => t.category === category);
                   const completedCount = categoryToolkits.filter(t => 
                     workspaceSessions.some(s => s.toolkitType === t.type)
