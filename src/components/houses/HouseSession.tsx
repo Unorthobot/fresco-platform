@@ -359,15 +359,28 @@ export function HouseSession({
 
           {/* Guided fields */}
           <div className="space-y-8">
-            {fields.map((field, idx) => (
+            {fields.map((field, idx) => {
+              // Split "Label (Agent Name)" into label + agent tag
+              const agentMatch = field.label.match(/^(.+?)\s+\((.+?)\)$/);
+              const fieldLabel = agentMatch ? agentMatch[1] : field.label;
+              const agentTag = agentMatch ? agentMatch[2] : null;
+
+              return (
               <motion.div
                 key={field.id}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.06 }}
               >
-                <div className="fresco-step-label mb-1">
-                  {field.required ? field.label : `${field.label} (optional)`}
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="fresco-step-label">
+                    {field.required ? fieldLabel : `${fieldLabel} (optional)`}
+                  </div>
+                  {agentTag && (
+                    <span className="text-fresco-xs text-fresco-graphite-light bg-fresco-light-gray px-2 py-0.5 rounded-full font-normal">
+                      {agentTag}
+                    </span>
+                  )}
                 </div>
                 <p className="text-fresco-sm text-fresco-graphite-mid mb-3">{field.prompt}</p>
                 <div className="relative">
@@ -429,7 +442,8 @@ export function HouseSession({
                   </div>
                 )}
               </motion.div>
-            ))}
+              );
+            })}
 
             {/* URL — Evaluate only */}
             {houseId === 'evaluate' && (

@@ -21,22 +21,24 @@ export const InsightStackAgent = {
   displayName: 'Insight Stack',
   house: 'investigate' as HouseId,
   systemPrompt: `You are the Insight Stack agent inside FRESCO's Investigate house.
-Your job: extract patterns and tensions from raw observations to find the REAL problem beneath the stated one.
+Your job: extract patterns and tensions from the raw observations the user has shared to find the REAL problem beneath the stated one.
+
+The user has provided observations — data points, interview feedback, behaviour patterns, numbers. This is your primary input.
 
 Focus on:
-- What patterns keep appearing across the data/observations?
-- What is being avoided or left unsaid?
-- Where do the facts contradict the assumptions?
+- What patterns keep appearing across these observations?
+- What is being avoided or left unsaid in what they've shared?
+- Where do the facts contradict each other?
 - What is the gap between what people say and what they do?
+- What is the signal beneath the noise?
 
-You are one of three agents analysing this input. Be specific to the user's actual content.
-Do NOT be generic. Reference their specific situation directly.
+Be specific. Reference actual details from what they shared. Do not be generic.
 
 Return JSON only:
 {
-  "findings": ["finding 1", "finding 2", "finding 3"],
-  "signal": "The single most important pattern you detected",
-  "flags": ["tension or contradiction 1", "tension 2"],
+  "findings": ["specific finding 1", "specific finding 2", "specific finding 3"],
+  "signal": "The single most important pattern — stated in one sharp sentence",
+  "flags": ["specific tension or contradiction 1", "tension 2"],
   "moves": ["specific next action 1", "specific next action 2"]
 }`,
 };
@@ -46,20 +48,23 @@ export const PositionBuilderAgent = {
   displayName: 'Position Builder',
   house: 'investigate' as HouseId,
   systemPrompt: `You are the Position Builder agent inside FRESCO's Investigate house.
-Your job: surface the assumptions and positions baked into the user's framing, and clarify what they actually believe.
+Your job: surface the assumptions and positions baked into the user's current belief, and pressure-test whether it holds.
+
+The user has shared what they currently believe — their working hypothesis, the position they're taking, what's at stake if they're wrong. This is your primary input.
 
 Focus on:
-- What implicit position is the user taking? Is it defensible?
-- What assumptions would need to be true for their framing to hold?
-- What would a challenger say to undermine this position?
-- What is the strongest version of the user's point of view?
+- Is this position defensible given what they've observed?
+- What assumptions must be true for their position to hold?
+- What would a sharp challenger say to undermine it?
+- What is the strongest version of their point of view — and where is it weakest?
+- Are they fighting the right battle?
 
-You are one of three agents. Be specific to the user's content — not generic.
+Be specific. Reference their actual stated position. Do not be generic.
 
 Return JSON only:
 {
-  "findings": ["finding 1", "finding 2", "finding 3"],
-  "signal": "The clearest position or belief embedded in their framing",
+  "findings": ["specific finding 1", "specific finding 2", "specific finding 3"],
+  "signal": "The clearest position embedded in their framing — and whether it holds",
   "flags": ["assumption that needs challenging 1", "assumption 2"],
   "moves": ["action to strengthen or test the position 1", "action 2"]
 }`,
@@ -70,22 +75,25 @@ export const BeliefMapperAgent = {
   displayName: 'Belief Mapper',
   house: 'investigate' as HouseId,
   systemPrompt: `You are the Belief Mapper agent inside FRESCO's Investigate house.
-Your job: identify the mental models and frameworks the user is operating with, including the ones they haven't named.
+Your job: identify the mental models and hidden assumptions the user is operating with — especially the ones they haven't named or questioned.
+
+The user has shared what they're assuming — beliefs they're treating as facts, things they're not questioning, the model they're working from. This is your primary input. But also look at their observations and position for unspoken assumptions.
 
 Focus on:
-- What model of the world is the user applying?
-- Where does this model serve them, and where does it fail?
-- What beliefs are they treating as facts?
-- What would change if they updated their model?
+- What model of the world is the user applying? Name it explicitly.
+- Which beliefs are being treated as facts when they should be hypotheses?
+- Where does this mental model fail or have edges?
+- What would change about their whole approach if one key belief turned out to be wrong?
+- What are they not even considering — the assumption so obvious to them they've made it invisible?
 
-You are one of three agents. Be specific to the user's content.
+Be specific. Name the actual beliefs and models you detect. Do not be generic.
 
 Return JSON only:
 {
-  "findings": ["finding 1", "finding 2", "finding 3"],
-  "signal": "The dominant mental model shaping their thinking",
-  "flags": ["belief being treated as fact 1", "blind spot 2"],
-  "moves": ["action to test or update the model 1", "action 2"]
+  "findings": ["specific belief or model 1", "specific belief or model 2", "specific belief or model 3"],
+  "signal": "The dominant unexamined assumption shaping everything — stated directly",
+  "flags": ["belief being treated as fact 1", "invisible assumption 2"],
+  "moves": ["action to test or challenge this model 1", "action 2"]
 }`,
 };
 
@@ -334,99 +342,117 @@ export interface HouseField {
 }
 
 export const HOUSE_FIELDS: Record<HouseId, HouseField[]> = {
+  // INVESTIGATE: 3 fields, one per agent
+  // Field 1 → Insight Stack (raw observations, data, patterns)
+  // Field 2 → Position Builder (current belief, framing, position being taken)
+  // Field 3 → Belief Mapper (assumptions being treated as fact, mental model)
   investigate: [
     {
-      id: 'situation',
-      label: 'What are you looking at?',
-      prompt: 'Set the scene. What situation, problem, or data are you trying to make sense of?',
-      placeholder: 'e.g. Our users keep dropping off after signup. We have 3 months of data and 12 customer interviews that point to different causes.',
-      minHeight: 120,
+      id: 'observations',
+      label: 'What are you observing? (Insight Stack)',
+      prompt: 'Dump everything you\'re seeing — data, user feedback, behaviours, interview quotes. Don\'t interpret yet. The more specific the better.',
+      placeholder: 'e.g. Drop-off at step 3 is 60%. Users in interviews say the form is "confusing" but can\'t say why. Power users skip it entirely. Support tickets mention the same two fields every week. Mobile drop-off is 2× desktop.',
+      minHeight: 160,
       required: true,
     },
     {
-      id: 'observations',
-      label: 'What are you noticing?',
-      prompt: 'Dump your raw observations — data points, things people said, behaviours you\'ve seen. Don\'t interpret yet.',
-      placeholder: 'e.g. 60% drop-off at step 3. Users say it\'s "confusing" but can\'t say why. Power users skip step 3 entirely. Mobile users drop off more than desktop.',
-      minHeight: 140,
+      id: 'position',
+      label: 'What do you currently believe? (Position Builder)',
+      prompt: 'State your working hypothesis. What position are you taking going in — and what\'s at stake if you\'re wrong?',
+      placeholder: 'e.g. I think the drop-off is a copy problem, not a UX problem — users don\'t understand what we\'re asking for. But my PM thinks it\'s a trust issue. If I\'m wrong, the fix I\'m planning won\'t work.',
+      minHeight: 120,
       required: false,
     },
     {
-      id: 'tension',
-      label: 'What\'s confusing or contradictory?',
-      prompt: 'Where does the evidence conflict? What doesn\'t add up?',
-      placeholder: 'e.g. Users say they want more features but churn goes up every time we add them. Our NPS is high but growth is flat.',
-      minHeight: 100,
+      id: 'assumptions',
+      label: 'What are you assuming? (Belief Mapper)',
+      prompt: 'Name the beliefs you\'re treating as facts. What are you not questioning? What would have to be true for your position to hold?',
+      placeholder: 'e.g. I\'m assuming users want to complete this step — maybe they don\'t. I\'m assuming the form fields are necessary — they were added 2 years ago and no one has challenged them. I\'m assuming the problem is consistent across segments.',
+      minHeight: 120,
       required: false,
     },
   ],
+
+  // INNOVATE: 3 fields, one per agent
+  // Field 1 → Flow Board (the journey being designed, friction points)
+  // Field 2 → Experiment Brief (what needs testing, the hypothesis)
+  // Field 3 → Strategy Sketchbook (strategic options and trade-offs)
   innovate: [
     {
-      id: 'solution',
-      label: 'What are you building or designing?',
-      prompt: 'Describe the solution, product, or experience. What problem does it solve and who is it for?',
-      placeholder: 'e.g. A self-serve onboarding flow for SMB customers. Currently onboarding is manual and takes 2 weeks. We want to get it to 2 days without losing quality.',
-      minHeight: 140,
+      id: 'flow',
+      label: 'What journey or flow are you designing? (Flow Board)',
+      prompt: 'Describe the experience step by step — from trigger to outcome. Where does it currently break down or feel slow?',
+      placeholder: 'e.g. User gets invite email → lands on signup page → enters details → hits verification step → waits for email → confirms → lands in dashboard. Current drop-off is at verification — 40% never confirm. Those who do take 3 days on average.',
+      minHeight: 160,
       required: true,
     },
-    {
-      id: 'constraints',
-      label: 'What constraints are you working within?',
-      prompt: 'What can\'t you change? What resources, time, or technical limits are you designing around?',
-      placeholder: 'e.g. We can\'t change the underlying data model. We have 6 weeks and 2 engineers. The design must work within our existing component library.',
-      minHeight: 100,
-      required: false,
-    },
-    {
-      id: 'tried',
-      label: 'What have you already tried?',
-      prompt: 'What approaches have you tested? What worked, what didn\'t, and why?',
-      placeholder: 'e.g. We tried a wizard-style flow — users completed it but then didn\'t use the product. We tried email nudges — 12% open rate, low action.',
-      minHeight: 100,
-      required: false,
-    },
-  ],
-  validate: [
     {
       id: 'hypothesis',
-      label: 'What are you trying to validate?',
-      prompt: 'State your core hypothesis. What do you believe is true, and what would it mean if you\'re wrong?',
-      placeholder: 'e.g. We believe enterprise customers will pay $500/mo for a dedicated account manager. If wrong, our entire enterprise tier pricing model needs rethinking.',
+      label: 'What do you want to test? (Experiment Brief)',
+      prompt: 'What\'s your best hypothesis for what will improve the outcome? What would a good test look like, and how would you know it worked?',
+      placeholder: 'e.g. Hypothesis: if we replace email verification with SMS, confirmation rate will increase by 20%. Test: A/B for 2 weeks, 50/50 split. Success = 20%+ lift in confirmation rate with no increase in fraudulent signups.',
       minHeight: 120,
-      required: true,
-    },
-    {
-      id: 'evidence',
-      label: 'What evidence do you have so far?',
-      prompt: 'What signals have you seen? Include source, sample size, and how strong you think each signal is.',
-      placeholder: 'e.g. 3 customer interviews said yes (weak — small sample, no commitment). 1 pilot customer paying $300/mo (strong — real behaviour). 2 competitors charge $400+ (market signal).',
-      minHeight: 140,
       required: false,
     },
     {
-      id: 'metric',
-      label: 'What would make you change direction?',
-      prompt: 'Define the specific result that would cause you to pivot or stop. Be concrete.',
-      placeholder: 'e.g. If we can\'t get 3 LOIs at $500/mo within 30 days, we\'ll drop to $299 and test again. If still no takers at $299, we kill the enterprise tier.',
-      minHeight: 100,
+      id: 'options',
+      label: 'What strategic options are you weighing? (Strategy Sketchbook)',
+      prompt: 'What are the 2–3 real choices in front of you? What does each one make possible or foreclose?',
+      placeholder: 'e.g. Option A: remove verification entirely — fastest, highest risk. Option B: magic link instead of code — medium lift, low risk. Option C: social login — highest lift, 6-week build. We need to ship something in 3 weeks.',
+      minHeight: 120,
       required: false,
     },
   ],
+
+  // VALIDATE: 3 fields, one per agent
+  // Field 1 → Experience Scorecard (what's being evaluated, quality criteria)
+  // Field 2 → Influence Map (who needs to be convinced, what's blocking them)
+  // Field 3 → Results Tracker (targets vs actuals, what the numbers say)
+  validate: [
+    {
+      id: 'experience',
+      label: 'What experience are you evaluating? (Experience Scorecard)',
+      prompt: 'Describe what you\'re assessing — a product, flow, message, or feature. What was it supposed to do, and who for?',
+      placeholder: 'e.g. Our new onboarding flow for SMB customers. Goal: get them to first value (creating their first project) within 24 hours of signup. Current reality: median time to first project is 6 days. 30% never create one.',
+      minHeight: 160,
+      required: true,
+    },
+    {
+      id: 'audience',
+      label: 'Who needs to be convinced, and what\'s blocking them? (Influence Map)',
+      prompt: 'Who are you trying to move — internally or externally? What do they currently believe, and what\'s stopping them from acting?',
+      placeholder: 'e.g. Our VP of Product needs to approve a redesign. She believes the current flow is fine and the problem is marketing quality. Her blocker is lack of data. Externally: users who signed up but haven\'t activated — they think setup will take too long.',
+      minHeight: 120,
+      required: false,
+    },
+    {
+      id: 'results',
+      label: 'What do the numbers say? (Results Tracker)',
+      prompt: 'List your key metrics with targets and actuals. Be honest — this only works with real numbers.',
+      placeholder: 'e.g. Time to first project: target 24h, actual 6 days. Activation rate: target 70%, actual 42%. Drop-off at step 2 (invite team): 58%. NPS of activated users: 71. NPS of non-activated: 12.',
+      minHeight: 120,
+      required: false,
+    },
+  ],
+
+  // EVALUATE: 2 fields, structured for the evaluation agents
+  // Field 1 → Page Score + Journey Trace (what exists, what it's meant to do)
+  // Field 2 → Variant Lens (what's underperforming, what you want to test)
   evaluate: [
     {
       id: 'subject',
-      label: 'What are you evaluating?',
-      prompt: 'Describe the page, flow, message, or experience. What is it meant to do and who is the audience?',
-      placeholder: 'e.g. Our new pricing page targeting mid-market SaaS companies. Goal: get them to book a demo. Current conversion is 2.1%, we want 4%+.',
-      minHeight: 120,
+      label: 'What are you evaluating? (Page Score + Journey Trace)',
+      prompt: 'Describe the page, flow, or experience. What is it meant to do, who is the audience, and what does the user journey look like step by step?',
+      placeholder: 'e.g. Our pricing page for mid-market SaaS buyers. Goal: book a demo. Journey: Google ad → pricing page → clicks "Book a demo" → calendar. Current conversion: 2.1%. Users spend avg 45 seconds. 70% scroll below the fold but don\'t click.',
+      minHeight: 160,
       required: true,
     },
     {
-      id: 'concerns',
-      label: 'What specific concerns do you have?',
-      prompt: 'What do you think is underperforming? What feedback have you received?',
-      placeholder: 'e.g. Sales says leads come in confused about which plan to choose. Heatmaps show people scroll past the pricing table without engaging. The CTA gets ignored.',
-      minHeight: 120,
+      id: 'variants',
+      label: 'What do you think is underperforming, and what would you test? (Variant Lens)',
+      prompt: 'Where do you think the experience is failing? What variants or changes are you considering, and what would a meaningful result look like?',
+      placeholder: 'e.g. The headline feels generic ("Built for teams"). CTA says "Book a demo" but buyers at this stage want a trial. Considering: (A) outcome-led headline, (B) "Start free trial" CTA, (C) add social proof above fold. Success = 4%+ conversion in 2-week test.',
+      minHeight: 140,
       required: false,
     },
   ],

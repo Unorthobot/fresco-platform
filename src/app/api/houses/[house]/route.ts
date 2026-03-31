@@ -22,7 +22,7 @@ async function runAgent(
 ): Promise<AgentOutput> {
   const contextSection = context ? `\n\nWORKSPACE CONTEXT (from prior sessions):\n${context}` : '';
   const urlSection = url ? `\n\nURL BEING EVALUATED: ${url}` : '';
-  const userMessage = `${contextSection}${urlSection}\n\nUSER INPUT:\n${userInput}\n\nAnalyse this and return your JSON findings.`;
+  const userMessage = `${contextSection}${urlSection}\n\nUSER INPUT (all fields combined):\n${userInput}\n\nAnalyse this using your specific lens and return your JSON findings.`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
