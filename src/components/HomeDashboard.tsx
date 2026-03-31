@@ -354,10 +354,10 @@ export function HomeDashboard({
                   <p className="text-fresco-sm text-fresco-graphite-mid mb-6 flex-1">{house.description}</p>
                   <button
                     onClick={() => onStartHouse?.(houseId)}
-                    className="w-full flex items-center justify-between p-3 rounded-none bg-fresco-black text-white hover:bg-fresco-graphite transition-all group"
+                    className="fresco-btn w-full"
                   >
-                    <span className="text-fresco-sm font-medium">Run {house.name}</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    <span>Run {house.name}</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </motion.div>
               );
