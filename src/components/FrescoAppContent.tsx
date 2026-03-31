@@ -100,6 +100,9 @@ export default function FrescoAppContent() {
       setCurrentView('account');
     } else if (activeSection === 'team') {
       setCurrentView('team');
+    } else if (activeSection === 'home') {
+      // Explicit home — always go home regardless of session/workspace state
+      setCurrentView('home');
     } else if (activeSessionId) {
       setCurrentView('session');
     } else if (activeWorkspaceId) {
