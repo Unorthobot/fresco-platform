@@ -103,12 +103,13 @@ function useVoice(onText: (t: string) => void) {
 // When answered (blur or content present), collapses to show a preview.
 
 function QuestionCard({
-  step, value, onChange, isActive, isAnswered, isLocked,
+  step, value, onChange, onBlur, isActive, isAnswered, isLocked,
   onActivate, showAgent = false,
 }: {
   step: ConversationStep;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   isActive: boolean;
   isAnswered: boolean;
   isLocked: boolean;
@@ -179,6 +180,7 @@ function QuestionCard({
                   ref={textRef}
                   value={value}
                   onChange={e => onChange(e.target.value)}
+                  onBlur={onBlur}
                   placeholder={step.placeholder}
                   className="fresco-input-lg pr-20"
                   style={{ minHeight: step.minHeight || 120 }}
@@ -454,13 +456,13 @@ function ConversationFlow({
 
   const unlockedUpTo = getUnlockedUpTo();
 
-  // Auto-advance active to next empty step when a step gets content
-  useEffect(() => {
-    if ((values[steps[activeIdx]?.id] || '').trim().length > 20 && activeIdx < steps.length - 1) {
-      const timer = setTimeout(() => setActiveIdx(activeIdx + 1), 300);
-      return () => clearTimeout(timer);
+  // Only auto-advance when user explicitly leaves a field (onBlur)
+  const handleBlur = (stepId: string) => {
+    const idx = steps.findIndex(s => s.id === stepId);
+    if (idx === activeIdx && (values[stepId] || '').trim().length > 0 && activeIdx < steps.length - 1) {
+      setActiveIdx(activeIdx + 1);
     }
-  }, [values, activeIdx]);
+  };
 
   return (
     <div className="space-y-3">
@@ -478,6 +480,7 @@ function ConversationFlow({
             step={step}
             value={values[step.id] || ''}
             onChange={v => onChange(step.id, v)}
+            onBlur={() => handleBlur(step.id)}
             isActive={isActive}
             isAnswered={isAnswered}
             isLocked={isLocked}
