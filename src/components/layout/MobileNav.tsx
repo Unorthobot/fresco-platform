@@ -4,20 +4,30 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Home, Archive, Settings, User, Layers, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { HOUSE_META } from '@/lib/agents';
+import type { HouseId } from '@/lib/agents';
 
 interface MobileNavProps {
   activeSection: string;
   onNavigate: (section: string) => void;
   userSubscription?: string;
+  onStartHouse?: (houseId: HouseId) => void;
 }
 
-export function MobileNav({ activeSection, onNavigate, userSubscription }: MobileNavProps) {
+export function MobileNav({ activeSection, onNavigate, userSubscription, onStartHouse }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleNavigate = (section: string) => {
     onNavigate(section);
     setIsOpen(false);
   };
+
+  const handleHouse = (houseId: HouseId) => {
+    onStartHouse?.(houseId);
+    setIsOpen(false);
+  };
+
+  const houseIds: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
@@ -55,7 +65,7 @@ export function MobileNav({ activeSection, onNavigate, userSubscription }: Mobil
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="md:hidden fixed left-0 top-0 bottom-0 w-[280px] bg-white dark:bg-gray-900 z-[56] shadow-xl"
+              className="md:hidden fixed left-0 top-0 bottom-0 w-[280px] bg-white dark:bg-gray-900 z-[56] shadow-xl overflow-y-auto"
             >
               <div className="p-4 border-b border-fresco-border-light dark:border-gray-700">
                 <div className="flex items-center gap-2">
@@ -64,6 +74,35 @@ export function MobileNav({ activeSection, onNavigate, userSubscription }: Mobil
                 </div>
               </div>
               
+              {/* Houses */}
+              <div className="p-4 border-b border-fresco-border-light dark:border-gray-700">
+                <p className="text-fresco-xs font-medium uppercase tracking-wider text-fresco-graphite-light mb-3">Houses</p>
+                <div className="space-y-1">
+                  {houseIds.map(houseId => {
+                    const house = HOUSE_META[houseId];
+                    return (
+                      <button
+                        key={houseId}
+                        onClick={() => handleHouse(houseId)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-fresco-base text-fresco-graphite-mid hover:bg-fresco-light-gray hover:text-fresco-black transition-colors"
+                      >
+                        <img
+                          src={house.icon}
+                          alt={house.name}
+                          className="w-4 h-4 flex-shrink-0 icon-theme"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                        <div className="text-left">
+                          <div className="text-fresco-sm font-medium">{house.name}</div>
+                          <div className="text-fresco-xs text-fresco-graphite-light">→ {house.output}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Standard nav */}
               <div className="p-4 space-y-1">
                 {navItems.map(item => (
                   <button

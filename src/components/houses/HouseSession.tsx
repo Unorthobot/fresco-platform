@@ -23,11 +23,9 @@ import {
   MicOff,
   Upload,
   FileText,
-  FileDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDBWrite } from '@/lib/useDBSync';
-import { useIsMobile } from '@/lib/hooks';
 import { useFrescoStore } from '@/lib/store';
 import { HOUSE_META, type HouseId } from '@/lib/agents';
 import type { HouseResult } from '@/lib/orchestrator';
@@ -63,7 +61,6 @@ export function HouseSession({
 }: HouseSessionProps) {
   const { sessions, workspaces } = useFrescoStore();
   const db = useDBWrite();
-  const isMobile = useIsMobile();
 
   const session = sessions.find(s => s.id === sessionId);
   const workspace = workspaces.find(w => w.id === workspaceId);

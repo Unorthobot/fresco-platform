@@ -452,9 +452,17 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                   ) : (
                     <div className="space-y-3">
                       {workspaceSessions.map((session, index) => {
-                        const toolkit = TOOLKITS[session.toolkitType];
-                        const nextToolkit = TOOLKIT_FLOW[session.toolkitType];
-                        
+                        // House session: use HOUSE_META. Legacy toolkit session: use TOOLKITS.
+                        const isHouseSession = !!(session as any).houseType;
+                        const houseId = (session as any).houseType as HouseId | undefined;
+                        const houseMeta = houseId ? HOUSE_META[houseId] : null;
+                        const toolkit = !isHouseSession ? TOOLKITS[session.toolkitType] : null;
+                        const sessionName = isHouseSession
+                          ? `${houseMeta?.name ?? 'House'} Analysis`
+                          : (toolkit?.name ?? session.toolkitType);
+                        const sessionCategory = isHouseSession ? houseId! : toolkit?.category ?? 'investigate';
+                        const categoryIcon = CATEGORY_ICONS[sessionCategory];
+
                         return (
                           <motion.div
                             key={session.id}
@@ -472,9 +480,9 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                               <div className="flex items-start justify-between">
                                 <div className="flex-1 min-w-0 pr-10">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <img src={CATEGORY_ICONS[toolkit.category]} alt="" className="w-5 h-5 icon-themed" />
+                                    <img src={categoryIcon} alt="" className="w-5 h-5 icon-themed" onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                                     <div>
-                                    <h3 className="text-fresco-base font-medium text-fresco-black">{toolkit.name}</h3>
+                                    <h3 className="text-fresco-base font-medium text-fresco-black">{sessionName}</h3>
                                     {session.steps?.[0]?.content && (() => {
                                       const raw = session.steps![0].content;
                                       let preview = raw;
@@ -666,7 +674,11 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                       <p className="text-fresco-sm text-fresco-graphite-soft italic leading-relaxed">
                         "{truncate(session.sentenceOfTruth?.content || '', 100)}"
                       </p>
-                      <p className="text-fresco-xs text-fresco-graphite-light mt-2">{TOOLKITS[session.toolkitType].name}</p>
+                      <p className="text-fresco-xs text-fresco-graphite-light mt-2">
+                        {(session as any).houseType
+                          ? `${HOUSE_META[(session as any).houseType as HouseId]?.name ?? 'House'} Analysis`
+                          : (TOOLKITS[session.toolkitType]?.name ?? session.toolkitType)}
+                      </p>
                     </button>
                   ))}
                 </div>

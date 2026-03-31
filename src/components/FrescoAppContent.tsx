@@ -279,10 +279,10 @@ export default function FrescoAppContent() {
       <a href="#main-content" className="skip-link">Skip to main content</a>
 
       <div className="hidden md:block">
-        <LeftNavRail onNavigate={handleNavigate} />
+        <LeftNavRail onNavigate={handleNavigate} onStartHouse={handleStartHouse} />
       </div>
 
-      <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} />
+      <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} onStartHouse={handleStartHouse} />
 
       <main id="main-content" className="md:ml-[220px] min-h-screen">
         <AnimatePresence mode="sync">
@@ -357,6 +357,7 @@ export default function FrescoAppContent() {
                 onNavigateToSession={handleNavigateToSession}
                 onCreateWorkspace={handleCreateWorkspace}
                 onStartToolkit={handleStartToolkit}
+                onStartHouse={handleStartHouse}
               />
             </motion.div>
           )}

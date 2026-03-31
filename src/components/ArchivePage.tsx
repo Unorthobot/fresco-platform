@@ -6,8 +6,18 @@ import { Search, Clock, ArrowRight, X } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
 import { formatRelativeTime, truncate } from '@/lib/utils';
 import { TOOLKITS } from '@/types';
+import { HOUSE_META } from '@/lib/agents';
+import type { HouseId } from '@/lib/agents';
 
 interface ArchivePageProps { onOpenSession?: (sessionId: string, workspaceId: string) => void; }
+
+function getSessionName(session: any): string {
+  if (session.houseType) {
+    return `${HOUSE_META[session.houseType as HouseId]?.name ?? 'House'} Analysis`;
+  }
+  const name = (TOOLKITS as any)[session.toolkitType]?.name;
+  return name ?? session.toolkitType;
+}
 
 export function ArchivePage({ onOpenSession }: ArchivePageProps) {
   const { sessions, workspaces } = useFrescoStore();
@@ -15,29 +25,16 @@ export function ArchivePage({ onOpenSession }: ArchivePageProps) {
   
   const allSessions = useMemo(() => {
     const sorted = [...sessions].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    
     if (!searchQuery.trim()) return sorted;
-    
     const query = searchQuery.toLowerCase();
     return sorted.filter(session => {
-      const toolkit = TOOLKITS[session.toolkitType];
+      const name = getSessionName(session);
       const workspace = workspaces.find(w => w.id === session.workspaceId);
-      
-      // Search in toolkit name
-      if (toolkit?.name.toLowerCase().includes(query)) return true;
-      
-      // Search in workspace title
+      if (name.toLowerCase().includes(query)) return true;
       if (workspace?.title.toLowerCase().includes(query)) return true;
-      
-      // Search in sentence of truth
       if (session.sentenceOfTruth?.content?.toLowerCase().includes(query)) return true;
-      
-      // Search in step responses
-      if (session.steps?.some(step => step.response?.toLowerCase().includes(query))) return true;
-      
-      // Search in insights
-      if (session.insights?.some(insight => insight.content?.toLowerCase().includes(query))) return true;
-      
+      if (session.steps?.some((step: any) => step.response?.toLowerCase().includes(query))) return true;
+      if (session.insights?.some((insight: any) => insight.content?.toLowerCase().includes(query))) return true;
       return false;
     });
   }, [sessions, workspaces, searchQuery]);
@@ -59,16 +56,13 @@ export function ArchivePage({ onOpenSession }: ArchivePageProps) {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fresco-graphite-light" />
           <input 
             type="text" 
-            placeholder="Search sessions, toolkits, insights..." 
+            placeholder="Search sessions, houses, insights..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-12 h-12 bg-transparent border border-fresco-border rounded-fresco text-fresco-base focus:outline-none focus:border-fresco-black dark:text-white dark:border-gray-700 dark:focus:border-white" 
           />
           {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-fresco-graphite-light hover:text-fresco-black dark:hover:text-white transition-colors"
-            >
+            <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-fresco-graphite-light hover:text-fresco-black transition-colors">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -98,25 +92,42 @@ export function ArchivePage({ onOpenSession }: ArchivePageProps) {
               <div className="space-y-2">
                 {allSessions.map((session) => {
                   const ws = workspaces.find((w) => w.id === session.workspaceId);
+                  const name = getSessionName(session);
+                  const isHouse = !!(session as any).houseType;
+                  const houseId = (session as any).houseType as HouseId | undefined;
+                  const verdict = (session as any).decision;
                   return (
                     <button key={session.id} onClick={() => onOpenSession?.(session.id, session.workspaceId)} className="w-full fresco-card-hover p-4 text-left group">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0 pr-4">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 className="text-fresco-base font-medium text-fresco-black">{TOOLKITS[session.toolkitType]?.name}</h3>
-                            {(session as any).decision && (
+                            {isHouse && houseId && (
+                              <img
+                                src={HOUSE_META[houseId]?.icon}
+                                alt={houseId}
+                                className="w-4 h-4 icon-theme"
+                                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            )}
+                            <h3 className="text-fresco-base font-medium text-fresco-black">{name}</h3>
+                            {isHouse && houseId && (
+                              <span className="text-fresco-xs text-fresco-graphite-light">
+                                → {HOUSE_META[houseId]?.output}
+                              </span>
+                            )}
+                            {verdict && (
                               <span className={[
                                 'text-fresco-xs font-medium px-2 py-0.5 rounded-full border',
-                                (session as any).decision === 'GO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                (session as any).decision === 'PIVOT' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                (session as any).decision === 'KILL' ? 'bg-red-50 text-red-600 border-red-200' :
+                                verdict === 'GO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                verdict === 'PIVOT' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                verdict === 'KILL' ? 'bg-red-50 text-red-600 border-red-200' :
                                 'bg-gray-50 text-gray-500 border-gray-200'
                               ].join(' ')}>
-                                {(session as any).decision === 'DEFERRED' ? 'Pending' : (session as any).decision}
+                                {verdict === 'DEFERRED' ? 'Pending' : verdict}
                               </span>
                             )}
                           </div>
-                          {session.steps?.[0]?.content && (
+                          {!isHouse && session.steps?.[0]?.content && (
                             <p className="text-fresco-xs text-fresco-graphite-mid line-clamp-1 mb-1">{session.steps[0].content.slice(0, 80)}</p>
                           )}
                           <p className="text-fresco-xs text-fresco-graphite-light">{ws?.title} · {formatRelativeTime(session.updatedAt)}</p>
@@ -135,9 +146,9 @@ export function ArchivePage({ onOpenSession }: ArchivePageProps) {
             <h3 className="fresco-label mb-4">Statistics</h3>
             <div className="fresco-card p-5 space-y-4">
               <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Sessions</span><span className="text-fresco-base font-medium text-fresco-black">{sessions.length}</span></div>
+              <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">House sessions</span><span className="text-fresco-base font-medium text-fresco-black">{sessions.filter(s => (s as any).houseType).length}</span></div>
               <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Workspaces</span><span className="text-fresco-base font-medium text-fresco-black">{workspaces.length}</span></div>
               <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Sentences of Truth</span><span className="text-fresco-base font-medium text-fresco-black">{sentencesOfTruth.length}</span></div>
-              <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Decisions made</span><span className="text-fresco-base font-medium text-fresco-black">{sessions.filter(s => (s as any).decision).length}</span></div>
               <div className="flex justify-between"><span className="text-fresco-sm text-fresco-graphite-mid">Total insights</span><span className="text-fresco-base font-medium text-fresco-black">{sessions.reduce((acc, s) => acc + (s.insights?.length || 0), 0)}</span></div>
             </div>
           </div>
