@@ -1,31 +1,26 @@
 // FRESCO Agent Definitions
 // Agents are background-only intelligence. They are never exposed in the UI.
-// Each agent takes user input and returns structured findings.
+// Display names match the marketing site toolkit names exactly.
 // The orchestrator merges agent outputs — the UI only ever sees the merged result.
 
 export type HouseId = 'investigate' | 'innovate' | 'validate' | 'evaluate';
 
-export interface AgentInput {
-  userInput: string;          // Primary free-text input from the user
-  context?: string;           // Optional: workspace context from prior sessions
-  thinkingLens?: string;      // Optional: active thinking lens
-  url?: string;               // Evaluate house only: URL to analyse
-}
-
 export interface AgentOutput {
   agentId: string;
-  findings: string[];         // 2-4 findings specific to this agent's lens
-  signal: string;             // Single most important signal from this agent
-  flags: string[];            // Issues, risks, or friction points this agent identified
-  moves: string[];            // Concrete actions this agent recommends
+  displayName: string;      // Marketing-site toolkit name shown during streaming
+  findings: string[];
+  signal: string;
+  flags: string[];
+  moves: string[];
 }
 
 // ─── INVESTIGATE AGENTS ───────────────────────────────────────────────────────
 
 export const InsightStackAgent = {
   id: 'InsightStackAgent',
+  displayName: 'Insight Stack',
   house: 'investigate' as HouseId,
-  systemPrompt: `You are the InsightStackAgent inside FRESCO's Investigate house.
+  systemPrompt: `You are the Insight Stack agent inside FRESCO's Investigate house.
 Your job: extract patterns and tensions from raw observations to find the REAL problem beneath the stated one.
 
 Focus on:
@@ -37,7 +32,7 @@ Focus on:
 You are one of three agents analysing this input. Be specific to the user's actual content.
 Do NOT be generic. Reference their specific situation directly.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The single most important pattern you detected",
@@ -46,10 +41,11 @@ Return JSON:
 }`,
 };
 
-export const POVAgent = {
-  id: 'POVAgent',
+export const PositionBuilderAgent = {
+  id: 'PositionBuilderAgent',
+  displayName: 'Position Builder',
   house: 'investigate' as HouseId,
-  systemPrompt: `You are the POVAgent inside FRESCO's Investigate house.
+  systemPrompt: `You are the Position Builder agent inside FRESCO's Investigate house.
 Your job: surface the assumptions and positions baked into the user's framing, and clarify what they actually believe.
 
 Focus on:
@@ -60,7 +56,7 @@ Focus on:
 
 You are one of three agents. Be specific to the user's content — not generic.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The clearest position or belief embedded in their framing",
@@ -69,10 +65,11 @@ Return JSON:
 }`,
 };
 
-export const MentalModelAgent = {
-  id: 'MentalModelAgent',
+export const BeliefMapperAgent = {
+  id: 'BeliefMapperAgent',
+  displayName: 'Belief Mapper',
   house: 'investigate' as HouseId,
-  systemPrompt: `You are the MentalModelAgent inside FRESCO's Investigate house.
+  systemPrompt: `You are the Belief Mapper agent inside FRESCO's Investigate house.
 Your job: identify the mental models and frameworks the user is operating with, including the ones they haven't named.
 
 Focus on:
@@ -83,7 +80,7 @@ Focus on:
 
 You are one of three agents. Be specific to the user's content.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The dominant mental model shaping their thinking",
@@ -94,10 +91,11 @@ Return JSON:
 
 // ─── INNOVATE AGENTS ──────────────────────────────────────────────────────────
 
-export const FlowAgent = {
-  id: 'FlowAgent',
+export const FlowBoardAgent = {
+  id: 'FlowBoardAgent',
+  displayName: 'Flow Board',
   house: 'innovate' as HouseId,
-  systemPrompt: `You are the FlowAgent inside FRESCO's Innovate house.
+  systemPrompt: `You are the Flow Board agent inside FRESCO's Innovate house.
 Your job: map the journey, process, or experience the user is designing and identify where friction occurs.
 
 Focus on:
@@ -108,7 +106,7 @@ Focus on:
 
 You are one of three agents. Be specific to the user's content.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The biggest friction point or gap in the current flow",
@@ -117,10 +115,11 @@ Return JSON:
 }`,
 };
 
-export const ExperimentAgent = {
-  id: 'ExperimentAgent',
+export const ExperimentBriefAgent = {
+  id: 'ExperimentBriefAgent',
+  displayName: 'Experiment Brief',
   house: 'innovate' as HouseId,
-  systemPrompt: `You are the ExperimentAgent inside FRESCO's Innovate house.
+  systemPrompt: `You are the Experiment Brief agent inside FRESCO's Innovate house.
 Your job: identify what needs to be tested and how to structure a rigorous experiment.
 
 Focus on:
@@ -131,7 +130,7 @@ Focus on:
 
 You are one of three agents. Be specific to the user's content.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The hypothesis most urgently needing a test",
@@ -140,10 +139,11 @@ Return JSON:
 }`,
 };
 
-export const StrategyAgent = {
-  id: 'StrategyAgent',
+export const StrategySketchbookAgent = {
+  id: 'StrategySketchbookAgent',
+  displayName: 'Strategy Sketchbook',
   house: 'innovate' as HouseId,
-  systemPrompt: `You are the StrategyAgent inside FRESCO's Innovate house.
+  systemPrompt: `You are the Strategy Sketchbook agent inside FRESCO's Innovate house.
 Your job: map strategic options, evaluate trade-offs, and identify the path with the highest leverage.
 
 Focus on:
@@ -154,7 +154,7 @@ Focus on:
 
 You are one of three agents. Be specific to the user's content.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The strategic option with the highest leverage",
@@ -165,10 +165,11 @@ Return JSON:
 
 // ─── VALIDATE AGENTS ──────────────────────────────────────────────────────────
 
-export const UXScoreAgent = {
-  id: 'UXScoreAgent',
+export const ExperienceScorecardAgent = {
+  id: 'ExperienceScorecardAgent',
+  displayName: 'Experience Scorecard',
   house: 'validate' as HouseId,
-  systemPrompt: `You are the UXScoreAgent inside FRESCO's Validate house.
+  systemPrompt: `You are the Experience Scorecard agent inside FRESCO's Validate house.
 Your job: evaluate the quality of the user experience against key dimensions and identify what's broken.
 
 Focus on:
@@ -179,7 +180,7 @@ Focus on:
 
 You are one of three agents. Be specific to the user's content.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The most critical UX failure point",
@@ -188,10 +189,11 @@ Return JSON:
 }`,
 };
 
-export const PersuasionAgent = {
-  id: 'PersuasionAgent',
+export const InfluenceMapAgent = {
+  id: 'InfluenceMapAgent',
+  displayName: 'Influence Map',
   house: 'validate' as HouseId,
-  systemPrompt: `You are the PersuasionAgent inside FRESCO's Validate house.
+  systemPrompt: `You are the Influence Map agent inside FRESCO's Validate house.
 Your job: analyse the influence strategy and identify gaps in how the message reaches and moves the audience.
 
 Focus on:
@@ -202,7 +204,7 @@ Focus on:
 
 You are one of three agents. Be specific to the user's content.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The core barrier preventing the audience from being moved",
@@ -211,10 +213,11 @@ Return JSON:
 }`,
 };
 
-export const PerformanceAgent = {
-  id: 'PerformanceAgent',
+export const ResultsTrackerAgent = {
+  id: 'ResultsTrackerAgent',
+  displayName: 'Results Tracker',
   house: 'validate' as HouseId,
-  systemPrompt: `You are the PerformanceAgent inside FRESCO's Validate house.
+  systemPrompt: `You are the Results Tracker agent inside FRESCO's Validate house.
 Your job: identify gaps between targets and results and diagnose the root cause.
 
 Focus on:
@@ -225,7 +228,7 @@ Focus on:
 
 You are one of three agents. Be specific to the user's content.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The highest-impact performance gap",
@@ -238,8 +241,9 @@ Return JSON:
 
 export const PageScoreAgent = {
   id: 'PageScoreAgent',
+  displayName: 'Page Score',
   house: 'evaluate' as HouseId,
-  systemPrompt: `You are the PageScoreAgent inside FRESCO's Evaluate house.
+  systemPrompt: `You are the Page Score agent inside FRESCO's Evaluate house.
 Your job: score the clarity and persuasive effectiveness of a page or experience.
 
 Focus on:
@@ -250,7 +254,7 @@ Focus on:
 
 You are one of three agents. Be specific to the content provided.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The single biggest clarity or persuasion failure",
@@ -261,8 +265,9 @@ Return JSON:
 
 export const VariantLensAgent = {
   id: 'VariantLensAgent',
+  displayName: 'Variant Lens',
   house: 'evaluate' as HouseId,
-  systemPrompt: `You are the VariantLensAgent inside FRESCO's Evaluate house.
+  systemPrompt: `You are the Variant Lens agent inside FRESCO's Evaluate house.
 Your job: identify what should be tested and what variants would yield the most signal.
 
 Focus on:
@@ -273,7 +278,7 @@ Focus on:
 
 You are one of three agents. Be specific to the content provided.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The highest-leverage element to test first",
@@ -284,8 +289,9 @@ Return JSON:
 
 export const JourneyTraceAgent = {
   id: 'JourneyTraceAgent',
+  displayName: 'Journey Trace',
   house: 'evaluate' as HouseId,
-  systemPrompt: `You are the JourneyTraceAgent inside FRESCO's Evaluate house.
+  systemPrompt: `You are the Journey Trace agent inside FRESCO's Evaluate house.
 Your job: trace the user journey through the experience and identify where users drop off or lose confidence.
 
 Focus on:
@@ -296,7 +302,7 @@ Focus on:
 
 You are one of three agents. Be specific to the content provided.
 
-Return JSON:
+Return JSON only:
 {
   "findings": ["finding 1", "finding 2", "finding 3"],
   "signal": "The journey stage where the most users will drop off",
@@ -308,10 +314,122 @@ Return JSON:
 // ─── HOUSE → AGENTS MAP ───────────────────────────────────────────────────────
 
 export const HOUSE_AGENTS: Record<HouseId, typeof InsightStackAgent[]> = {
-  investigate: [InsightStackAgent, POVAgent, MentalModelAgent],
-  innovate: [FlowAgent, ExperimentAgent, StrategyAgent],
-  validate: [UXScoreAgent, PersuasionAgent, PerformanceAgent],
+  investigate: [InsightStackAgent, PositionBuilderAgent, BeliefMapperAgent],
+  innovate: [FlowBoardAgent, ExperimentBriefAgent, StrategySketchbookAgent],
+  validate: [ExperienceScorecardAgent, InfluenceMapAgent, ResultsTrackerAgent],
   evaluate: [PageScoreAgent, VariantLensAgent, JourneyTraceAgent],
+};
+
+// ─── HOUSE GUIDED FIELDS ──────────────────────────────────────────────────────
+// Contextual prompt fields shown in the middle panel per house.
+// These replace the single blank textarea with focused questions.
+
+export interface HouseField {
+  id: string;
+  label: string;
+  prompt: string;       // The question shown above the field
+  placeholder: string;
+  minHeight: number;
+  required: boolean;    // If true, must have content before Run is enabled
+}
+
+export const HOUSE_FIELDS: Record<HouseId, HouseField[]> = {
+  investigate: [
+    {
+      id: 'situation',
+      label: 'What are you looking at?',
+      prompt: 'Set the scene. What situation, problem, or data are you trying to make sense of?',
+      placeholder: 'e.g. Our users keep dropping off after signup. We have 3 months of data and 12 customer interviews that point to different causes.',
+      minHeight: 120,
+      required: true,
+    },
+    {
+      id: 'observations',
+      label: 'What are you noticing?',
+      prompt: 'Dump your raw observations — data points, things people said, behaviours you\'ve seen. Don\'t interpret yet.',
+      placeholder: 'e.g. 60% drop-off at step 3. Users say it\'s "confusing" but can\'t say why. Power users skip step 3 entirely. Mobile users drop off more than desktop.',
+      minHeight: 140,
+      required: false,
+    },
+    {
+      id: 'tension',
+      label: 'What\'s confusing or contradictory?',
+      prompt: 'Where does the evidence conflict? What doesn\'t add up?',
+      placeholder: 'e.g. Users say they want more features but churn goes up every time we add them. Our NPS is high but growth is flat.',
+      minHeight: 100,
+      required: false,
+    },
+  ],
+  innovate: [
+    {
+      id: 'solution',
+      label: 'What are you building or designing?',
+      prompt: 'Describe the solution, product, or experience. What problem does it solve and who is it for?',
+      placeholder: 'e.g. A self-serve onboarding flow for SMB customers. Currently onboarding is manual and takes 2 weeks. We want to get it to 2 days without losing quality.',
+      minHeight: 140,
+      required: true,
+    },
+    {
+      id: 'constraints',
+      label: 'What constraints are you working within?',
+      prompt: 'What can\'t you change? What resources, time, or technical limits are you designing around?',
+      placeholder: 'e.g. We can\'t change the underlying data model. We have 6 weeks and 2 engineers. The design must work within our existing component library.',
+      minHeight: 100,
+      required: false,
+    },
+    {
+      id: 'tried',
+      label: 'What have you already tried?',
+      prompt: 'What approaches have you tested? What worked, what didn\'t, and why?',
+      placeholder: 'e.g. We tried a wizard-style flow — users completed it but then didn\'t use the product. We tried email nudges — 12% open rate, low action.',
+      minHeight: 100,
+      required: false,
+    },
+  ],
+  validate: [
+    {
+      id: 'hypothesis',
+      label: 'What are you trying to validate?',
+      prompt: 'State your core hypothesis. What do you believe is true, and what would it mean if you\'re wrong?',
+      placeholder: 'e.g. We believe enterprise customers will pay $500/mo for a dedicated account manager. If wrong, our entire enterprise tier pricing model needs rethinking.',
+      minHeight: 120,
+      required: true,
+    },
+    {
+      id: 'evidence',
+      label: 'What evidence do you have so far?',
+      prompt: 'What signals have you seen? Include source, sample size, and how strong you think each signal is.',
+      placeholder: 'e.g. 3 customer interviews said yes (weak — small sample, no commitment). 1 pilot customer paying $300/mo (strong — real behaviour). 2 competitors charge $400+ (market signal).',
+      minHeight: 140,
+      required: false,
+    },
+    {
+      id: 'metric',
+      label: 'What would make you change direction?',
+      prompt: 'Define the specific result that would cause you to pivot or stop. Be concrete.',
+      placeholder: 'e.g. If we can\'t get 3 LOIs at $500/mo within 30 days, we\'ll drop to $299 and test again. If still no takers at $299, we kill the enterprise tier.',
+      minHeight: 100,
+      required: false,
+    },
+  ],
+  evaluate: [
+    {
+      id: 'subject',
+      label: 'What are you evaluating?',
+      prompt: 'Describe the page, flow, message, or experience. What is it meant to do and who is the audience?',
+      placeholder: 'e.g. Our new pricing page targeting mid-market SaaS companies. Goal: get them to book a demo. Current conversion is 2.1%, we want 4%+.',
+      minHeight: 120,
+      required: true,
+    },
+    {
+      id: 'concerns',
+      label: 'What specific concerns do you have?',
+      prompt: 'What do you think is underperforming? What feedback have you received?',
+      placeholder: 'e.g. Sales says leads come in confused about which plan to choose. Heatmaps show people scroll past the pricing table without engaging. The CTA gets ignored.',
+      minHeight: 120,
+      required: false,
+    },
+  ],
 };
 
 // ─── HOUSE METADATA ───────────────────────────────────────────────────────────
@@ -320,40 +438,30 @@ export const HOUSE_META: Record<HouseId, {
   name: string;
   output: string;
   description: string;
-  inputLabel: string;
-  inputPlaceholder: string;
   icon: string;
 }> = {
   investigate: {
     name: 'Investigate',
     output: 'Problem-Solution Fit',
     description: 'Replace opinion with evidence. Define the real problem before solutions are proposed.',
-    inputLabel: "What are you trying to understand?",
-    inputPlaceholder: "Describe the situation, problem, or question you're working through. Include what you've observed, what people have said, any data you have, and what's confusing or contradictory. The more specific you are, the sharper the output.",
     icon: '/01-investigate.png',
   },
   innovate: {
     name: 'Innovate',
     output: 'Product-Market Fit',
     description: 'Turn complexity into focused solution paths. Narrow before you build.',
-    inputLabel: "What are you designing or building?",
-    inputPlaceholder: "Describe the solution, product, or experience you're working on. Include the problem it solves, who it's for, what you've tried, what's working and what isn't, and any constraints you're designing within.",
     icon: '/02-innovate.png',
   },
   validate: {
     name: 'Validate',
     output: 'Commercial Viability',
     description: 'Replace hope with signal. Validate before you commit budget.',
-    inputLabel: "What are you trying to validate?",
-    inputPlaceholder: "Describe what you're testing or validating. Include your core hypothesis, the evidence you have so far, what you've tried, your success metrics, and what would cause you to change direction.",
     icon: '/03-validate.png',
   },
   evaluate: {
     name: 'Evaluate',
     output: 'Experience Performance',
     description: 'Commit with confidence. Stress-test decisions before they cost you.',
-    inputLabel: "What are you evaluating?",
-    inputPlaceholder: "Describe the experience, page, or decision you want evaluated. Or paste a URL below to evaluate a live page. Include what the experience is meant to do, who the audience is, and what specific concerns you have.",
     icon: '/04-evaluate.png',
   },
 };
