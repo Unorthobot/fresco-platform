@@ -360,8 +360,9 @@ export function HouseSession({
           {/* Guided fields */}
           <div className="space-y-8">
             {fields.map((field, idx) => {
-              // Split "Label (Agent Name)" into label + agent tag
-              const agentMatch = field.label.match(/^(.+?)\s+\((.+?)\)$/);
+              const isGoalField = field.id === 'goal';
+              // Split "Label (Agent Name)" into label + agent tag for non-goal fields
+              const agentMatch = !isGoalField && field.label.match(/^(.+?)\s+\((.+?)\)$/);
               const fieldLabel = agentMatch ? agentMatch[1] : field.label;
               const agentTag = agentMatch ? agentMatch[2] : null;
 
@@ -371,10 +372,20 @@ export function HouseSession({
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.06 }}
+                className={isGoalField ? '' : 'pt-2'}
               >
+                {/* Divider before first agent field */}
+                {idx === 1 && (
+                  <div className="flex items-center gap-3 mb-6 -mt-2">
+                    <div className="flex-1 h-px bg-fresco-border-light" />
+                    <span className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wider">Tell each engine what it needs</span>
+                    <div className="flex-1 h-px bg-fresco-border-light" />
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="fresco-step-label">
-                    {field.required ? fieldLabel : `${fieldLabel} (optional)`}
+                  <div className={isGoalField ? 'text-fresco-xl font-medium text-fresco-black' : 'fresco-step-label'}>
+                    {isGoalField ? field.label : (field.required ? fieldLabel : `${fieldLabel} (optional)`)}
                   </div>
                   {agentTag && (
                     <span className="text-fresco-xs text-fresco-graphite-light bg-fresco-light-gray px-2 py-0.5 rounded-full font-normal">
@@ -382,6 +393,11 @@ export function HouseSession({
                     </span>
                   )}
                 </div>
+                {isGoalField ? (
+                  <p className="text-fresco-base text-fresco-graphite-mid mb-3">{field.prompt}</p>
+                ) : (
+                  <p className="text-fresco-sm text-fresco-graphite-mid mb-3">{field.prompt}</p>
+                )}
                 <p className="text-fresco-sm text-fresco-graphite-mid mb-3">{field.prompt}</p>
                 <div className="relative">
                   <textarea
@@ -484,7 +500,7 @@ export function HouseSession({
               </button>
               {!canRun && !isRunning && (
                 <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
-                  Fill in the first field to run the analysis
+                  Tell us what you're trying to do to run the analysis
                 </p>
               )}
             </div>

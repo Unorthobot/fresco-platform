@@ -342,22 +342,26 @@ export interface HouseField {
 }
 
 export const HOUSE_FIELDS: Record<HouseId, HouseField[]> = {
-  // INVESTIGATE: 3 fields, one per agent
-  // Field 1 → Insight Stack (raw observations, data, patterns)
-  // Field 2 → Position Builder (current belief, framing, position being taken)
-  // Field 3 → Belief Mapper (assumptions being treated as fact, mental model)
   investigate: [
     {
-      id: 'observations',
-      label: 'What are you observing? (Insight Stack)',
-      prompt: 'Dump everything you\'re seeing — data, user feedback, behaviours, interview quotes. Don\'t interpret yet. The more specific the better.',
-      placeholder: 'e.g. Drop-off at step 3 is 60%. Users in interviews say the form is "confusing" but can\'t say why. Power users skip it entirely. Support tickets mention the same two fields every week. Mobile drop-off is 2× desktop.',
-      minHeight: 160,
+      id: 'goal',
+      label: 'What are you trying to do?',
+      prompt: 'Understand the real problem.',
+      placeholder: 'e.g. We\'re seeing high drop-off after signup and I need to understand whether it\'s a UX problem, a messaging problem, or a product-fit problem — before we commit to a fix.',
+      minHeight: 100,
       required: true,
     },
     {
+      id: 'observations',
+      label: 'What are you observing?',
+      prompt: 'Dump everything you\'re seeing — data, user feedback, behaviours, interview quotes. Don\'t interpret yet. The more specific the better.',
+      placeholder: 'e.g. Drop-off at step 3 is 60%. Users in interviews say the form is "confusing" but can\'t say why. Power users skip it entirely. Support tickets mention the same two fields every week. Mobile drop-off is 2× desktop.',
+      minHeight: 160,
+      required: false,
+    },
+    {
       id: 'position',
-      label: 'What do you currently believe? (Position Builder)',
+      label: 'What do you currently believe?',
       prompt: 'State your working hypothesis. What position are you taking going in — and what\'s at stake if you\'re wrong?',
       placeholder: 'e.g. I think the drop-off is a copy problem, not a UX problem — users don\'t understand what we\'re asking for. But my PM thinks it\'s a trust issue. If I\'m wrong, the fix I\'m planning won\'t work.',
       minHeight: 120,
@@ -365,93 +369,106 @@ export const HOUSE_FIELDS: Record<HouseId, HouseField[]> = {
     },
     {
       id: 'assumptions',
-      label: 'What are you assuming? (Belief Mapper)',
+      label: 'What are you assuming?',
       prompt: 'Name the beliefs you\'re treating as facts. What are you not questioning? What would have to be true for your position to hold?',
-      placeholder: 'e.g. I\'m assuming users want to complete this step — maybe they don\'t. I\'m assuming the form fields are necessary — they were added 2 years ago and no one has challenged them. I\'m assuming the problem is consistent across segments.',
+      placeholder: 'e.g. I\'m assuming users want to complete this step — maybe they don\'t. I\'m assuming the form fields are necessary — they were added 2 years ago and no one has challenged them.',
       minHeight: 120,
       required: false,
     },
   ],
 
-  // INNOVATE: 3 fields, one per agent
-  // Field 1 → Flow Board (the journey being designed, friction points)
-  // Field 2 → Experiment Brief (what needs testing, the hypothesis)
-  // Field 3 → Strategy Sketchbook (strategic options and trade-offs)
   innovate: [
     {
-      id: 'flow',
-      label: 'What journey or flow are you designing? (Flow Board)',
-      prompt: 'Describe the experience step by step — from trigger to outcome. Where does it currently break down or feel slow?',
-      placeholder: 'e.g. User gets invite email → lands on signup page → enters details → hits verification step → waits for email → confirms → lands in dashboard. Current drop-off is at verification — 40% never confirm. Those who do take 3 days on average.',
-      minHeight: 160,
+      id: 'goal',
+      label: 'What are you trying to do?',
+      prompt: 'Design the right solution.',
+      placeholder: 'e.g. We need to redesign the onboarding flow so SMB customers reach first value within 24 hours instead of 6 days — without adding engineering complexity.',
+      minHeight: 100,
       required: true,
     },
     {
+      id: 'flow',
+      label: 'What journey or flow are you designing?',
+      prompt: 'Describe the experience step by step — from trigger to outcome. Where does it currently break down or feel slow?',
+      placeholder: 'e.g. User gets invite email → lands on signup page → enters details → hits verification step → waits for email → confirms → lands in dashboard. Current drop-off is at verification — 40% never confirm.',
+      minHeight: 160,
+      required: false,
+    },
+    {
       id: 'hypothesis',
-      label: 'What do you want to test? (Experiment Brief)',
+      label: 'What do you want to test?',
       prompt: 'What\'s your best hypothesis for what will improve the outcome? What would a good test look like, and how would you know it worked?',
-      placeholder: 'e.g. Hypothesis: if we replace email verification with SMS, confirmation rate will increase by 20%. Test: A/B for 2 weeks, 50/50 split. Success = 20%+ lift in confirmation rate with no increase in fraudulent signups.',
+      placeholder: 'e.g. Hypothesis: replacing email verification with SMS will increase confirmation rate by 20%. Success = 20%+ lift in 2 weeks with no increase in fraud.',
       minHeight: 120,
       required: false,
     },
     {
       id: 'options',
-      label: 'What strategic options are you weighing? (Strategy Sketchbook)',
+      label: 'What strategic options are you weighing?',
       prompt: 'What are the 2–3 real choices in front of you? What does each one make possible or foreclose?',
-      placeholder: 'e.g. Option A: remove verification entirely — fastest, highest risk. Option B: magic link instead of code — medium lift, low risk. Option C: social login — highest lift, 6-week build. We need to ship something in 3 weeks.',
+      placeholder: 'e.g. Option A: remove verification entirely — fastest, highest risk. Option B: magic link — medium lift, low risk. Option C: social login — highest lift, 6-week build. We need to ship in 3 weeks.',
       minHeight: 120,
       required: false,
     },
   ],
 
-  // VALIDATE: 3 fields, one per agent
-  // Field 1 → Experience Scorecard (what's being evaluated, quality criteria)
-  // Field 2 → Influence Map (who needs to be convinced, what's blocking them)
-  // Field 3 → Results Tracker (targets vs actuals, what the numbers say)
   validate: [
     {
-      id: 'experience',
-      label: 'What experience are you evaluating? (Experience Scorecard)',
-      prompt: 'Describe what you\'re assessing — a product, flow, message, or feature. What was it supposed to do, and who for?',
-      placeholder: 'e.g. Our new onboarding flow for SMB customers. Goal: get them to first value (creating their first project) within 24 hours of signup. Current reality: median time to first project is 6 days. 30% never create one.',
-      minHeight: 160,
+      id: 'goal',
+      label: 'What are you trying to do?',
+      prompt: 'Test viability before committing.',
+      placeholder: 'e.g. We\'re about to invest 3 months in an enterprise tier and I want to validate that the pricing model, the experience, and the go-to-market approach will actually work before we build.',
+      minHeight: 100,
       required: true,
     },
     {
+      id: 'experience',
+      label: 'What experience are you evaluating?',
+      prompt: 'Describe what you\'re assessing — a product, flow, message, or feature. What was it supposed to do, and who for?',
+      placeholder: 'e.g. Our new onboarding flow for SMB customers. Goal: get them to first value (creating their first project) within 24 hours. Current reality: median time is 6 days. 30% never create one.',
+      minHeight: 140,
+      required: false,
+    },
+    {
       id: 'audience',
-      label: 'Who needs to be convinced, and what\'s blocking them? (Influence Map)',
+      label: 'Who needs to be convinced, and what\'s blocking them?',
       prompt: 'Who are you trying to move — internally or externally? What do they currently believe, and what\'s stopping them from acting?',
-      placeholder: 'e.g. Our VP of Product needs to approve a redesign. She believes the current flow is fine and the problem is marketing quality. Her blocker is lack of data. Externally: users who signed up but haven\'t activated — they think setup will take too long.',
+      placeholder: 'e.g. Our VP needs to approve the redesign but believes the problem is marketing quality, not product. Externally: activated users are happy (NPS 71) but non-activated think setup will take too long.',
       minHeight: 120,
       required: false,
     },
     {
       id: 'results',
-      label: 'What do the numbers say? (Results Tracker)',
+      label: 'What do the numbers say?',
       prompt: 'List your key metrics with targets and actuals. Be honest — this only works with real numbers.',
-      placeholder: 'e.g. Time to first project: target 24h, actual 6 days. Activation rate: target 70%, actual 42%. Drop-off at step 2 (invite team): 58%. NPS of activated users: 71. NPS of non-activated: 12.',
+      placeholder: 'e.g. Time to first project: target 24h, actual 6 days. Activation rate: target 70%, actual 42%. Drop-off at step 2 (invite team): 58%. NPS activated: 71. NPS non-activated: 12.',
       minHeight: 120,
       required: false,
     },
   ],
 
-  // EVALUATE: 2 fields, structured for the evaluation agents
-  // Field 1 → Page Score + Journey Trace (what exists, what it's meant to do)
-  // Field 2 → Variant Lens (what's underperforming, what you want to test)
   evaluate: [
     {
-      id: 'subject',
-      label: 'What are you evaluating? (Page Score + Journey Trace)',
-      prompt: 'Describe the page, flow, or experience. What is it meant to do, who is the audience, and what does the user journey look like step by step?',
-      placeholder: 'e.g. Our pricing page for mid-market SaaS buyers. Goal: book a demo. Journey: Google ad → pricing page → clicks "Book a demo" → calendar. Current conversion: 2.1%. Users spend avg 45 seconds. 70% scroll below the fold but don\'t click.',
-      minHeight: 160,
+      id: 'goal',
+      label: 'What are you trying to do?',
+      prompt: 'Understand how this performs.',
+      placeholder: 'e.g. I want to understand why our pricing page isn\'t converting and identify the highest-leverage changes to test — before we commit to a full redesign.',
+      minHeight: 100,
       required: true,
     },
     {
+      id: 'subject',
+      label: 'What are you evaluating?',
+      prompt: 'Describe the page, flow, or experience. What is it meant to do, who is the audience, and what does the journey look like step by step?',
+      placeholder: 'e.g. Pricing page for mid-market SaaS buyers. Goal: book a demo. Journey: Google ad → pricing page → "Book a demo" → calendar. Conversion: 2.1%. Users spend 45s avg. 70% scroll below fold but don\'t click.',
+      minHeight: 160,
+      required: false,
+    },
+    {
       id: 'variants',
-      label: 'What do you think is underperforming, and what would you test? (Variant Lens)',
-      prompt: 'Where do you think the experience is failing? What variants or changes are you considering, and what would a meaningful result look like?',
-      placeholder: 'e.g. The headline feels generic ("Built for teams"). CTA says "Book a demo" but buyers at this stage want a trial. Considering: (A) outcome-led headline, (B) "Start free trial" CTA, (C) add social proof above fold. Success = 4%+ conversion in 2-week test.',
+      label: 'What do you think is underperforming, and what would you test?',
+      prompt: 'Where do you think the experience is failing? What variants are you considering, and what would a meaningful result look like?',
+      placeholder: 'e.g. The headline feels generic. CTA says "Book a demo" but buyers at this stage want a trial. Considering: (A) outcome-led headline, (B) "Start free trial" CTA, (C) social proof above fold. Success = 4%+ conversion.',
       minHeight: 140,
       required: false,
     },
