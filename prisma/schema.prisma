@@ -82,6 +82,7 @@ model ToolkitSession {
   id                 String    @id @default(cuid())
   workspaceId        String
   toolkitType        String
+  houseType          String?
   thinkingLens       String    @default("automatic")
   stepResponses      Json      @default("{}")
   aiOutputs          Json?

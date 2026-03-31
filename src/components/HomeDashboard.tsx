@@ -181,7 +181,10 @@ export function HomeDashboard({
                 <div className="flex items-center gap-2 flex-wrap">
                   {recentSessions.map((session) => {
                     const ws = workspaces.find(w => w.id === session.workspaceId);
-                    const toolkitName = TOOLKITS[session.toolkitType]?.name || 'Session';
+                    const houseType = (session as any).houseType as HouseId | undefined;
+                    const sessionName = houseType
+                      ? `${HOUSE_META[houseType]?.name ?? 'House'} Analysis`
+                      : (TOOLKITS[session.toolkitType]?.name ?? 'Session');
                     return (
                       <button
                         key={session.id}
@@ -189,7 +192,7 @@ export function HomeDashboard({
                         className="inline-flex items-center gap-2 px-3 py-1.5 bg-fresco-light-gray hover:bg-fresco-border rounded-full text-fresco-sm text-fresco-graphite-soft hover:text-fresco-black transition-colors"
                       >
                         <Clock className="w-3.5 h-3.5" />
-                        <span>{toolkitName}</span>
+                        <span>{sessionName}</span>
                         {ws && (
                           <>
                             <span className="text-fresco-graphite-light">·</span>

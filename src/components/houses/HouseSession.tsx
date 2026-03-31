@@ -66,13 +66,35 @@ export function HouseSession({
   const workspace = workspaces.find(w => w.id === workspaceId);
   const meta = HOUSE_META[houseId];
 
+  // Restore persisted result from session store on mount
+  const getPersistedResult = (): HouseResult | null => {
+    if (!session) return null;
+    const ao = (session as any).aiOutputs;
+    if (ao?.houseResult) return ao.houseResult as HouseResult;
+    // Fallback: reconstruct from flat aiOutputs if houseResult not stored
+    if (ao?.sentenceOfTruth && ao?.keyIssues?.length) {
+      return {
+        house: houseId,
+        verdict: ao.verdict ?? 'INVESTIGATE FURTHER',
+        verdictRationale: ao.verdictRationale ?? '',
+        sentenceOfTruth: ao.sentenceOfTruth,
+        keyIssues: ao.keyIssues ?? [],
+        necessaryMoves: ao.necessaryMoves ?? [],
+        suggestedNextHouse: ao.suggestedNextHouse ?? null,
+        suggestedNextHouseReason: ao.suggestedNextHouseReason ?? '',
+        outputLabel: ao.outputLabel ?? meta.output,
+      };
+    }
+    return null;
+  };
+
   // Middle panel state
   const [userInput, setUserInput] = useState('');
   const [url, setUrl] = useState('');
   const [isRunning, setIsRunning] = useState(false);
 
-  // Right panel state
-  const [result, setResult] = useState<HouseResult | null>(null);
+  // Right panel state — initialise from persisted data
+  const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
   const [hasCopied, setHasCopied] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
@@ -120,13 +142,29 @@ export function HouseSession({
         const data: HouseResult = await response.json();
         setResult(data);
 
-        // Persist to session store as AI outputs
+        // Persist full HouseResult so it survives navigation and reload
         if (session) {
           await db.saveAIOutputs(sessionId, {
             insights: data.keyIssues,
             sentenceOfTruth: data.sentenceOfTruth,
             necessaryMoves: data.necessaryMoves,
           });
+          // Also store extended house fields in session store directly
+          // so getPersistedResult() can restore verdict on remount
+          const extendedOutputs = {
+            houseResult: data,
+            verdict: data.verdict,
+            verdictRationale: data.verdictRationale,
+            keyIssues: data.keyIssues,
+            necessaryMoves: data.necessaryMoves,
+            sentenceOfTruth: data.sentenceOfTruth,
+            suggestedNextHouse: data.suggestedNextHouse,
+            suggestedNextHouseReason: data.suggestedNextHouseReason,
+            outputLabel: data.outputLabel,
+          };
+          useFrescoStore.getState().updateSession(sessionId, {
+            aiOutputs: extendedOutputs,
+          } as any);
         }
       }
     } catch (err) {

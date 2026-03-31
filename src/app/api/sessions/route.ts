@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id, workspaceId, toolkitType, thinkingLens } = await req.json();
+  const { id, workspaceId, toolkitType, thinkingLens, houseType } = await req.json();
 
   // Verify workspace belongs to user
   const workspace = await prisma.workspace.findFirst({
@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
       id,
       workspaceId,
       toolkitType,
+      houseType: houseType || null,
       thinkingLens: thinkingLens || 'automatic',
     },
   });

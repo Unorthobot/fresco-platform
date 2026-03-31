@@ -53,9 +53,12 @@ export function useDBSync() {
             id: s.id,
             workspaceId: s.workspaceId,
             toolkitType: s.toolkitType,
-            category: s.category || 'investigate',
+            houseType: s.houseType || undefined,
+            category: s.houseType || s.category || 'investigate',
             thinkingLens: s.thinkingLens || 'automatic',
             status: 'draft',
+            // Preserve the full aiOutputs JSON from DB (includes houseResult for house sessions)
+            aiOutputs: s.aiOutputs || null,
             steps: s.stepResponses ? Object.entries(s.stepResponses).map(([k, v]: any) => ({
               id: `${s.id}-step-${k}`,
               stepNumber: parseInt(k),
@@ -197,7 +200,7 @@ export function useDBWrite() {
         await fetch('/api/sessions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: session2.id, workspaceId, toolkitType: session2.toolkitType }),
+          body: JSON.stringify({ id: session2.id, workspaceId, toolkitType: session2.toolkitType, houseType }),
         });
       } catch (err) {
         console.error('Failed to save house session to DB:', err);
@@ -267,6 +270,16 @@ export function useDBWrite() {
     const s = useFrescoStore.getState().sessions.find((s: any) => s.id === sessionId);
     if (!s) return;
     try {
+      // For house sessions, aiOutputs on the session may already contain the full HouseResult
+      const existingAiOutputs = (s as any).aiOutputs;
+      const isHouseSession = !!(s as any).houseType;
+      const aiOutputs = isHouseSession && existingAiOutputs?.houseResult
+        ? existingAiOutputs
+        : {
+            insights: (s.insights || []).map((i: any) => i.content).filter(Boolean),
+            necessaryMoves: (s.necessaryMoves || []).map((m: any) => m.content).filter(Boolean),
+          };
+
       await fetch(`/api/sessions/${sessionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -275,10 +288,7 @@ export function useDBWrite() {
           stepResponses: Object.fromEntries(
             (s.steps || []).map((step: any) => [String(step.stepNumber), step.response || step.content || ''])
           ),
-          aiOutputs: {
-            insights: (s.insights || []).map((i: any) => i.content).filter(Boolean),
-            necessaryMoves: (s.necessaryMoves || []).map((m: any) => m.content).filter(Boolean),
-          },
+          aiOutputs,
           sentenceOfTruth: s.sentenceOfTruth?.content || null,
           isLocked: s.sentenceOfTruth?.isLocked || false,
         }),
