@@ -1,15 +1,16 @@
 // FRESCO Houses API — /api/houses/[house]
-// Streaming SSE response:
-//   1. Each agent result sent as it completes (parallel execution)
-//   2. Final merged verdict sent last
+// Sequential agent execution: each agent receives prior agents' outputs.
+// Streaming SSE: each agent result sent as it completes.
+// Synthesis layer merges all outputs into a single HouseResult.
 //
-// Event types:
-//   { type: 'agent', displayName, signal, findings }  — one per agent as it finishes
-//   { type: 'verdict', ...HouseResult }               — final merged output
-//   { type: 'error', message }                        — on failure
+// SSE event types:
+//   { type: 'agent', displayName, signal, summary, confidence }  — one per agent
+//   { type: 'verdict', ...HouseResult }                          — final merged output
+//   { type: 'error', message }
 
 import { NextRequest } from 'next/server';
-import { HOUSE_AGENTS, type HouseId, type AgentOutput } from '@/lib/agents';
+import { HOUSE_AGENTS, type HouseId } from '@/lib/agents';
+import type { AgentOutput } from '@/lib/orchestrator';
 import { buildMergePrompt, buildHouseResult, mergeAgentOutputsLocally } from '@/lib/orchestrator';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -17,12 +18,24 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 async function runAgent(
   agent: { id: string; displayName: string; systemPrompt: string },
   userInput: string,
+  priorOutputs: AgentOutput[],
   context?: string,
   url?: string,
 ): Promise<AgentOutput> {
-  const contextSection = context ? `\n\nWORKSPACE CONTEXT (from prior sessions):\n${context}` : '';
+  const contextSection = context
+    ? `\n\nWORKSPACE CONTEXT (from prior sessions):\n${context}`
+    : '';
   const urlSection = url ? `\n\nURL BEING EVALUATED: ${url}` : '';
-  const userMessage = `${contextSection}${urlSection}\n\nUSER INPUT (all fields combined):\n${userInput}\n\nAnalyse this using your specific lens and return your JSON findings.`;
+
+  // Sequential context: each agent sees what prior agents found
+  const priorSection = priorOutputs.length > 0
+    ? `\n\nPRIOR AGENT OUTPUTS (build on these — don't repeat them):\n` +
+      priorOutputs.map(p =>
+        `${p.displayName}:\n- Summary: ${p.summary}\n- Key findings: ${p.key_findings.join(' | ')}\n- Signal: ${p.signal}`
+      ).join('\n\n')
+    : '';
+
+  const userMessage = `${contextSection}${urlSection}${priorSection}\n\nUSER INPUT:\n${userInput}\n\nReturn your JSON analysis.`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -33,13 +46,13 @@ async function runAgent(
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 600,
+      max_tokens: 700,
       system: agent.systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
     }),
   });
 
-  if (!response.ok) throw new Error(`Agent ${agent.id} API error: ${response.status}`);
+  if (!response.ok) throw new Error(`Agent ${agent.id} error: ${response.status}`);
 
   const data = await response.json();
   const text = data.content?.[0]?.text || '';
@@ -50,10 +63,13 @@ async function runAgent(
   return {
     agentId: agent.id,
     displayName: agent.displayName,
-    findings: parsed.findings || [],
+    summary: parsed.summary || '',
+    key_findings: parsed.key_findings || [],
     signal: parsed.signal || '',
-    flags: parsed.flags || [],
-    moves: parsed.moves || [],
+    confidence: parsed.confidence || 'medium',
+    risks: parsed.risks || [],
+    recommendations: parsed.recommendations || [],
+    structured_artifact: parsed.structured_artifact || undefined,
   };
 }
 
@@ -68,11 +84,11 @@ async function runMerge(house: HouseId, agentOutputs: AgentOutput[], userInput: 
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 800,
+      max_tokens: 900,
       messages: [{ role: 'user', content: mergePrompt }],
     }),
   });
-  if (!response.ok) throw new Error(`Merge API error: ${response.status}`);
+  if (!response.ok) throw new Error(`Merge error: ${response.status}`);
   const data = await response.json();
   const text = data.content?.[0]?.text || '';
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -100,11 +116,12 @@ export async function POST(
     return new Response(JSON.stringify({ error: 'userInput required (min 10 chars)' }), { status: 400 });
   }
 
-  // No API key — return a non-streaming fallback
   if (!ANTHROPIC_API_KEY) {
     const fallback = {
       type: 'verdict',
       house,
+      fitLabel: house,
+      fitStrength: 'Undecided',
       verdict: 'INVESTIGATE FURTHER',
       verdictRationale: 'Add your Anthropic API key in Settings to enable AI-powered house analysis.',
       sentenceOfTruth: 'Configure ANTHROPIC_API_KEY to unlock full orchestration.',
@@ -120,9 +137,8 @@ export async function POST(
   }
 
   const agents = HOUSE_AGENTS[house];
-
-  // Streaming SSE response
   const encoder = new TextEncoder();
+
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: object) => {
@@ -131,44 +147,53 @@ export async function POST(
 
       try {
         const agentOutputs: AgentOutput[] = [];
-        const agentPromises = agents.map(agent =>
-          runAgent(agent, userInput.trim(), context, url)
-            .then(output => {
-              agentOutputs.push(output);
-              // Stream this agent's result as it finishes
-              send({
-                type: 'agent',
-                displayName: output.displayName,
-                signal: output.signal,
-                findings: output.findings.slice(0, 2), // top 2 findings for preview
-              });
-              return output;
-            })
-            .catch(err => {
-              console.error(`Agent ${agent.id} failed:`, err);
-              const stub: AgentOutput = {
-                agentId: agent.id,
-                displayName: agent.displayName,
-                findings: [],
-                signal: '',
-                flags: [],
-                moves: [],
-              };
-              agentOutputs.push(stub);
-              return stub;
-            })
-        );
 
-        await Promise.all(agentPromises);
+        // ── Sequential execution ─────────────────────────────────────────────
+        for (const agent of agents) {
+          try {
+            const output = await runAgent(
+              agent,
+              userInput.trim(),
+              agentOutputs,   // each agent receives all prior outputs
+              context,
+              url
+            );
+            agentOutputs.push(output);
 
-        // Run merge once all agents are done
-        const hasOutput = agentOutputs.some(a => a.signal || a.findings.length > 0);
+            // Stream this agent's result immediately
+            send({
+              type: 'agent',
+              displayName: output.displayName,
+              signal: output.signal,
+              summary: output.summary,
+              confidence: output.confidence,
+            });
+          } catch (err) {
+            console.error(`Agent ${agent.id} failed:`, err);
+            const stub: AgentOutput = {
+              agentId: agent.id,
+              displayName: agent.displayName,
+              summary: '',
+              key_findings: [],
+              signal: '',
+              confidence: 'low',
+              risks: [],
+              recommendations: [],
+            };
+            agentOutputs.push(stub);
+          }
+        }
+
+        // ── Synthesis merge ──────────────────────────────────────────────────
+        const hasOutput = agentOutputs.some(a => a.signal || a.key_findings.length > 0);
         let verdictData;
+
         if (hasOutput) {
           try {
             const mergeResponse = await runMerge(house, agentOutputs, userInput.trim());
             verdictData = buildHouseResult(house, mergeResponse);
-          } catch {
+          } catch (mergeErr) {
+            console.error('Merge failed, using local:', mergeErr);
             verdictData = mergeAgentOutputsLocally(house, agentOutputs);
           }
         } else {
@@ -176,6 +201,7 @@ export async function POST(
         }
 
         send({ type: 'verdict', ...verdictData });
+
       } catch (err) {
         console.error('House stream error:', err);
         send({ type: 'error', message: 'Analysis failed. Please try again.' });

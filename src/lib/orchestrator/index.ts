@@ -1,98 +1,215 @@
 // FRESCO Orchestrator
-// Receives outputs from all agents in a house.
-// Merges them into a single structured result.
-// This is the only thing the UI ever sees — agent IDs are never surfaced.
+// Sequential agent execution per house.
+// Each agent receives prior agents' outputs as context.
+// Synthesis layer merges all outputs into a single HouseResult.
+// Routing engine determines next house based on what was found.
 
-import type { HouseId, AgentOutput } from '@/lib/agents';
+import type { HouseId } from '@/lib/agents';
+
+// ─── Agent data contract ─────────────────────────────────────────────────────
+
+export interface AgentOutput {
+  agentId: string;
+  displayName: string;
+  summary: string;                  // 1-sentence summary of what this agent found
+  key_findings: string[];           // 2-4 specific findings
+  signal: string;                   // Single most important signal (for streaming display)
+  confidence: 'high' | 'medium' | 'low';
+  risks: string[];                  // Risks or flags this agent identified
+  recommendations: string[];        // Agent-specific recommendations
+  structured_artifact?: string;     // Optional: named model, framework, or structure
+}
+
+// ─── House result ─────────────────────────────────────────────────────────────
 
 export interface HouseResult {
   house: HouseId;
-  verdict: string;                // GO / PIVOT / INVESTIGATE FURTHER / STOP
-  verdictRationale: string;       // 1–2 sentence explanation of the verdict
-  sentenceOfTruth: string;        // Single most important insight across all agents
-  keyIssues: string[];            // 3–5 consolidated issues (deduped across agents)
-  necessaryMoves: string[];       // 3–5 prioritised actions (deduped across agents)
+  // Core judgement — house-specific fit label
+  fitLabel: string;                 // e.g. "Problem–Solution Fit"
+  fitStrength: 'Strong' | 'Weak' | 'Undecided';
+  // Legacy verdict for UI colour coding
+  verdict: 'GO' | 'PIVOT' | 'INVESTIGATE FURTHER' | 'STOP';
+  verdictRationale: string;
+  // Outputs
+  sentenceOfTruth: string;
+  keyIssues: string[];
+  necessaryMoves: string[];
+  // Routing
   suggestedNextHouse: HouseId | null;
   suggestedNextHouseReason: string;
-  outputLabel: string;            // e.g. "Problem-Solution Fit"
+  // Meta
+  outputLabel: string;
 }
 
-const HOUSE_OUTPUT_LABELS: Record<HouseId, string> = {
-  investigate: 'Problem-Solution Fit',
-  innovate: 'Product-Market Fit',
+// ─── House configuration ──────────────────────────────────────────────────────
+
+export const HOUSE_FIT_LABELS: Record<HouseId, string> = {
+  investigate: 'Problem–Solution Fit',
+  innovate: 'Product–Market Fit',
   validate: 'Commercial Viability',
-  evaluate: 'Experience Performance',
+  evaluate: 'Performance Readiness',
 };
 
-const NEXT_HOUSE: Record<HouseId, HouseId | null> = {
-  investigate: 'innovate',
-  innovate: 'validate',
-  validate: 'evaluate',
-  evaluate: null,
+export const HOUSE_OUTPUT_LABELS: Record<HouseId, string> = {
+  investigate: 'Problem–Solution Fit',
+  innovate: 'Product–Market Fit',
+  validate: 'Commercial and Market Viability',
+  evaluate: 'Performance and Optimisation Readiness',
 };
 
-const NEXT_HOUSE_REASONS: Record<HouseId, string> = {
-  investigate: 'You have a clearer problem definition. Move to Innovate to design solutions.',
-  innovate: 'You have solution paths. Move to Validate to test them before committing.',
-  validate: 'You have validation signals. Move to Evaluate to stress-test the experience.',
-  evaluate: 'Full cycle complete.',
+// Sequential agent order per house (from spec)
+// Investigate: Insight Stack → Belief Mapper → Position Builder
+// Innovate:    Flow Board → Strategy Sketchbook → Experiment Brief
+// Validate:    Experience Scorecard → Influence Map → Results Tracker
+// Evaluate:    Page Intelligence → Comparison → Journey Intelligence
+export const AGENT_SEQUENCE: Record<HouseId, string[]> = {
+  investigate: ['InsightStackAgent', 'BeliefMapperAgent', 'PositionBuilderAgent'],
+  innovate:    ['FlowBoardAgent', 'StrategySketchbookAgent', 'ExperimentBriefAgent'],
+  validate:    ['ExperienceScorecardAgent', 'InfluenceMapAgent', 'ResultsTrackerAgent'],
+  evaluate:    ['PageIntelligenceAgent', 'ComparisonAgent', 'JourneyIntelligenceAgent'],
 };
 
-// Merge system prompt — takes all agent outputs and synthesises a final verdict
+// ─── Cross-house routing logic ────────────────────────────────────────────────
+
+export interface RoutingDecision {
+  nextHouse: HouseId | null;
+  reason: string;
+}
+
+export function determineNextHouse(
+  house: HouseId,
+  fitStrength: 'Strong' | 'Weak' | 'Undecided',
+  verdict: string,
+  keyIssues: string[]
+): RoutingDecision {
+  // The spec: houses are a loop, not a line
+  // Evaluate can route back to any house depending on findings
+  
+  const issuesText = keyIssues.join(' ').toLowerCase();
+
+  if (house === 'investigate') {
+    return fitStrength === 'Strong'
+      ? { nextHouse: 'innovate', reason: 'Problem is well-defined. Move to Innovate to shape the right solution path.' }
+      : { nextHouse: 'investigate', reason: 'The problem needs more clarity before solutioning. Run another Investigate cycle with sharper input.' };
+  }
+
+  if (house === 'innovate') {
+    return fitStrength === 'Strong'
+      ? { nextHouse: 'validate', reason: 'A promising solution path exists. Move to Validate to test viability before committing.' }
+      : { nextHouse: 'investigate', reason: 'The solution isn\'t clear yet — this often means the problem definition needs sharpening. Return to Investigate.' };
+  }
+
+  if (house === 'validate') {
+    return fitStrength === 'Strong'
+      ? { nextHouse: 'evaluate', reason: 'Viability is confirmed. Move to Evaluate to assess the live experience.' }
+      : verdict === 'PIVOT'
+      ? { nextHouse: 'innovate', reason: 'The concept needs rethinking. Return to Innovate to explore alternative solution paths.' }
+      : { nextHouse: 'investigate', reason: 'Viability concerns suggest the problem itself may be misunderstood. Return to Investigate.' };
+  }
+
+  if (house === 'evaluate') {
+    // Evaluate can loop back to any house
+    const needsRedesign = issuesText.includes('design') || issuesText.includes('flow') || issuesText.includes('ux') || issuesText.includes('journey');
+    const needsStrategy = issuesText.includes('positioning') || issuesText.includes('market') || issuesText.includes('commercial') || issuesText.includes('viability');
+    const needsUnderstanding = issuesText.includes('problem') || issuesText.includes('assumption') || issuesText.includes('misunderstand');
+
+    if (needsUnderstanding) return { nextHouse: 'investigate', reason: 'Performance issues reveal the original problem may have been misunderstood. Return to Investigate.' };
+    if (needsStrategy) return { nextHouse: 'validate', reason: 'The issue is commercial or market logic, not design. Return to Validate.' };
+    if (needsRedesign) return { nextHouse: 'innovate', reason: 'Performance reveals the solution needs redesign. Return to Innovate.' };
+    return fitStrength === 'Strong'
+      ? { nextHouse: null, reason: 'Performance is strong. The loop is complete.' }
+      : { nextHouse: 'innovate', reason: 'Performance gaps point to solution-level issues. Return to Innovate.' };
+  }
+
+  return { nextHouse: null, reason: '' };
+}
+
+// ─── Merge prompt ──────────────────────────────────────────────────────────────
+
 export function buildMergePrompt(house: HouseId, agentOutputs: AgentOutput[], userInput: string): string {
   const houseName = house.charAt(0).toUpperCase() + house.slice(1);
-  const outputLabel = HOUSE_OUTPUT_LABELS[house];
+  const fitLabel = HOUSE_FIT_LABELS[house];
 
-  const agentSummaries = agentOutputs.map(a => {
-    return `### ${a.agentId}
-Signal: ${a.signal}
-Findings: ${a.findings.join(' | ')}
-Flags: ${a.flags.join(' | ')}
-Moves: ${a.moves.join(' | ')}`;
-  }).join('\n\n');
+  const agentSummaries = agentOutputs.map((a, i) => `### Agent ${i + 1}: ${a.displayName}
+Summary: ${a.summary}
+Key findings: ${a.key_findings.join(' | ')}
+Confidence: ${a.confidence}
+Risks: ${a.risks.join(' | ')}
+Recommendations: ${a.recommendations.join(' | ')}
+${a.structured_artifact ? `Structured artifact: ${a.structured_artifact}` : ''}`).join('\n\n');
 
-  return `You are FRESCO's ${houseName} orchestrator. Three specialist agents have analysed the user's input from different angles.
-Your job: synthesise their outputs into a single, honest, actionable result for the ${outputLabel} phase.
+  return `You are FRESCO's ${houseName} synthesis engine. Three specialist agents have run sequentially on the user's input. Each one built on the previous agent's findings.
+
+Your job: synthesise their combined outputs into a single integrated result.
 
 USER INPUT:
 ${userInput}
 
-AGENT OUTPUTS:
+SEQUENTIAL AGENT OUTPUTS (in execution order):
 ${agentSummaries}
 
-Synthesise these into a verdict. Rules:
-- VERDICT must be one of: "GO", "PIVOT", "INVESTIGATE FURTHER", or "STOP"
-  - GO: the evidence supports moving forward with confidence
-  - PIVOT: there's a better direction — name it
-  - INVESTIGATE FURTHER: not enough signal yet to commit
-  - STOP: the evidence strongly suggests this path is wrong
-- SENTENCE OF TRUTH: ONE powerful statement that captures what is most true about this situation — the thing the user sensed but hadn't articulated. Make it feel like an "aha moment".
-- KEY ISSUES: 3–5 consolidated issues from across the agents. Deduplicate. Keep the most important. Be specific to the user's actual content.
-- NECESSARY MOVES: 3–5 concrete, specific actions the user should take. Prioritised. Not generic.
-- VERDICT RATIONALE: 1–2 sentences explaining why this verdict — reference their specific situation.
+Produce the synthesis. Rules:
+- FIT_STRENGTH must be: "Strong", "Weak", or "Undecided"
+  - Strong: clear signal, confident direction
+  - Weak: significant concerns, needs work before proceeding
+  - Undecided: mixed signals, more information needed
+- VERDICT must be: "GO", "PIVOT", "INVESTIGATE FURTHER", or "STOP"
+  GO = proceed with confidence | PIVOT = better direction exists | INVESTIGATE FURTHER = not enough signal | STOP = wrong path
+- SENTENCE OF TRUTH: ONE sharp statement — the thing the user sensed but hadn't articulated. Not a summary. An insight.
+- KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to their situation.
+- NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
+- VERDICT RATIONALE: 1–2 sentences. Reference their specific situation.
 
 Respond ONLY with valid JSON:
 {
+  "fitStrength": "Strong | Weak | Undecided",
   "verdict": "GO | PIVOT | INVESTIGATE FURTHER | STOP",
-  "verdictRationale": "1-2 sentences specific to their situation",
-  "sentenceOfTruth": "Single powerful statement",
+  "verdictRationale": "1-2 sentences",
+  "sentenceOfTruth": "Single sharp insight",
   "keyIssues": ["issue 1", "issue 2", "issue 3"],
   "necessaryMoves": ["move 1", "move 2", "move 3"]
 }`;
 }
 
-// Client-side merge fallback — used when API call fails
-export function mergeAgentOutputsLocally(
-  house: HouseId,
-  agentOutputs: AgentOutput[]
-): HouseResult {
-  // Collect all signals, findings, flags, moves
-  const allSignals = agentOutputs.map(a => a.signal).filter(Boolean);
-  const allFindings = agentOutputs.flatMap(a => a.findings);
-  const allFlags = agentOutputs.flatMap(a => a.flags);
-  const allMoves = agentOutputs.flatMap(a => a.moves);
+// ─── Build final HouseResult ──────────────────────────────────────────────────
 
-  // Deduplicate by taking first occurrence of similar items (simple approach)
+export function buildHouseResult(
+  house: HouseId,
+  mergeResponse: {
+    fitStrength: 'Strong' | 'Weak' | 'Undecided';
+    verdict: string;
+    verdictRationale: string;
+    sentenceOfTruth: string;
+    keyIssues: string[];
+    necessaryMoves: string[];
+  }
+): HouseResult {
+  const fitStrength = mergeResponse.fitStrength || 'Undecided';
+  const verdict = (mergeResponse.verdict as HouseResult['verdict']) || 'INVESTIGATE FURTHER';
+  const routing = determineNextHouse(house, fitStrength, verdict, mergeResponse.keyIssues || []);
+
+  return {
+    house,
+    fitLabel: HOUSE_FIT_LABELS[house],
+    fitStrength,
+    verdict,
+    verdictRationale: mergeResponse.verdictRationale,
+    sentenceOfTruth: mergeResponse.sentenceOfTruth,
+    keyIssues: (mergeResponse.keyIssues || []).slice(0, 5),
+    necessaryMoves: (mergeResponse.necessaryMoves || []).slice(0, 5),
+    suggestedNextHouse: routing.nextHouse,
+    suggestedNextHouseReason: routing.reason,
+    outputLabel: HOUSE_OUTPUT_LABELS[house],
+  };
+}
+
+// ─── Local merge fallback ─────────────────────────────────────────────────────
+
+export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutput[]): HouseResult {
+  const allSignals = agentOutputs.map(a => a.signal).filter(Boolean);
+  const allIssues = agentOutputs.flatMap(a => a.risks);
+  const allMoves = agentOutputs.flatMap(a => a.recommendations);
+
   const dedup = (arr: string[], max: number) => {
     const seen = new Set<string>();
     return arr.filter(item => {
@@ -103,39 +220,19 @@ export function mergeAgentOutputsLocally(
     }).slice(0, max);
   };
 
-  return {
-    house,
-    verdict: 'INVESTIGATE FURTHER',
-    verdictRationale: 'Multiple perspectives have been analysed. Review the key issues and necessary moves before committing.',
-    sentenceOfTruth: allSignals[0] || 'The real insight is in the tension between what you know and what you\'re assuming.',
-    keyIssues: dedup(allFlags, 5),
-    necessaryMoves: dedup(allMoves, 5),
-    suggestedNextHouse: NEXT_HOUSE[house],
-    suggestedNextHouseReason: NEXT_HOUSE_REASONS[house],
-    outputLabel: HOUSE_OUTPUT_LABELS[house],
-  };
-}
+  const routing = determineNextHouse(house, 'Undecided', 'INVESTIGATE FURTHER', allIssues);
 
-// Build final HouseResult from the Claude merge response
-export function buildHouseResult(
-  house: HouseId,
-  mergeResponse: {
-    verdict: string;
-    verdictRationale: string;
-    sentenceOfTruth: string;
-    keyIssues: string[];
-    necessaryMoves: string[];
-  }
-): HouseResult {
   return {
     house,
-    verdict: mergeResponse.verdict,
-    verdictRationale: mergeResponse.verdictRationale,
-    sentenceOfTruth: mergeResponse.sentenceOfTruth,
-    keyIssues: mergeResponse.keyIssues.slice(0, 5),
-    necessaryMoves: mergeResponse.necessaryMoves.slice(0, 5),
-    suggestedNextHouse: NEXT_HOUSE[house],
-    suggestedNextHouseReason: NEXT_HOUSE_REASONS[house],
+    fitLabel: HOUSE_FIT_LABELS[house],
+    fitStrength: 'Undecided',
+    verdict: 'INVESTIGATE FURTHER',
+    verdictRationale: 'Multiple perspectives analysed. Review key issues and necessary moves before committing.',
+    sentenceOfTruth: allSignals[0] || 'The real insight lies in the tension between what you know and what you\'re assuming.',
+    keyIssues: dedup(allIssues, 5),
+    necessaryMoves: dedup(allMoves, 5),
+    suggestedNextHouse: routing.nextHouse,
+    suggestedNextHouseReason: routing.reason,
     outputLabel: HOUSE_OUTPUT_LABELS[house],
   };
 }

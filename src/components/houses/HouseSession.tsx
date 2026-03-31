@@ -36,8 +36,8 @@ interface HouseSessionProps {
 interface AgentStreamEvent {
   displayName: string;
   signal: string;
-  findings: string[];
-  done: boolean; // true = final verdict received
+  summary: string;
+  confidence: 'high' | 'medium' | 'low';
 }
 
 const VERDICT_STYLES: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -70,6 +70,8 @@ export function HouseSession({
     if (ao?.sentenceOfTruth && ao?.keyIssues?.length) {
       return {
         house: houseId,
+        fitLabel: ao.fitLabel ?? meta.output,
+        fitStrength: ao.fitStrength ?? 'Undecided',
         verdict: ao.verdict ?? 'INVESTIGATE FURTHER',
         verdictRationale: ao.verdictRationale ?? '',
         sentenceOfTruth: ao.sentenceOfTruth,
@@ -179,8 +181,8 @@ export function HouseSession({
                 setAgentEvents(prev => [...prev, {
                   displayName: event.displayName,
                   signal: event.signal,
-                  findings: event.findings || [],
-                  done: false,
+                  summary: event.summary || '',
+                  confidence: event.confidence || 'medium',
                 }]);
               } else if (event.type === 'verdict') {
                 const { type, ...verdictData } = event;
@@ -554,10 +556,19 @@ export function HouseSession({
                     animate={{ opacity: 1, x: 0 }}
                     className="p-3 bg-fresco-light-gray rounded-none border-l-2 border-fresco-black/20"
                   >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-fresco-black flex-shrink-0" />
-                      <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">
-                        {event.displayName}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-fresco-black flex-shrink-0" />
+                        <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">
+                          {event.displayName}
+                        </span>
+                      </div>
+                      <span className={`text-fresco-xs px-1.5 py-0.5 rounded-full ${
+                        event.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
+                        event.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
+                        'bg-fresco-border text-fresco-graphite-light'
+                      }`}>
+                        {event.confidence}
                       </span>
                     </div>
                     <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">
@@ -591,9 +602,16 @@ export function HouseSession({
                     'px-4 py-3 border rounded-none',
                     verdictStyle?.bg, verdictStyle?.text, verdictStyle?.border
                   )}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className={cn('w-2 h-2 rounded-full flex-shrink-0', verdictStyle?.dot)} />
-                      <span className="text-fresco-lg font-bold">{result.verdict}</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <div className={cn('w-2 h-2 rounded-full flex-shrink-0', verdictStyle?.dot)} />
+                        <span className="text-fresco-lg font-bold">{result.verdict}</span>
+                      </div>
+                      {(result as any).fitStrength && (
+                        <span className="text-fresco-xs font-medium opacity-70">
+                          {(result as any).fitLabel}: {(result as any).fitStrength}
+                        </span>
+                      )}
                     </div>
                     <p className="text-fresco-sm opacity-80">{result.verdictRationale}</p>
                   </div>
