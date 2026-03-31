@@ -287,10 +287,10 @@ export default function FrescoAppContent() {
 
       <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} onStartHouse={handleStartHouse} />
 
-      <main id="main-content" className="md:ml-[220px] min-h-screen">
-        <AnimatePresence mode="sync">
+      <main id="main-content" className="md:ml-[220px] min-h-screen relative">
+        <AnimatePresence mode="wait">
           {effectiveView === 'home' && (
-            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <HomeDashboard
                 onNavigateToWorkspace={handleNavigateToWorkspace}
                 onNavigateToSession={handleNavigateToSession}
@@ -302,7 +302,7 @@ export default function FrescoAppContent() {
           )}
 
           {effectiveView === 'workspace' && activeWorkspaceId && (
-            <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <WorkspaceOverview
                 workspaceId={activeWorkspaceId}
                 onBack={handleBackToHome}
@@ -314,7 +314,7 @@ export default function FrescoAppContent() {
           )}
 
           {effectiveView === 'session' && activeWorkspaceId && currentSession && (
-            <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="h-screen">
+            <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="h-screen">
               <ToolkitRouter
                 sessionId={currentSession.id}
                 workspaceId={activeWorkspaceId}
@@ -326,41 +326,29 @@ export default function FrescoAppContent() {
           )}
 
           {effectiveView === 'archive' && (
-            <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <ArchivePage onOpenSession={(sessionId, workspaceId) => handleNavigateToSession(sessionId, workspaceId)} />
             </motion.div>
           )}
 
           {effectiveView === 'settings' && (
-            <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <SettingsPage />
             </motion.div>
           )}
 
           {effectiveView === 'account' && (
-            <motion.div key="account" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <motion.div key="account" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <AccountPage />
             </motion.div>
           )}
 
           {effectiveView === 'team' && (
-            <motion.div key="team" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <motion.div key="team" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <TeamPage
                 userId={user?.id || ''}
                 userSubscription={user?.subscription || 'free'}
                 onUpgrade={() => setShowUpgradeModal(true)}
-              />
-            </motion.div>
-          )}
-
-          {effectiveView !== 'home' && effectiveView !== 'archive' && effectiveView !== 'settings' && effectiveView !== 'account' && effectiveView !== 'team' && !activeWorkspaceId && (
-            <motion.div key="fallback-home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <HomeDashboard
-                onNavigateToWorkspace={handleNavigateToWorkspace}
-                onNavigateToSession={handleNavigateToSession}
-                onCreateWorkspace={handleCreateWorkspace}
-                onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
               />
             </motion.div>
           )}
