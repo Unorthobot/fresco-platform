@@ -4,10 +4,12 @@ import { useSession } from 'next-auth/react';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Plus, Clock, MapPin, Cloud, Sun, CloudRain, Folder, Lightbulb, Timer, Layout, GitBranch, Lock } from 'lucide-react';
+import { ArrowRight, Plus, Clock, MapPin, Cloud, Sun, CloudRain, Folder, Lightbulb, Timer } from 'lucide-react';
 import { useFrescoStore, useWorkspaces } from '@/lib/store';
 import { formatRelativeTime } from '@/lib/utils';
 import { TOOLKITS, type ToolkitType } from '@/types';
+import type { HouseId } from '@/lib/agents';
+import { HOUSE_META } from '@/lib/agents';
 import { EmptyState } from '@/components/ui/EmptyStates';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { PricingModal } from '@/components/ui/PricingModal';
@@ -21,6 +23,7 @@ interface HomeDashboardProps {
   onNavigateToSession?: (sessionId: string, workspaceId: string) => void;
   onCreateWorkspace?: () => void;
   onStartToolkit?: (toolkitType: ToolkitType) => void | Promise<void>;
+  onStartHouse?: (houseId: HouseId) => void | Promise<void>;
 }
 
 interface WeatherData {
@@ -29,29 +32,14 @@ interface WeatherData {
   location: string;
 }
 
-// Toolkit descriptions for hint text (kept concise for consistent 2-line display)
-const TOOLKIT_HINTS: Record<string, string> = {
-  insight_stack: 'Extract patterns and tensions from complexity to uncover the core truth',
-  pov_generator: 'Build a clear, defensible position before anyone challenges you',
-  mental_model_mapper: 'Surface the unspoken assumptions that drive decisions in your space',
-  flow_board: 'Visualise user journeys step by step and identify friction points',
-  experiment_brief: 'Structure hypotheses and validation criteria for focused testing',
-  strategy_sketchbook: 'Explore and compare strategic options before committing',
-  ux_scorecard: 'Evaluate experiences with structured scoring and clear priorities',
-  persuasion_canvas: 'Map influence strategies by understanding barriers and beliefs',
-  performance_grid: 'Compare targets vs actual results and decide what to change',
-  decision_matrix: 'Score your options against weighted criteria to eliminate bias',
-  risk_radar: 'Surface and weight every risk before you commit to a path',
-  signal_checker: 'Audit your evidence — separate real signal from wishful thinking',
-};
-
 export function HomeDashboard({
   onNavigateToWorkspace,
   onNavigateToSession,
   onCreateWorkspace,
   onStartToolkit,
+  onStartHouse,
 }: HomeDashboardProps) {
-  const { user, sessions, getRecentSessions, canUseToolkit } = useFrescoStore();
+  const { user, sessions, getRecentSessions } = useFrescoStore();
   const workspaces = useWorkspaces();
   
   const [mounted, setMounted] = useState(false);
@@ -332,222 +320,45 @@ export function HomeDashboard({
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
             <h2 className="text-fresco-2xl font-medium text-fresco-black mb-2">The Four Houses</h2>
             <p className="text-fresco-base text-fresco-graphite-mid">
-              Kill weak ideas earlier. Commit faster to strong ones.
+              Select a house. Three agents analyse your input and return a verdict.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {/* Investigate */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="fresco-card p-6 border-l-4 border-l-fresco-black">
-              <div className="fresco-phase-icon">
-                <img src="/01-investigate.png" alt="Investigate" className="w-5 h-5 icon-theme" />
-              </div>
-              <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">Investigate</h3>
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Replace opinion with evidence. Define the real problem before solutions are proposed.</p>
-              <div className="space-y-2">
-                <button 
-                  onClick={() => onStartToolkit?.('insight_stack')} 
-                  className="w-full text-left p-3 rounded-none border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
+            {(['investigate', 'innovate', 'validate', 'evaluate'] as HouseId[]).map((houseId, i) => {
+              const house = HOUSE_META[houseId];
+              const borderColors = ['border-l-fresco-black', 'border-l-fresco-graphite-mid', 'border-l-fresco-graphite-light', 'border-l-fresco-black/40'];
+              return (
+                <motion.div
+                  key={houseId}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + i * 0.1 }}
+                  className={`fresco-card p-6 border-l-4 ${borderColors[i]} flex flex-col`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Insight Stack™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                  <div className="fresco-phase-icon">
+                    <img
+                      src={house.icon}
+                      alt={house.name}
+                      className="w-5 h-5 icon-theme"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
                   </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.insight_stack}</p>
-                </button>
-                <button 
-                  onClick={() => canUseToolkit('pov_generator') ? onStartToolkit?.('pov_generator') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('pov_generator') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Position Builder™</span>
-                    {!canUseToolkit('pov_generator') ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <Lock className="w-3 h-3" />Pro
-                      </span>
-                    ) : (
-                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                    )}
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.pov_generator}</p>
-                </button>
-                <button 
-                  onClick={() => canUseToolkit('mental_model_mapper') ? onStartToolkit?.('mental_model_mapper') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('mental_model_mapper') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Belief Mapper™</span>
-                    {!canUseToolkit('mental_model_mapper') ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <Lock className="w-3 h-3" />Pro
-                      </span>
-                    ) : (
-                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                    )}
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.mental_model_mapper}</p>
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Innovate */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="fresco-card p-6 border-l-4 border-l-fresco-graphite-mid">
-              <div className="fresco-phase-icon">
-                <img src="/02-innovate.png" alt="Innovate" className="w-5 h-5 icon-theme" />
-              </div>
-              <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">Innovate</h3>
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Turn complexity into focused solution paths. Narrow before you build.</p>
-              <div className="space-y-2">
-                <button 
-                  onClick={() => onStartToolkit?.('flow_board')} 
-                  className="w-full text-left p-3 rounded-none border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Flow Board™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.flow_board}</p>
-                </button>
-                <button 
-                  onClick={() => canUseToolkit('experiment_brief') ? onStartToolkit?.('experiment_brief') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('experiment_brief') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Experiment Brief™</span>
-                    {!canUseToolkit('experiment_brief') ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <Lock className="w-3 h-3" />Pro
-                      </span>
-                    ) : (
-                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                    )}
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.experiment_brief}</p>
-                </button>
-                <button 
-                  onClick={() => canUseToolkit('strategy_sketchbook') ? onStartToolkit?.('strategy_sketchbook') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('strategy_sketchbook') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Strategy Sketchbook™</span>
-                    {!canUseToolkit('strategy_sketchbook') ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <Lock className="w-3 h-3" />Pro
-                      </span>
-                    ) : (
-                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                    )}
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.strategy_sketchbook}</p>
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Validate */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="fresco-card p-6 border-l-4 border-l-fresco-graphite-light">
-              <div className="fresco-phase-icon">
-                <img src="/03-validate.png" alt="Validate" className="w-5 h-5 icon-theme" />
-              </div>
-              <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">Validate</h3>
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Replace hope with signal. Validate before you commit budget.</p>
-              <div className="space-y-2">
-                <button 
-                  onClick={() => onStartToolkit?.('ux_scorecard')} 
-                  className="w-full text-left p-3 rounded-none border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Experience Scorecard™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.ux_scorecard}</p>
-                </button>
-                <button 
-                  onClick={() => canUseToolkit('persuasion_canvas') ? onStartToolkit?.('persuasion_canvas') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('persuasion_canvas') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Influence Map™</span>
-                    {!canUseToolkit('persuasion_canvas') ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <Lock className="w-3 h-3" />Pro
-                      </span>
-                    ) : (
-                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                    )}
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.persuasion_canvas}</p>
-                </button>
-                <button 
-                  onClick={() => canUseToolkit('performance_grid') ? onStartToolkit?.('performance_grid') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('performance_grid') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Results Tracker™</span>
-                    {!canUseToolkit('performance_grid') ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <Lock className="w-3 h-3" />Pro
-                      </span>
-                    ) : (
-                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                    )}
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.performance_grid}</p>
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Evaluate — the fourth house */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="fresco-card p-6 border-l-4 border-l-fresco-black/40">
-              <div className="fresco-phase-icon">
-                <img src="/04-evaluate.png" alt="Evaluate" className="w-5 h-5 icon-theme" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              </div>
-              <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">Evaluate</h3>
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">Commit with confidence. Stress-test decisions before they cost you.</p>
-              <div className="space-y-2">
-                <button 
-                  onClick={() => canUseToolkit('signal_checker') ? onStartToolkit?.('signal_checker') : setShowUpgradeModal(true)}
-                  className="w-full text-left p-3 rounded-none border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Signal Checker™</span>
-                    <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.signal_checker}</p>
-                </button>
-                <button 
-                  onClick={() => canUseToolkit('decision_matrix') ? onStartToolkit?.('decision_matrix') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('decision_matrix') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Decision Matrix™</span>
-                    {!canUseToolkit('decision_matrix') ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <Lock className="w-3 h-3" />Pro
-                      </span>
-                    ) : (
-                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                    )}
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.decision_matrix}</p>
-                </button>
-                <button 
-                  onClick={() => canUseToolkit('risk_radar') ? onStartToolkit?.('risk_radar') : setShowUpgradeModal(true)}
-                  className={`w-full text-left p-3 rounded-none border transition-all group ${!canUseToolkit('risk_radar') ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-300' : 'border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-fresco-sm font-medium text-fresco-black">Risk Radar™</span>
-                    {!canUseToolkit('risk_radar') ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <Lock className="w-3 h-3" />Pro
-                      </span>
-                    ) : (
-                      <ArrowRight className="w-4 h-4 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                    )}
-                  </div>
-                  <p className="text-fresco-xs text-fresco-graphite-light mt-1">{TOOLKIT_HINTS.risk_radar}</p>
-                </button>
-              </div>
-            </motion.div>
+                  <h3 className="text-fresco-lg font-medium text-fresco-black mb-1">{house.name}</h3>
+                  <p className="text-fresco-xs text-fresco-graphite-light font-medium uppercase tracking-wide mb-3">
+                    → {house.output}
+                  </p>
+                  <p className="text-fresco-sm text-fresco-graphite-mid mb-6 flex-1">{house.description}</p>
+                  <button
+                    onClick={() => onStartHouse?.(houseId)}
+                    className="w-full flex items-center justify-between p-3 rounded-none bg-fresco-black text-white hover:bg-fresco-graphite transition-all group"
+                  >
+                    <span className="text-fresco-sm font-medium">Run {house.name}</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -190,6 +190,22 @@ export function useDBWrite() {
     return session2;
   };
 
+  const createHouseSession = async (workspaceId: string, houseType: string) => {
+    const session2 = store.createHouseSession(workspaceId, houseType as any);
+    if (isAuthenticated) {
+      try {
+        await fetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: session2.id, workspaceId, toolkitType: session2.toolkitType }),
+        });
+      } catch (err) {
+        console.error('Failed to save house session to DB:', err);
+      }
+    }
+    return session2;
+  };
+
   const updateSession = async (id: string, updates: any) => {
     store.updateSession(id, updates);
     if (isAuthenticated) {
@@ -315,5 +331,5 @@ export function useDBWrite() {
     }
   };
 
-  return { createWorkspace, updateWorkspace, deleteWorkspace, createSession, updateSession, updateSessionStep, saveAIOutputs, setSentenceOfTruth, setSessionLens, deleteSession, saveDecision };
+  return { createWorkspace, updateWorkspace, deleteWorkspace, createSession, createHouseSession, updateSession, updateSessionStep, saveAIOutputs, setSentenceOfTruth, setSessionLens, deleteSession, saveDecision };
 }

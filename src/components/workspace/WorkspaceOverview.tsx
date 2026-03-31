@@ -7,6 +7,8 @@ import { useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { formatRelativeTime, truncate, cn } from '@/lib/utils';
 import { TOOLKITS, type ToolkitType, type ToolkitCategory } from '@/types';
+import type { HouseId } from '@/lib/agents';
+import { HOUSE_META } from '@/lib/agents';
 type Session = any;
 import { JourneyMap } from '@/components/ui/JourneyMap';
 import { TimelineView } from '@/components/ui/TimelineView';
@@ -116,6 +118,7 @@ interface WorkspaceOverviewProps {
   onBack?: () => void;
   onOpenSession?: (sessionId: string) => void;
   onStartToolkit?: (toolkitType: ToolkitType) => void | Promise<void>;
+  onStartHouse?: (houseId: HouseId) => void | Promise<void>;
 }
 
 // Toolkit flow - each toolkit suggests the next in the journey
@@ -171,7 +174,7 @@ const CATEGORY_LABELS: Record<ToolkitCategory, string> = {
   evaluate: 'Evaluate',
 };
 
-export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartToolkit }: WorkspaceOverviewProps) {
+export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartToolkit, onStartHouse }: WorkspaceOverviewProps) {
   const { workspaces, sessions, deleteSession } = useFrescoStore();
   const db = useDBWrite();
   const workspace = workspaces.find((w) => w.id === workspaceId);
@@ -301,7 +304,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
             </div>
           </div>
           
-          {/* New Session Button with Dropdown */}
+          {/* New Session — House Picker */}
           <div className="relative">
             <button 
               onClick={() => setShowToolkitSelector(!showToolkitSelector)} 
@@ -312,7 +315,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
               <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${showToolkitSelector ? 'rotate-180' : ''}`} />
             </button>
             
-            {/* Toolkit Selector Dropdown */}
+            {/* House Picker Dropdown */}
             <AnimatePresence>
               {showToolkitSelector && (
                 <>
@@ -321,60 +324,34 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 top-full mt-2 w-80 bg-fresco-white rounded-none shadow-lg border border-fresco-border z-50 overflow-hidden"
+                    className="absolute right-0 top-full mt-2 w-72 bg-fresco-white rounded-none shadow-lg border border-fresco-border z-50 overflow-hidden"
                   >
-                    {/* Suggestions */}
-                    {suggestedToolkits.length > 0 && (
-                      <div className="p-3 border-b border-fresco-border-light bg-fresco-light-gray/50">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Sparkles className="w-4 h-4 text-fresco-graphite-mid" />
-                          <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider">Suggested</span>
-                        </div>
-                        {suggestedToolkits.map((suggestion) => (
+                    <div className="p-3 border-b border-fresco-border-light bg-fresco-light-gray/50">
+                      <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider">Select a house</span>
+                    </div>
+                    <div className="p-2">
+                      {(['investigate', 'innovate', 'validate', 'evaluate'] as HouseId[]).map((houseId) => {
+                        const house = HOUSE_META[houseId];
+                        return (
                           <button
-                            key={suggestion.type}
-                            onClick={() => handleSelectToolkit(suggestion.type)}
-                            className="w-full flex items-center gap-3 p-2 rounded-none hover:bg-white transition-colors text-left"
+                            key={houseId}
+                            onClick={() => { setShowToolkitSelector(false); onStartHouse?.(houseId); }}
+                            className="w-full flex items-center gap-3 p-3 rounded-none hover:bg-fresco-light-gray transition-colors text-left"
                           >
-                            <img 
-                              src={CATEGORY_ICONS[TOOLKITS[suggestion.type].category]} 
-                              alt="" 
-                              className="w-5 h-5 icon-themed" 
+                            <img
+                              src={house.icon}
+                              alt={house.name}
+                              className="w-5 h-5 icon-themed flex-shrink-0"
+                              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
-                            <div className="flex-1">
-                              <div className="text-fresco-sm font-medium text-fresco-black">{TOOLKITS[suggestion.type].name}</div>
-                              <div className="text-fresco-xs text-fresco-graphite-light">{suggestion.reason}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-fresco-sm font-medium text-fresco-black">{house.name}</div>
+                              <div className="text-fresco-xs text-fresco-graphite-light truncate">→ {house.output}</div>
                             </div>
+                            <ArrowRight className="w-4 h-4 text-fresco-graphite-light flex-shrink-0" />
                           </button>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* All Toolkits by Category */}
-                    <div className="max-h-[400px] overflow-y-auto">
-                      {(['investigate', 'innovate', 'validate'] as ToolkitCategory[]).map((category) => (
-                        <div key={category} className="p-3 border-b border-fresco-border-light last:border-b-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <img src={CATEGORY_ICONS[category]} alt="" className="w-4 h-4 icon-themed" />
-                            <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider">{CATEGORY_LABELS[category]}</span>
-                          </div>
-                          <div className="space-y-1">
-                            {ALL_TOOLKITS.filter(t => t.category === category).map((toolkit) => (
-                              <button
-                                key={toolkit.type}
-                                onClick={() => handleSelectToolkit(toolkit.type)}
-                                className="w-full flex items-center justify-between p-2 rounded-none hover:bg-fresco-light-gray transition-colors text-left"
-                              >
-                                <div>
-                                  <div className="text-fresco-sm text-fresco-black">{TOOLKITS[toolkit.type].name}</div>
-                                  <div className="text-fresco-xs text-fresco-graphite-light">{TOOLKITS[toolkit.type].subtitle}</div>
-                                </div>
-                                <ArrowRight className="w-4 h-4 text-fresco-graphite-light" />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </motion.div>
                 </>
@@ -450,14 +427,26 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                   {workspaceSessions.length === 0 ? (
                     <div className="border-2 border-dashed border-fresco-border p-10 text-center">
                       <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">What are you trying to decide?</h3>
-                      <p className="text-fresco-sm text-fresco-graphite-mid mb-6 max-w-sm mx-auto">Start with Insight Stack to extract clarity from what you already know. It takes about 10 minutes.</p>
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <button onClick={() => onStartToolkit?.('insight_stack')} className="fresco-btn">
-                          Start with Insight Stack
-                        </button>
-                        <button onClick={() => setShowToolkitSelector(true)} className="fresco-btn-secondary">
-                          Browse all toolkits
-                        </button>
+                      <p className="text-fresco-sm text-fresco-graphite-mid mb-6 max-w-sm mx-auto">Select a house to begin. Each house runs three specialist agents and returns a verdict.</p>
+                      <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+                        {(['investigate', 'innovate', 'validate', 'evaluate'] as HouseId[]).map((houseId) => {
+                          const house = HOUSE_META[houseId];
+                          return (
+                            <button
+                              key={houseId}
+                              onClick={() => onStartHouse?.(houseId)}
+                              className="flex flex-col items-center gap-2 p-3 border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all rounded-none"
+                            >
+                              <img
+                                src={house.icon}
+                                alt={house.name}
+                                className="w-5 h-5 icon-themed"
+                                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                              <span className="text-fresco-xs font-medium text-fresco-black">{house.name}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (

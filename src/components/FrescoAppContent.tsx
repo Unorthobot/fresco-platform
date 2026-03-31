@@ -20,6 +20,7 @@ import { Onboarding, useOnboarding } from '@/components/ui/Onboarding';
 import { NewWorkspaceModal } from '@/components/ui/NewWorkspaceModal';
 import { PricingModal } from '@/components/ui/PricingModal';
 import { type ToolkitType } from '@/types';
+import type { HouseId } from '@/lib/agents';
 
 type View = 'home' | 'workspace' | 'session' | 'archive' | 'settings' | 'account' | 'team';
 
@@ -218,6 +219,20 @@ export default function FrescoAppContent() {
     handleNavigateToSession(session.id, workspaceId);
   };
 
+  const handleStartHouse = async (houseId: HouseId) => {
+    let workspaceId = activeWorkspaceId;
+    if (!workspaceId) {
+      if (!canCreateWorkspace()) {
+        setShowUpgradeModal(true);
+        return;
+      }
+      const workspace = await db.createWorkspace('New Workspace', 'Created for a new thinking session.');
+      workspaceId = workspace.id;
+    }
+    const session = await db.createHouseSession(workspaceId, houseId);
+    handleNavigateToSession(session.id, workspaceId);
+  };
+
   const handleBackToHome = () => {
     setActiveWorkspace(null);
     setActiveSession(null);
@@ -278,6 +293,7 @@ export default function FrescoAppContent() {
                 onNavigateToSession={handleNavigateToSession}
                 onCreateWorkspace={handleCreateWorkspace}
                 onStartToolkit={handleStartToolkit}
+                onStartHouse={handleStartHouse}
               />
             </motion.div>
           )}
@@ -289,6 +305,7 @@ export default function FrescoAppContent() {
                 onBack={handleBackToHome}
                 onOpenSession={(sessionId) => handleNavigateToSession(sessionId, activeWorkspaceId)}
                 onStartToolkit={handleStartToolkit}
+                onStartHouse={handleStartHouse}
               />
             </motion.div>
           )}
@@ -300,6 +317,7 @@ export default function FrescoAppContent() {
                 workspaceId={activeWorkspaceId}
                 onBack={handleBackToWorkspace}
                 onStartToolkit={handleStartToolkit}
+                onNavigateToHouse={(houseId) => handleStartHouse(houseId)}
               />
             </motion.div>
           )}

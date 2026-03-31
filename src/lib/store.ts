@@ -71,6 +71,7 @@ interface FrescoState {
   
   // Actions - Sessions
   createSession: (workspaceId: string, toolkitType: ToolkitType) => ToolkitSession;
+  createHouseSession: (workspaceId: string, houseType: ToolkitCategory) => ToolkitSession;
   updateSession: (id: string, updates: Partial<ToolkitSession>) => void;
   deleteSession: (id: string) => void;
   setActiveSession: (id: string | null) => void;
@@ -231,6 +232,39 @@ export const useFrescoStore = create<FrescoState>()(
         // Update workspace updatedAt
         get().updateWorkspace(workspaceId, {});
         
+        return session;
+      },
+
+      createHouseSession: (workspaceId, houseType) => {
+        // House sessions use a sentinel toolkitType matching the house
+        // insight_stack = investigate sentinel, flow_board = innovate, ux_scorecard = validate, signal_checker = evaluate
+        const sentinelMap: Record<string, ToolkitType> = {
+          investigate: 'insight_stack',
+          innovate: 'flow_board',
+          validate: 'ux_scorecard',
+          evaluate: 'signal_checker',
+        };
+        const toolkitType = sentinelMap[houseType] as ToolkitType || 'insight_stack';
+        const session: ToolkitSession = {
+          id: generateId(),
+          toolkitType,
+          houseType,
+          category: houseType,
+          thinkingLens: 'automatic',
+          status: 'draft',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId: get().user?.id || 'demo-user',
+          workspaceId,
+          steps: [],
+          insights: [],
+          necessaryMoves: [],
+        };
+        set((state) => ({
+          sessions: [session, ...state.sessions],
+          activeSessionId: session.id,
+        }));
+        get().updateWorkspace(workspaceId, {});
         return session;
       },
       

@@ -941,6 +941,7 @@ export interface Workspace {
 export interface ToolkitSession {
   id: string;
   toolkitType: ToolkitType;
+  houseType?: ToolkitCategory;   // house-mode sessions store which house was run
   category: ToolkitCategory;
   thinkingLens: ThinkingModeId;
   title?: string;

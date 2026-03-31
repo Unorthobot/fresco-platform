@@ -13,7 +13,7 @@ export async function GET() {
     where: { userId },
     select: { teamId: true },
   });
-  const teamIds = memberships.map(m => m.teamId);
+  const teamIds = memberships.map((m: { teamId: string }) => m.teamId);
 
   // Personal workspaces + shared team workspaces
   const workspaces = await prisma.workspace.findMany({
