@@ -139,6 +139,19 @@ export async function POST(
   const agents = HOUSE_AGENTS[house];
   const encoder = new TextEncoder();
 
+  // ── Evaluate: classify input type to determine agent emphasis ─────────────
+  // Single page → Page Scorecard leads, Journey Trace light
+  // Multiple pages/flow → all three, Journey Trace gets full context
+  // Comparison (two versions) → Variant Lens leads
+  let evaluateMode: 'single' | 'journey' | 'comparison' = 'single';
+  if (house === 'evaluate') {
+    const combined = userInput.toLowerCase();
+    const hasComparison = /version [ab]|variant|vs\.|versus|option [ab]|current.*test|control.*treatment/.test(combined);
+    const hasMultiplePages = /step \d|→|->|page \d|flow|journey|sequence|funnel|after.*before|first.*then/.test(combined);
+    if (hasComparison) evaluateMode = 'comparison';
+    else if (hasMultiplePages) evaluateMode = 'journey';
+  }
+
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: object) => {
@@ -151,9 +164,16 @@ export async function POST(
         // ── Sequential execution ─────────────────────────────────────────────
         for (const agent of agents) {
           try {
+            // For Evaluate: append mode context so agents know the primary lens
+            const modeContext = house === 'evaluate' && evaluateMode !== 'single'
+              ? `\n\nEVALUATION MODE: ${evaluateMode === 'comparison'
+                  ? 'COMPARISON — the user is comparing two versions or approaches. The Variant Lens perspective is primary.'
+                  : 'JOURNEY — the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
+              : '';
+
             const output = await runAgent(
               agent,
-              userInput.trim(),
+              userInput.trim() + modeContext,
               agentOutputs,   // each agent receives all prior outputs
               context,
               url

@@ -47,14 +47,14 @@ export const HOUSE_FIT_LABELS: Record<HouseId, string> = {
   investigate: 'Problem–Solution Fit',
   innovate: 'Product–Market Fit',
   validate: 'Commercial Viability',
-  evaluate: 'Performance Readiness',
+  evaluate: 'Performance Reality',
 };
 
 export const HOUSE_OUTPUT_LABELS: Record<HouseId, string> = {
   investigate: 'Problem–Solution Fit',
   innovate: 'Product–Market Fit',
   validate: 'Commercial and Market Viability',
-  evaluate: 'Performance and Optimisation Readiness',
+  evaluate: 'Performance Reality',
 };
 
 // Sequential agent order per house (from spec)
@@ -66,7 +66,7 @@ export const AGENT_SEQUENCE: Record<HouseId, string[]> = {
   investigate: ['InsightStackAgent', 'BeliefMapperAgent', 'PositionBuilderAgent'],
   innovate:    ['FlowBoardAgent', 'StrategySketchbookAgent', 'ExperimentBriefAgent'],
   validate:    ['ExperienceScorecardAgent', 'InfluenceMapAgent', 'ResultsTrackerAgent'],
-  evaluate:    ['PageIntelligenceAgent', 'ComparisonAgent', 'JourneyIntelligenceAgent'],
+  evaluate:    ['PageScorecardAgent', 'VariantLensAgent', 'JourneyTraceAgent'],
 };
 
 // ─── Cross-house routing logic ────────────────────────────────────────────────
