@@ -622,7 +622,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
               <OrchestrationPanel
                 workspaceTitle={workspace?.title}
                 sessions={workspaceSessions}
-                onStartToolkit={onStartToolkit}
+                onStartHouse={onStartHouse}
               />
             </div>
 

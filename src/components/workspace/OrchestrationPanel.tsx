@@ -1,19 +1,15 @@
 'use client';
 
 // FRESCO Orchestration Panel
-// Calls /api/orchestrate and shows the recommended next house + toolkit.
-// Rendered in the WorkspaceOverview sidebar.
+// Recommends the next HOUSE to run based on workspace session outputs.
+// Agents are never mentioned — the user only sees houses.
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowRight, RefreshCw, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
-import type { ToolkitType } from '@/types';
-
-type HouseId = 'investigate' | 'innovate' | 'validate' | 'evaluate';
+import type { HouseId } from '@/lib/agents';
 
 interface SessionSummary {
-  toolkit: string;
-  toolkitName: string;
   house: HouseId;
   sentenceOfTruth?: string;
   insights?: string[];
@@ -23,85 +19,82 @@ interface SessionSummary {
 
 interface OrchestrationResult {
   nextHouse: HouseId;
-  nextToolkit: string;
-  nextToolkitName: string;
   recommendation: string;
   reasoning: string;
   urgency: 'high' | 'medium' | 'low';
-  houseProgress: Record<HouseId, { total: number; completed: number }>;
+  houseProgress: Record<HouseId, { completed: boolean }>;
 }
 
 interface OrchestrationPanelProps {
   workspaceTitle?: string;
-  sessions: any[]; // ToolkitSession[]
-  onStartToolkit?: (toolkitType: ToolkitType) => void | Promise<void>;
+  sessions: any[];
+  onStartHouse?: (houseId: HouseId) => void | Promise<void>;
 }
 
-const HOUSE_COLORS: Record<HouseId, string> = {
-  investigate: 'bg-fresco-black text-white',
-  innovate: 'bg-fresco-graphite text-white',
-  validate: 'bg-fresco-graphite-mid text-white',
-  evaluate: 'bg-fresco-black/80 text-white',
+const HOUSE_ICONS: Record<HouseId, string> = {
+  investigate: '/01-investigate.png',
+  innovate:    '/02-innovate.png',
+  validate:    '/03-validate.png',
+  evaluate:    '/04-evaluate.png',
+};
+
+const HOUSE_NAMES: Record<HouseId, string> = {
+  investigate: 'Investigate',
+  innovate:    'Innovate',
+  validate:    'Validate',
+  evaluate:    'Evaluate',
+};
+
+const HOUSE_OUTPUTS: Record<HouseId, string> = {
+  investigate: 'Problem–Solution Fit',
+  innovate:    'Product–Market Fit',
+  validate:    'Commercial Viability',
+  evaluate:    'Performance Readiness',
 };
 
 const HOUSE_BORDER: Record<HouseId, string> = {
   investigate: 'border-l-fresco-black',
-  innovate: 'border-l-fresco-graphite',
-  validate: 'border-l-fresco-graphite-light',
-  evaluate: 'border-l-fresco-black/50',
+  innovate:    'border-l-fresco-graphite',
+  validate:    'border-l-fresco-graphite-light',
+  evaluate:    'border-l-fresco-black/50',
 };
 
 const URGENCY_LABEL: Record<string, string> = {
-  high: 'Do this next',
+  high:   'Do this next',
   medium: 'Suggested',
-  low: 'When ready',
+  low:    'When ready',
 };
 
-const HOUSE_ICONS: Record<HouseId, string> = {
-  investigate: '/01-investigate.png',
-  innovate: '/02-innovate.png',
-  validate: '/03-validate.png',
-  evaluate: '/04-evaluate.png',
-};
-
-function getHouseForToolkit(toolkit: string): HouseId {
+function getHouseForSession(session: any): HouseId {
+  if (session.houseType) return session.houseType as HouseId;
   const map: Record<string, HouseId> = {
     insight_stack: 'investigate', pov_generator: 'investigate', mental_model_mapper: 'investigate',
     flow_board: 'innovate', experiment_brief: 'innovate', strategy_sketchbook: 'innovate',
     ux_scorecard: 'validate', persuasion_canvas: 'validate', performance_grid: 'validate',
     decision_matrix: 'evaluate', risk_radar: 'evaluate', signal_checker: 'evaluate',
   };
-  return map[toolkit] || 'investigate';
+  return map[session.toolkitType] || 'investigate';
 }
 
-const TOOLKIT_DISPLAY_NAMES: Record<string, string> = {
-  insight_stack: 'Insight Stack', pov_generator: 'Position Builder', mental_model_mapper: 'Belief Mapper',
-  flow_board: 'Flow Board', experiment_brief: 'Experiment Brief', strategy_sketchbook: 'Strategy Sketchbook',
-  ux_scorecard: 'Experience Scorecard', persuasion_canvas: 'Influence Map', performance_grid: 'Results Tracker',
-  decision_matrix: 'Decision Matrix', risk_radar: 'Risk Radar', signal_checker: 'Signal Checker',
-};
-
-export function OrchestrationPanel({ workspaceTitle, sessions, onStartToolkit }: OrchestrationPanelProps) {
+export function OrchestrationPanel({ workspaceTitle, sessions, onStartHouse }: OrchestrationPanelProps) {
   const [result, setResult] = useState<OrchestrationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  const buildSessionSummaries = useCallback((): SessionSummary[] => {
+  const buildSummaries = useCallback((): SessionSummary[] => {
     return sessions.map(s => {
-      const aiOutputs = s.aiOutputs || {};
+      const ao = s.aiOutputs || {};
       return {
-        toolkit: s.toolkitType,
-        toolkitName: TOOLKIT_DISPLAY_NAMES[s.toolkitType] || s.toolkitType,
-        house: getHouseForToolkit(s.toolkitType),
-        sentenceOfTruth: s.sentenceOfTruth?.content || aiOutputs.sentenceOfTruth || undefined,
-        insights: s.insights?.map((i: any) => i.content || i) || aiOutputs.insights || [],
-        necessaryMoves: s.necessaryMoves?.map((m: any) => m.content || m) || aiOutputs.necessaryMoves || [],
+        house: getHouseForSession(s),
+        sentenceOfTruth: s.sentenceOfTruth?.content || ao.sentenceOfTruth || ao.houseResult?.sentenceOfTruth,
+        insights: s.insights?.map((i: any) => i.content || i) || ao.insights || ao.houseResult?.keyIssues || [],
+        necessaryMoves: s.necessaryMoves?.map((m: any) => m.content || m) || ao.necessaryMoves || ao.houseResult?.necessaryMoves || [],
         hasOutput: !!(
-          (s.insights && s.insights.length > 0) ||
           s.sentenceOfTruth?.content ||
-          aiOutputs.insights?.length > 0 ||
-          aiOutputs.sentenceOfTruth
+          (s.insights && s.insights.length > 0) ||
+          ao.sentenceOfTruth ||
+          ao.houseResult?.sentenceOfTruth
         ),
       };
     });
@@ -110,43 +103,35 @@ export function OrchestrationPanel({ workspaceTitle, sessions, onStartToolkit }:
   const fetchOrchestration = useCallback(async () => {
     setIsLoading(true);
     try {
-      const summaries = buildSessionSummaries();
-      const response = await fetch('/api/orchestrate', {
+      const summaries = buildSummaries();
+      const res = await fetch('/api/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workspaceTitle,
-          sessions: summaries,
-        }),
+        body: JSON.stringify({ workspaceTitle, sessions: summaries }),
       });
-      if (response.ok) {
-        const data = await response.json();
-        setResult(data);
+      if (res.ok) {
+        setResult(await res.json());
         setHasLoaded(true);
       }
     } catch (err) {
       console.error('Orchestration fetch failed:', err);
     }
     setIsLoading(false);
-  }, [workspaceTitle, buildSessionSummaries]);
+  }, [workspaceTitle, buildSummaries]);
 
-  // Auto-fetch on mount and when sessions change (debounced by session count)
   useEffect(() => {
-    if (!hasLoaded) {
-      fetchOrchestration();
-    }
+    if (!hasLoaded) fetchOrchestration();
   }, [hasLoaded, fetchOrchestration]);
 
-  // Re-run when session count changes
   const sessionCount = sessions.length;
   useEffect(() => {
-    if (hasLoaded) {
-      setHasLoaded(false);
-    }
+    if (hasLoaded) setHasLoaded(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionCount]);
 
   if (!result && !isLoading) return null;
+
+  const houses: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
 
   return (
     <div className="rounded-none border border-fresco-border overflow-hidden">
@@ -160,11 +145,9 @@ export function OrchestrationPanel({ workspaceTitle, sessions, onStartToolkit }:
           <span className="text-fresco-sm font-medium text-fresco-black">What to do next</span>
           {result && (
             <span className={`text-fresco-xs px-2 py-0.5 rounded-full font-medium ${
-              result.urgency === 'high'
-                ? 'bg-fresco-black text-white'
-                : result.urgency === 'medium'
-                ? 'bg-fresco-graphite-mid/20 text-fresco-graphite-mid'
-                : 'bg-fresco-border text-fresco-graphite-light'
+              result.urgency === 'high'   ? 'bg-fresco-black text-white' :
+              result.urgency === 'medium' ? 'bg-fresco-graphite-mid/20 text-fresco-graphite-mid' :
+                                           'bg-fresco-border text-fresco-graphite-light'
             }`}>
               {URGENCY_LABEL[result.urgency]}
             </span>
@@ -172,15 +155,12 @@ export function OrchestrationPanel({ workspaceTitle, sessions, onStartToolkit }:
         </div>
         <div className="flex items-center gap-1">
           {isLoading && <Loader2 className="w-3.5 h-3.5 text-fresco-graphite-light animate-spin" />}
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-fresco-graphite-light" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-fresco-graphite-light" />
-          )}
+          {isExpanded
+            ? <ChevronUp className="w-4 h-4 text-fresco-graphite-light" />
+            : <ChevronDown className="w-4 h-4 text-fresco-graphite-light" />}
         </div>
       </button>
 
-      {/* Body */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -194,24 +174,26 @@ export function OrchestrationPanel({ workspaceTitle, sessions, onStartToolkit }:
               {isLoading && !result ? (
                 <div className="flex items-center gap-2 py-2 text-fresco-sm text-fresco-graphite-light">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Analysing your sessions...</span>
+                  <span>Analysing your sessions…</span>
                 </div>
               ) : result ? (
                 <>
-                  {/* Next toolkit recommendation */}
+                  {/* Recommended house */}
                   <div className={`border-l-4 ${HOUSE_BORDER[result.nextHouse]} pl-3 mb-4`}>
                     <div className="flex items-center gap-2 mb-1">
                       <img
                         src={HOUSE_ICONS[result.nextHouse]}
                         alt={result.nextHouse}
                         className="w-4 h-4 icon-theme"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                       <span className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide">
-                        {result.nextHouse.charAt(0).toUpperCase() + result.nextHouse.slice(1)} house
+                        {HOUSE_NAMES[result.nextHouse]}
                       </span>
                     </div>
-                    <p className="text-fresco-base font-medium text-fresco-black">{result.nextToolkitName}</p>
+                    <p className="text-fresco-sm font-medium text-fresco-black">
+                      → {HOUSE_OUTPUTS[result.nextHouse]}
+                    </p>
                     <p className="text-fresco-sm text-fresco-graphite-mid mt-1">{result.recommendation}</p>
                   </div>
 
@@ -220,22 +202,22 @@ export function OrchestrationPanel({ workspaceTitle, sessions, onStartToolkit }:
                     {result.reasoning}
                   </p>
 
-                  {/* House progress mini-bars */}
+                  {/* House progress dots */}
                   {result.houseProgress && (
                     <div className="grid grid-cols-4 gap-1 mb-4">
-                      {(['investigate', 'innovate', 'validate', 'evaluate'] as HouseId[]).map(h => {
-                        const p = result.houseProgress[h];
-                        const pct = p ? Math.round((p.completed / p.total) * 100) : 0;
+                      {houses.map(h => {
+                        const done = result.houseProgress[h]?.completed;
                         const isTarget = h === result.nextHouse;
                         return (
-                          <div key={h} className="flex flex-col gap-1">
-                            <div className="h-1 bg-fresco-border rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all ${isTarget ? 'bg-fresco-black' : 'bg-fresco-graphite-light'}`}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <span className={`text-fresco-xs ${isTarget ? 'text-fresco-black font-medium' : 'text-fresco-graphite-light'}`}>
+                          <div key={h} className="flex flex-col gap-1.5">
+                            <div className={`h-1 rounded-full transition-all ${
+                              done      ? 'bg-fresco-black' :
+                              isTarget  ? 'bg-fresco-graphite-light' :
+                                          'bg-fresco-border'
+                            }`} />
+                            <span className={`text-fresco-xs ${
+                              isTarget ? 'text-fresco-black font-medium' : 'text-fresco-graphite-light'
+                            }`}>
                               {h.slice(0, 3)}
                             </span>
                           </div>
@@ -247,10 +229,10 @@ export function OrchestrationPanel({ workspaceTitle, sessions, onStartToolkit }:
                   {/* CTA */}
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => onStartToolkit?.(result.nextToolkit as ToolkitType)}
+                      onClick={() => onStartHouse?.(result.nextHouse)}
                       className="flex-1 flex items-center justify-center gap-2 h-9 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors rounded-none"
                     >
-                      Start {result.nextToolkitName}
+                      Run {HOUSE_NAMES[result.nextHouse]}
                       <ArrowRight className="w-4 h-4" />
                     </button>
                     <button
