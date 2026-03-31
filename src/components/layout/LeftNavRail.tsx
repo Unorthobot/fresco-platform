@@ -26,7 +26,6 @@ import type { Workspace } from '@/types';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { UsageIndicator } from '@/components/ui/UsageIndicator';
 import { NewWorkspaceModal } from '@/components/ui/NewWorkspaceModal';
-import { HOUSE_META } from '@/lib/agents';
 import type { HouseId } from '@/lib/agents';
 
 interface LeftNavRailProps {
@@ -54,7 +53,6 @@ export function LeftNavRail({ onNavigate, onStartHouse }: LeftNavRailProps) {
   
   const db = useDBWrite();
   const [showWorkspaces, setShowWorkspaces] = useState(true);
-  const [showHouses, setShowHouses] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [hoveredWorkspace, setHoveredWorkspace] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -112,8 +110,6 @@ export function LeftNavRail({ onNavigate, onStartHouse }: LeftNavRailProps) {
   };
   
   const isActive = (section: string) => activeSection === section;
-
-  const houseIds: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
   
   return (
     <>
@@ -146,52 +142,6 @@ export function LeftNavRail({ onNavigate, onStartHouse }: LeftNavRailProps) {
             </button>
           </div>
 
-          {/* Houses */}
-          <div className="mt-4 px-3">
-            <button
-              onClick={() => setShowHouses(!showHouses)}
-              className="flex items-center justify-between w-full px-3 py-2 text-fresco-xs font-medium uppercase tracking-wider text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors"
-            >
-              <span>Houses</span>
-              <ChevronDown
-                className={cn('w-4 h-4 transition-transform duration-200', !showHouses && '-rotate-90')}
-              />
-            </button>
-
-            <AnimatePresence>
-              {showHouses && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="py-1">
-                    {houseIds.map((houseId) => {
-                      const house = HOUSE_META[houseId];
-                      return (
-                        <button
-                          key={houseId}
-                          onClick={() => onStartHouse?.(houseId)}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black hover:bg-fresco-light-gray rounded-none transition-all"
-                        >
-                          <img
-                            src={house.icon}
-                            alt={house.name}
-                            className="w-4 h-4 flex-shrink-0 icon-theme"
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                          />
-                          <span className="truncate flex-1">{house.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          
           {/* Workspaces */}
           <div className="mt-4 px-3">
             <button
