@@ -44,7 +44,9 @@ interface ConversationStep {
   hint: string;
   placeholder: string;
   minHeight?: number;
-  agent?: string; // which agent this feeds
+  agent?: string;
+  inputType?: 'textarea' | 'chips' | 'contradictions' | 'options' | 'passfail' | 'metrics' | 'sliders' | 'synthesis';
+  sliderLabels?: string[]; // for sliders inputType — one label per slider
 }
 
 const VERDICT_STYLES: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -53,6 +55,376 @@ const VERDICT_STYLES: Record<string, { bg: string; text: string; border: string;
   'INVESTIGATE FURTHER': { bg: 'bg-blue-50',    text: 'text-blue-800',    border: 'border-blue-200',    dot: 'bg-blue-500' },
   'STOP':                { bg: 'bg-red-50',      text: 'text-red-800',     border: 'border-red-200',     dot: 'bg-red-500' },
 };
+
+// ─── Chip / tag input ────────────────────────────────────────────────────────
+// For discrete items: assumptions, patterns, signals
+
+function ChipInput({ value, onChange, placeholder }: {
+  value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  const chips = value ? value.split('\n').filter(Boolean) : [];
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const add = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    const next = [...chips, trimmed].join('\n');
+    onChange(next);
+    setDraft('');
+  };
+
+  const remove = (i: number) => {
+    const next = chips.filter((_, idx) => idx !== i).join('\n');
+    onChange(next);
+  };
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
+        <AnimatePresence>
+          {chips.map((chip, i) => (
+            <motion.span
+              key={chip + i}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-fresco-light-gray border border-fresco-border text-fresco-sm text-fresco-black rounded-none"
+            >
+              {chip}
+              <button type="button" onClick={() => remove(i)} className="text-fresco-graphite-light hover:text-fresco-black transition-colors ml-0.5">
+                <X className="w-3 h-3" />
+              </button>
+            </motion.span>
+          ))}
+        </AnimatePresence>
+      </div>
+      <div className="flex gap-2">
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          placeholder={placeholder || 'Type and press Enter to add'}
+          className="flex-1 h-10 px-4 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black transition-all"
+        />
+        <button
+          type="button"
+          onClick={add}
+          disabled={!draft.trim()}
+          className="h-10 px-4 text-fresco-sm border border-fresco-border text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-all disabled:opacity-30"
+        >
+          Add
+        </button>
+      </div>
+      {chips.length === 0 && (
+        <p className="mt-2 text-fresco-xs text-fresco-graphite-light">Add each item separately — one per chip</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Contradiction pairs ──────────────────────────────────────────────────────
+// "We assumed X / But actually Y"
+
+interface ContradictionPair { assumed: string; actually: string; }
+
+function ContradictionInput({ value, onChange }: {
+  value: string; onChange: (v: string) => void;
+}) {
+  const parse = (): ContradictionPair[] => {
+    try { return value ? JSON.parse(value) : []; } catch { return []; }
+  };
+  const serialize = (pairs: ContradictionPair[]) => JSON.stringify(pairs);
+
+  const pairs = parse();
+
+  const addPair = () => onChange(serialize([...pairs, { assumed: '', actually: '' }]));
+
+  const updatePair = (i: number, field: 'assumed' | 'actually', v: string) => {
+    const next = pairs.map((p, idx) => idx === i ? { ...p, [field]: v } : p);
+    onChange(serialize(next));
+  };
+
+  const removePair = (i: number) => onChange(serialize(pairs.filter((_, idx) => idx !== i)));
+
+  return (
+    <div className="space-y-3">
+      {pairs.length === 0 && (
+        <p className="text-fresco-sm text-fresco-graphite-light py-2">Add a contradiction — where do the facts conflict with your assumptions?</p>
+      )}
+      {pairs.map((pair, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-2 gap-2 relative group"
+        >
+          <div>
+            <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">We assumed</p>
+            <input
+              value={pair.assumed}
+              onChange={e => updatePair(i, 'assumed', e.target.value)}
+              placeholder="e.g. Users want more features"
+              className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black"
+            />
+          </div>
+          <div>
+            <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">But actually</p>
+            <input
+              value={pair.actually}
+              onChange={e => updatePair(i, 'actually', e.target.value)}
+              placeholder="e.g. They churn when we add them"
+              className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => removePair(i)}
+            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-fresco-border text-fresco-graphite-light hover:bg-fresco-black hover:text-white transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </motion.div>
+      ))}
+      <button
+        type="button"
+        onClick={addPair}
+        className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1.5"
+      >
+        <span className="text-lg leading-none">+</span> Add contradiction
+      </button>
+    </div>
+  );
+}
+
+// ─── Option cards ─────────────────────────────────────────────────────────────
+// For strategic options — each is a card with a label + description
+
+interface OptionCard { label: string; description: string; }
+
+function OptionCardsInput({ value, onChange }: {
+  value: string; onChange: (v: string) => void;
+}) {
+  const parse = (): OptionCard[] => {
+    try { return value ? JSON.parse(value) : []; } catch { return []; }
+  };
+  const serialize = (cards: OptionCard[]) => JSON.stringify(cards);
+  const cards = parse();
+  const letters = 'ABCDEFGH';
+
+  const addCard = () => onChange(serialize([...cards, { label: '', description: '' }]));
+  const updateCard = (i: number, field: 'label' | 'description', v: string) => {
+    onChange(serialize(cards.map((c, idx) => idx === i ? { ...c, [field]: v } : c)));
+  };
+  const removeCard = (i: number) => onChange(serialize(cards.filter((_, idx) => idx !== i)));
+
+  return (
+    <div className="space-y-3">
+      {cards.map((card, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="border border-fresco-border p-4 relative group"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <span className="w-6 h-6 rounded-full bg-fresco-black text-white text-fresco-xs font-medium flex items-center justify-center flex-shrink-0">
+              {letters[i] || i + 1}
+            </span>
+            <input
+              value={card.label}
+              onChange={e => updateCard(i, 'label', e.target.value)}
+              placeholder={`Option ${letters[i] || i + 1} — short name`}
+              className="flex-1 text-fresco-base font-medium text-fresco-black bg-transparent border-b border-fresco-border-light focus:outline-none focus:border-fresco-black pb-0.5"
+            />
+          </div>
+          <textarea
+            value={card.description}
+            onChange={e => updateCard(i, 'description', e.target.value)}
+            placeholder="Describe this option — what it involves, what it gains, what it gives up"
+            className="w-full text-fresco-sm text-fresco-graphite-soft bg-transparent border-none resize-none focus:outline-none leading-relaxed"
+            style={{ minHeight: 60 }}
+          />
+          <button
+            type="button"
+            onClick={() => removeCard(i)}
+            className="absolute top-3 right-3 w-5 h-5 rounded-full bg-fresco-border text-fresco-graphite-light hover:bg-red-100 hover:text-red-500 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </motion.div>
+      ))}
+      {cards.length === 0 && (
+        <p className="text-fresco-sm text-fresco-graphite-light py-2">Add each option as a separate card — aim for at least 3.</p>
+      )}
+      <button
+        type="button"
+        onClick={addCard}
+        className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1.5"
+      >
+        <span className="text-lg leading-none">+</span> Add option
+      </button>
+    </div>
+  );
+}
+
+// ─── Pass / Fail input ────────────────────────────────────────────────────────
+
+function PassFailInput({ value, onChange }: {
+  value: string; onChange: (v: string) => void;
+}) {
+  const parse = () => {
+    try { return value ? JSON.parse(value) : { pass: '', fail: '' }; } catch { return { pass: '', fail: '' }; }
+  };
+  const data = parse();
+  const update = (field: 'pass' | 'fail', v: string) =>
+    onChange(JSON.stringify({ ...data, [field]: v }));
+
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+          <p className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">Pass — this would prove it works</p>
+        </div>
+        <textarea
+          value={data.pass}
+          onChange={e => update('pass', e.target.value)}
+          placeholder="e.g. +15% confirmation rate in treatment group over 2 weeks"
+          className="w-full px-3 py-2.5 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none"
+          style={{ minHeight: 90 }}
+        />
+      </div>
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-2 h-2 rounded-full bg-red-400" />
+          <p className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">Fail — this would kill it</p>
+        </div>
+        <textarea
+          value={data.fail}
+          onChange={e => update('fail', e.target.value)}
+          placeholder="e.g. &lt;5% difference after 2 weeks — stop and reconsider"
+          className="w-full px-3 py-2.5 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-red-300 resize-none"
+          style={{ minHeight: 90 }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Metrics table ────────────────────────────────────────────────────────────
+
+function MetricsInput({ value, onChange }: {
+  value: string; onChange: (v: string) => void;
+}) {
+  interface MetricRow { metric: string; target: string; actual: string; }
+  const parse = (): MetricRow[] => {
+    try { return value ? JSON.parse(value) : [{ metric: '', target: '', actual: '' }]; }
+    catch { return [{ metric: '', target: '', actual: '' }]; }
+  };
+  const rows = parse();
+  const update = (i: number, field: keyof MetricRow, v: string) => {
+    onChange(JSON.stringify(rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r)));
+  };
+  const addRow = () => onChange(JSON.stringify([...rows, { metric: '', target: '', actual: '' }]));
+  const removeRow = (i: number) => onChange(JSON.stringify(rows.filter((_, idx) => idx !== i)));
+
+  return (
+    <div>
+      <div className="border border-fresco-border overflow-hidden">
+        <div className="grid grid-cols-3 bg-fresco-light-gray border-b border-fresco-border px-0">
+          {['Metric', 'Target', 'Actual'].map(h => (
+            <div key={h} className="px-4 py-2 text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide border-r border-fresco-border-light last:border-0">{h}</div>
+          ))}
+        </div>
+        {rows.map((row, i) => (
+          <div key={i} className="grid grid-cols-3 border-b border-fresco-border-light last:border-0 group relative">
+            {(['metric', 'target', 'actual'] as const).map((field, fi) => (
+              <input
+                key={field}
+                value={row[field]}
+                onChange={e => update(i, field, e.target.value)}
+                placeholder={fi === 0 ? 'e.g. CAC' : fi === 1 ? 'e.g. < $800' : 'e.g. $1,240'}
+                className={cn(
+                  'px-4 py-3 text-fresco-sm text-fresco-black bg-transparent focus:outline-none focus:bg-fresco-light-gray transition-colors',
+                  fi < 2 && 'border-r border-fresco-border-light'
+                )}
+              />
+            ))}
+            {rows.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeRow(i)}
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-fresco-border text-fresco-graphite-light hover:bg-red-100 hover:text-red-500 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={addRow}
+        className="mt-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1.5"
+      >
+        <span className="text-lg leading-none">+</span> Add metric
+      </button>
+    </div>
+  );
+}
+
+// ─── Slider ratings ───────────────────────────────────────────────────────────
+// For scoring criteria — each criterion gets a 1–10 slider + optional note
+
+function SliderRatings({ value, onChange, labels }: {
+  value: string; onChange: (v: string) => void; labels: string[];
+}) {
+  interface SliderRow { label: string; score: number; note: string; }
+  const parse = (): SliderRow[] => {
+    try {
+      const parsed = value ? JSON.parse(value) : [];
+      return labels.map((label, i) => parsed[i] || { label, score: 5, note: '' });
+    } catch {
+      return labels.map(label => ({ label, score: 5, note: '' }));
+    }
+  };
+  const rows = parse();
+  const update = (i: number, field: 'score' | 'note', v: string | number) => {
+    const next = rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r);
+    onChange(JSON.stringify(next));
+  };
+
+  return (
+    <div className="space-y-4">
+      {rows.map((row, i) => (
+        <div key={i} className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-fresco-sm font-medium text-fresco-black">{row.label}</p>
+            <span className={cn(
+              'text-fresco-sm font-bold tabular-nums w-8 text-right',
+              row.score >= 7 ? 'text-emerald-600' : row.score >= 4 ? 'text-amber-600' : 'text-red-500'
+            )}>{row.score}/10</span>
+          </div>
+          <input
+            type="range"
+            min={1} max={10} step={1}
+            value={row.score}
+            onChange={e => update(i, 'score', parseInt(e.target.value))}
+            className="w-full h-1.5 accent-fresco-black cursor-pointer"
+          />
+          <input
+            value={row.note}
+            onChange={e => update(i, 'note', e.target.value)}
+            placeholder="Why this score? Back it with evidence."
+            className="w-full h-9 px-3 text-fresco-sm text-fresco-graphite-soft bg-fresco-light-gray border-none rounded-none focus:outline-none focus:bg-fresco-white focus:ring-1 focus:ring-fresco-border transition-all"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ─── Voice recording hook ─────────────────────────────────────────────────────
 
@@ -104,7 +476,7 @@ function useVoice(onText: (t: string) => void) {
 
 function QuestionCard({
   step, value, onChange, onBlur, isActive, isAnswered, isLocked,
-  onActivate, showAgent = false,
+  onActivate, showAgent = false, criteriaValue = '',
 }: {
   step: ConversationStep;
   value: string;
@@ -115,6 +487,7 @@ function QuestionCard({
   isLocked: boolean;
   onActivate: () => void;
   showAgent?: boolean;
+  criteriaValue?: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const voice = useVoice(t => onChange(value ? `${value}\n\n${t}` : t));
@@ -147,7 +520,31 @@ function QuestionCard({
         >
           <div className="flex-1 pr-4 min-w-0">
             <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">{step.question}</p>
-            <p className="text-fresco-sm text-fresco-graphite-mid line-clamp-2 leading-relaxed">{value}</p>
+            {step.inputType === 'chips' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {value.split('\n').filter(Boolean).length} item{value.split('\n').filter(Boolean).length !== 1 ? 's' : ''} added
+              </p>
+            ) : step.inputType === 'contradictions' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {(() => { try { return JSON.parse(value).filter((p: any) => p.assumed).length; } catch { return 0; } })()} contradiction{(() => { try { return JSON.parse(value).filter((p: any) => p.assumed).length !== 1; } catch { return true; } })() ? 's' : ''} mapped
+              </p>
+            ) : step.inputType === 'options' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {(() => { try { return JSON.parse(value).length; } catch { return 0; } })()} option{(() => { try { return JSON.parse(value).length !== 1; } catch { return true; } })() ? 's' : ''} defined
+              </p>
+            ) : step.inputType === 'passfail' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">Pass &amp; fail conditions defined</p>
+            ) : step.inputType === 'metrics' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {(() => { try { return JSON.parse(value).filter((r: any) => r.metric).length; } catch { return 0; } })()} metric{(() => { try { return JSON.parse(value).filter((r: any) => r.metric).length !== 1; } catch { return true; } })() ? 's' : ''} tracked
+              </p>
+            ) : step.inputType === 'sliders' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {(() => { try { const rows = JSON.parse(value); const avg = rows.reduce((s: number, r: any) => s + r.score, 0) / rows.length; return `Avg score: ${avg.toFixed(1)}/10`; } catch { return 'Scored'; } })()}
+              </p>
+            ) : (
+              <p className="text-fresco-sm text-fresco-graphite-mid line-clamp-2 leading-relaxed">{value}</p>
+            )}
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0 mt-1">
             <div className="w-1.5 h-1.5 rounded-full bg-fresco-black" />
@@ -175,50 +572,83 @@ function QuestionCard({
           {isActive && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }}>
               <p className="text-fresco-sm text-fresco-graphite-light mb-3">{step.hint}</p>
-              <div className="relative">
-                <textarea
-                  ref={textRef}
-                  value={value}
-                  onChange={e => onChange(e.target.value)}
-                  onBlur={onBlur}
-                  placeholder={step.placeholder}
-                  className="fresco-input-lg pr-20"
-                  style={{ minHeight: step.minHeight || 120 }}
-                />
-                <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={voice.recording ? voice.stop : voice.start}
-                    className={cn('p-1.5 rounded-full transition-all',
-                      voice.recording ? 'bg-red-500 text-white animate-pulse'
-                        : 'bg-fresco-light-gray text-fresco-graphite-mid hover:bg-fresco-border hover:text-fresco-black'
-                    )}
-                    title={voice.recording ? 'Stop' : 'Voice input'}
-                  >
-                    {voice.recording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="p-1.5 rounded-full bg-fresco-light-gray text-fresco-graphite-mid hover:bg-fresco-border hover:text-fresco-black transition-all"
-                    title="Upload file"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                  </button>
-                  <input ref={fileRef} type="file" multiple accept=".txt,.md,.csv,.json" className="hidden"
-                    onChange={async e => {
-                      for (const file of Array.from(e.target.files || [])) {
-                        const text = await new Promise<string>(res => {
-                          const r = new FileReader();
-                          r.onload = ev => res(ev.target?.result as string);
-                          r.readAsText(file);
-                        });
-                        onChange(value ? `${value}\n\n--- From ${file.name} ---\n${text}` : text);
-                      }
-                    }}
+
+              {/* Specialised controls — no voice/file for structured inputs */}
+              {step.inputType === 'chips' && (
+                <ChipInput value={value} onChange={onChange} placeholder={step.placeholder} />
+              )}
+              {step.inputType === 'contradictions' && (
+                <ContradictionInput value={value} onChange={onChange} />
+              )}
+              {step.inputType === 'options' && (
+                <OptionCardsInput value={value} onChange={onChange} />
+              )}
+              {step.inputType === 'passfail' && (
+                <PassFailInput value={value} onChange={onChange} />
+              )}
+              {step.inputType === 'metrics' && (
+                <MetricsInput value={value} onChange={onChange} />
+              )}
+              {step.inputType === 'sliders' && (() => {
+                // Parse criteria from the previous field — numbered lines like "1. Time-to-value..."
+                const rawLabels = criteriaValue
+                  ? criteriaValue.split('\n').filter(Boolean)
+                    .map(l => l.replace(/^\d+[\.\)]\s*/, '').split('(')[0].trim())
+                    .filter(Boolean)
+                  : [];
+                const labels = rawLabels.length >= 2 ? rawLabels.slice(0, 5)
+                  : (step.sliderLabels || ['Criterion 1', 'Criterion 2', 'Criterion 3']);
+                return <SliderRatings value={value} onChange={onChange} labels={labels} />;
+              })()}
+
+              {/* Default textarea — with voice + file */}
+              {(!step.inputType || step.inputType === 'textarea' || step.inputType === 'synthesis') && (
+                <div className="relative">
+                  <textarea
+                    ref={textRef}
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    onBlur={onBlur}
+                    placeholder={step.placeholder}
+                    className="fresco-input-lg pr-20"
+                    style={{ minHeight: step.minHeight || 120 }}
                   />
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={voice.recording ? voice.stop : voice.start}
+                      className={cn('p-1.5 rounded-full transition-all',
+                        voice.recording ? 'bg-red-500 text-white animate-pulse'
+                          : 'bg-fresco-light-gray text-fresco-graphite-mid hover:bg-fresco-border hover:text-fresco-black'
+                      )}
+                      title={voice.recording ? 'Stop' : 'Voice input'}
+                    >
+                      {voice.recording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      className="p-1.5 rounded-full bg-fresco-light-gray text-fresco-graphite-mid hover:bg-fresco-border hover:text-fresco-black transition-all"
+                      title="Upload file"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                    </button>
+                    <input ref={fileRef} type="file" multiple accept=".txt,.md,.csv,.json" className="hidden"
+                      onChange={async e => {
+                        for (const file of Array.from(e.target.files || [])) {
+                          const text = await new Promise<string>(res => {
+                            const r = new FileReader();
+                            r.onload = ev => res(ev.target?.result as string);
+                            r.readAsText(file);
+                          });
+                          onChange(value ? `${value}\n\n--- From ${file.name} ---\n${text}` : text);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
               {voice.recording && (
                 <p className="mt-1.5 text-fresco-xs text-red-500 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
@@ -231,6 +661,40 @@ function QuestionCard({
       )}
     </motion.div>
   );
+}
+
+// ─── Serialise structured inputs to readable text for agents ─────────────────
+
+function getInputTypeForId(id: string, allSteps: ConversationStep[]): ConversationStep['inputType'] {
+  return allSteps.find(s => s.id === id)?.inputType;
+}
+
+function serializeStructuredField(type: ConversationStep['inputType'], v: string): string {
+  if (!type || type === 'textarea' || type === 'synthesis') return v.trim();
+  if (type === 'chips') return v.split('\n').filter(Boolean).join(', ');
+  try {
+    const parsed = JSON.parse(v);
+    if (type === 'contradictions') {
+      return parsed.filter((p: any) => p.assumed?.trim())
+        .map((p: any) => `We assumed: ${p.assumed} / But actually: ${p.actually}`).join('\n');
+    }
+    if (type === 'options') {
+      return parsed.filter((c: any) => c.label?.trim())
+        .map((c: any, i: number) => `Option ${String.fromCharCode(65 + i)} — ${c.label}: ${c.description}`).join('\n');
+    }
+    if (type === 'passfail') {
+      return [parsed.pass ? `Pass: ${parsed.pass}` : '', parsed.fail ? `Fail: ${parsed.fail}` : ''].filter(Boolean).join('\n');
+    }
+    if (type === 'metrics') {
+      return parsed.filter((r: any) => r.metric?.trim())
+        .map((r: any) => `${r.metric}: target ${r.target}, actual ${r.actual}`).join('\n');
+    }
+    if (type === 'sliders') {
+      return parsed.filter((r: any) => r.label)
+        .map((r: any) => `${r.label}: ${r.score}/10${r.note ? ` — ${r.note}` : ''}`).join('\n');
+    }
+    return v;
+  } catch { return v; }
 }
 
 // ─── House conversation configs ───────────────────────────────────────────────
@@ -255,6 +719,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'patterns',
+    inputType: 'chips',
     question: 'What keeps coming up?',
     hint: 'Look across your observations. What themes, clusters, or repeating signals do you see?',
     placeholder: "e.g. Every churned user mentioned confusion in the first week. Retained users all found one core feature within 48 hours. The confusion always clusters around the same moment.",
@@ -263,6 +728,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'contradictions',
+    inputType: 'contradictions',
     question: "What doesn't add up?",
     hint: "Where do things contradict each other? What surprised you? What's broken or missing?",
     placeholder: "e.g. High NPS but still churning. Users say they love the product but don't come back. Power users behave completely differently from everyone else.",
@@ -280,6 +746,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   // ── Belief Mapper ──
   {
     id: 'assumptions',
+    inputType: 'chips',
     question: 'What do people assume here?',
     hint: "What do people take for granted? List the unspoken rules, shortcuts, and assumptions — even ones you think are wrong.",
     placeholder: "e.g. 'Users will read the onboarding.' 'Confused users will ask for help.' 'The drop-off is a UX problem.' 'Power users are our best signal.'",
@@ -310,37 +777,14 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
     minHeight: 120,
     agent: 'Belief Mapper',
   },
-  // ── Position Builder ──
+  // ── Position Builder ── (synthesis — one question after deep investigation)
   {
-    id: 'who',
-    question: 'Who is this position about?',
-    hint: 'Describe the specific person or group this position is built around. The more specific, the sharper the output.',
-    placeholder: "e.g. A mid-level product manager at a fast-growing startup who has budget but no time to evaluate tools properly.",
-    minHeight: 100,
-    agent: 'Position Builder',
-  },
-  {
-    id: 'real_need',
-    question: 'What do they actually need?',
-    hint: "What is the real, unmet need behind their behaviour? Not what they ask for — what they actually need.",
-    placeholder: "e.g. They need to feel confident in their decisions without spending hours doing research they don't have time for. They want to look smart, not be smart.",
-    minHeight: 120,
-    agent: 'Position Builder',
-  },
-  {
-    id: 'hard_to_argue',
-    question: 'What makes this hard to argue with?',
-    hint: 'What fact, pattern, or reality makes your position difficult to dismiss? What would you say to a sceptic?',
-    placeholder: "e.g. Most PMs are evaluated on speed of delivery, not quality of decisions — so anything that slows them down feels like a threat, even if it would help them.",
-    minHeight: 120,
-    agent: 'Position Builder',
-  },
-  {
-    id: 'so_what',
-    question: 'So what changes?',
-    hint: 'If this truth is real, what must be done? Articulate the strategic consequence.',
-    placeholder: "e.g. If this is true, we should lead with speed and confidence — not depth and comprehensiveness. The product should feel like a shortcut, not a process.",
-    minHeight: 120,
+    id: 'position_synthesis',
+    inputType: 'synthesis' as const,
+    question: 'So what does this mean?',
+    hint: "Based on everything you've found: who is this really about, what do they actually need, and what should change as a result?",
+    placeholder: "e.g. This is really about mid-level PMs who need to feel confident, not just be right. They need speed and a defensible trail. That means we should lead with certainty and shortcut language — not depth.",
+    minHeight: 140,
     agent: 'Position Builder',
   },
 ];
@@ -398,9 +842,10 @@ const INNOVATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'pass_fail',
+    inputType: 'passfail' as const,
     question: 'What does pass/fail look like?',
     hint: "Define the exact numbers or outcomes that would tell you the experiment worked — or didn't.",
-    placeholder: "e.g. Success: +15% confirmation rate. Failure: <5% difference. If negative, kill SMS and reconsider the whole verification step.",
+    placeholder: "e.g. Success: +15% confirmation rate. Failure: <5% difference.",
     minHeight: 120,
     agent: 'Experiment Brief',
   },
@@ -415,6 +860,7 @@ const INNOVATE_STEPS: ConversationStep[] = [
   // ── Strategy Sketchbook ──
   {
     id: 'options',
+    inputType: 'options',
     question: 'What are your real options?',
     hint: "List at least 3 strategic paths. Include options you're tempted to dismiss.",
     placeholder: "e.g. A: remove verification entirely (fastest, highest fraud risk). B: magic link (medium lift, 1-week build). C: social login (highest lift, 6-week build). D: keep current, add progress indicator.",
@@ -459,6 +905,8 @@ const VALIDATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'scores',
+    inputType: 'sliders',
+    sliderLabels: ['Criterion 1', 'Criterion 2', 'Criterion 3', 'Criterion 4', 'Criterion 5'],
     question: 'Score each criterion — and explain why.',
     hint: 'Rate each out of 10. Back scores with evidence — user feedback, data, or direct observation.',
     placeholder: "e.g. Time-to-value: 4/10 — average user takes 12 minutes. Clarity: 6/10 — most find the CTA but miss the secondary action. Emotional tone: 7/10 — friendly but loses confidence at step 3.",
@@ -517,6 +965,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'targets',
+    inputType: 'metrics' as const,
     question: 'What are you tracking — and what are the targets?',
     hint: "List the specific metrics with targets or benchmarks. If you don't have a target, set one now.",
     placeholder: "e.g. CAC (target: under $800). Trial-to-paid conversion (target: 15%). Time-to-close (target: under 21 days). MQL volume (target: 120/mo).",
@@ -635,16 +1084,33 @@ function ConversationFlow({
   const [activeIdx, setActiveIdx] = useState(0);
 
   // Unlock next step when current has meaningful content (20+ chars)
+  // ── Helpers for structured inputs ──────────────────────────────────────
+  const allSteps = [...INVESTIGATE_STEPS, ...INNOVATE_STEPS, ...VALIDATE_STEPS,
+    ...EVALUATE_STEPS_SINGLE, ...EVALUATE_STEPS_JOURNEY, ...EVALUATE_STEPS_COMPARISON];
+
+  const hasValue = (id: string): boolean => {
+    const v = values[id] || '';
+    const type = allSteps.find(s => s.id === id)?.inputType;
+    if (!type || type === 'textarea' || type === 'synthesis') return v.trim().length > 0;
+    if (type === 'chips') return v.split('\n').filter(Boolean).length > 0;
+    try {
+      const parsed = JSON.parse(v);
+      if (type === 'contradictions') return parsed.some((p: any) => p.assumed?.trim());
+      if (type === 'options') return parsed.length > 0 && parsed[0]?.label?.trim();
+      if (type === 'passfail') return parsed.pass?.trim() || parsed.fail?.trim();
+      if (type === 'metrics') return parsed.some((r: any) => r.metric?.trim());
+      if (type === 'sliders') return parsed.some((r: any) => r.note?.trim());
+      return false;
+    } catch { return false; }
+  };
+
   const getUnlockedUpTo = () => {
     let i = 0;
     while (i < steps.length) {
-      if ((values[steps[i].id] || '').trim().length > 0) {
-        i++;
-      } else {
-        break;
-      }
+      if (hasValue(steps[i].id)) i++;
+      else break;
     }
-    return Math.min(i + 1, steps.length); // always show one ahead
+    return Math.min(i + 1, steps.length);
   };
 
   const unlockedUpTo = getUnlockedUpTo();
@@ -652,7 +1118,7 @@ function ConversationFlow({
   // Only auto-advance when user explicitly leaves a field (onBlur)
   const handleBlur = (stepId: string) => {
     const idx = steps.findIndex(s => s.id === stepId);
-    if (idx === activeIdx && (values[stepId] || '').trim().length > 0 && activeIdx < steps.length - 1) {
+    if (idx === activeIdx && hasValue(stepId) && activeIdx < steps.length - 1) {
       setActiveIdx(activeIdx + 1);
     }
   };
@@ -662,7 +1128,7 @@ function ConversationFlow({
       {steps.map((step, idx) => {
         const isVisible = idx < unlockedUpTo;
         const isActive = idx === activeIdx;
-        const isAnswered = (values[step.id] || '').trim().length > 0 && !isActive;
+        const isAnswered = hasValue(step.id) && !isActive;
         const isLocked = !isVisible;
 
         if (!isVisible) return null;
@@ -679,6 +1145,7 @@ function ConversationFlow({
             isLocked={isLocked}
             onActivate={() => setActiveIdx(idx)}
             showAgent={true}
+            criteriaValue={values['criteria'] || ''}
           />
         );
       })}
@@ -849,13 +1316,15 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
   const buildUserInput = () => {
     const order: Record<HouseId, string[]> = {
-      investigate: ['situation', 'observations', 'patterns', 'contradictions', 'truth', 'assumptions', 'assumption_chains', 'ignored', 'new_model', 'who', 'real_need', 'hard_to_argue', 'so_what'],
+      investigate: ['situation', 'observations', 'patterns', 'contradictions', 'truth', 'assumptions', 'assumption_chains', 'ignored', 'new_model', 'position_synthesis'],
       innovate:    ['start', 'steps', 'breakdown', 'success', 'hypothesis', 'test', 'pass_fail', 'wrong', 'options', 'option_costs', 'recommendation'],
       validate:    ['subject', 'criteria', 'scores', 'fixes', 'audience', 'desired_action', 'blockers', 'move_them', 'measuring', 'targets', 'actuals', 'changes'],
       evaluate:    ['goal', 'subject', 'score_criteria', 'concerns', 'trust_drops', 'transitions', 'version_a', 'version_b', 'delta_focus'],
     };
+    const allSteps = [...INVESTIGATE_STEPS, ...INNOVATE_STEPS, ...VALIDATE_STEPS,
+      ...EVALUATE_STEPS_SINGLE, ...EVALUATE_STEPS_JOURNEY, ...EVALUATE_STEPS_COMPARISON];
     return order[houseId]
-      .map(k => (values[k] || '').trim())
+      .map(k => serializeStructuredField(getInputTypeForId(k, allSteps), values[k] || ''))
       .filter(Boolean)
       .join('\n\n');
   };
