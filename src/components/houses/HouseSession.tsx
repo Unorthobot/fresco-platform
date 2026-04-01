@@ -45,7 +45,7 @@ interface ConversationStep {
   placeholder: string;
   minHeight?: number;
   agent?: string;
-  inputType?: 'textarea' | 'chips' | 'contradictions' | 'options' | 'passfail' | 'metrics' | 'sliders' | 'synthesis';
+  inputType?: 'textarea' | 'chips' | 'contradictions' | 'options' | 'passfail' | 'metrics' | 'sliders' | 'synthesis' | 'singleline' | 'numberedsteps' | 'testbrief' | 'audienceprofile' | 'barriermoves' | 'optioncosts' | 'evaluatebrief' | 'prioritychips';
   sliderLabels?: string[]; // for sliders inputType — one label per slider
 }
 
@@ -476,7 +476,7 @@ function useVoice(onText: (t: string) => void) {
 
 function QuestionCard({
   step, value, onChange, onBlur, isActive, isAnswered, isLocked,
-  onActivate, showAgent = false, criteriaValue = '',
+  onActivate, showAgent = false, criteriaValue = '', secondaryValue = '',
 }: {
   step: ConversationStep;
   value: string;
@@ -488,6 +488,7 @@ function QuestionCard({
   onActivate: () => void;
   showAgent?: boolean;
   criteriaValue?: string;
+  secondaryValue?: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const voice = useVoice(t => onChange(value ? `${value}\n\n${t}` : t));
@@ -589,11 +590,32 @@ function QuestionCard({
               {step.inputType === 'metrics' && (
                 <MetricsInput value={value} onChange={onChange} />
               )}
+              {step.inputType === 'numberedsteps' && (
+                <NumberedStepsInput value={value} onChange={onChange} placeholder={step.placeholder} />
+              )}
+              {step.inputType === 'testbrief' && (
+                <TestBriefInput value={value} onChange={onChange} />
+              )}
+              {step.inputType === 'audienceprofile' && (
+                <AudienceProfileInput value={value} onChange={onChange} />
+              )}
+              {step.inputType === 'barriermoves' && (
+                <BarrierMovesInput value={value} onChange={onChange} blockers={secondaryValue || criteriaValue} />
+              )}
+              {step.inputType === 'optioncosts' && (
+                <OptionCostsInput value={value} onChange={onChange} optionsValue={secondaryValue || criteriaValue} />
+              )}
+              {step.inputType === 'evaluatebrief' && (
+                <EvaluateBriefInput value={value} onChange={onChange} />
+              )}
+              {step.inputType === 'prioritychips' && (
+                <PriorityChipsInput value={value} onChange={onChange} placeholder={step.placeholder} />
+              )}
               {step.inputType === 'sliders' && (() => {
-                // Parse criteria from the previous field — numbered lines like "1. Time-to-value..."
-                const rawLabels = criteriaValue
-                  ? criteriaValue.split('\n').filter(Boolean)
-                    .map(l => l.replace(/^\d+[\.\)]\s*/, '').split('(')[0].trim())
+                const source = secondaryValue || criteriaValue;
+                const rawLabels = source
+                  ? source.split('\n').filter(Boolean)
+                    .map((l: string) => l.replace(/^\d+[\.\)]\s*/, '').split('(')[0].trim())
                     .filter(Boolean)
                   : [];
                 const labels = rawLabels.length >= 2 ? rawLabels.slice(0, 5)
@@ -670,33 +692,289 @@ function getInputTypeForId(id: string, allSteps: ConversationStep[]): Conversati
 }
 
 function serializeStructuredField(type: ConversationStep['inputType'], v: string): string {
-  if (!type || type === 'textarea' || type === 'synthesis') return v.trim();
-  if (type === 'chips') return v.split('\n').filter(Boolean).join(', ');
+  if (!type || type === 'textarea' || type === 'synthesis' || type === 'singleline') return v.trim();
+  if (type === 'chips' || type === 'prioritychips' || type === 'numberedsteps') {
+    const items = v.split('\n').filter(Boolean);
+    return type === 'numberedsteps' ? items.map((s, i) => `${i + 1}. ${s}`).join('\n') : items.join(', ');
+  }
   try {
-    const parsed = JSON.parse(v);
-    if (type === 'contradictions') {
-      return parsed.filter((p: any) => p.assumed?.trim())
-        .map((p: any) => `We assumed: ${p.assumed} / But actually: ${p.actually}`).join('\n');
-    }
-    if (type === 'options') {
-      return parsed.filter((c: any) => c.label?.trim())
-        .map((c: any, i: number) => `Option ${String.fromCharCode(65 + i)} — ${c.label}: ${c.description}`).join('\n');
-    }
-    if (type === 'passfail') {
-      return [parsed.pass ? `Pass: ${parsed.pass}` : '', parsed.fail ? `Fail: ${parsed.fail}` : ''].filter(Boolean).join('\n');
-    }
-    if (type === 'metrics') {
-      return parsed.filter((r: any) => r.metric?.trim())
-        .map((r: any) => `${r.metric}: target ${r.target}, actual ${r.actual}`).join('\n');
-    }
-    if (type === 'sliders') {
-      return parsed.filter((r: any) => r.label)
-        .map((r: any) => `${r.label}: ${r.score}/10${r.note ? ` — ${r.note}` : ''}`).join('\n');
-    }
+    const p = JSON.parse(v);
+    if (type === 'contradictions') return p.filter((x: any) => x.assumed?.trim()).map((x: any) => `We assumed: ${x.assumed} / But actually: ${x.actually}`).join('\n');
+    if (type === 'options') return p.filter((x: any) => x.label?.trim()).map((x: any, i: number) => `Option ${String.fromCharCode(65 + i)} — ${x.label}: ${x.description}`).join('\n');
+    if (type === 'optioncosts') return p.filter((x: any) => x.label?.trim()).map((x: any) => `${x.label}: gains ${x.gains}, gives up ${x.givesUp}`).join('\n');
+    if (type === 'passfail') return [p.pass ? `Pass: ${p.pass}` : '', p.fail ? `Fail: ${p.fail}` : ''].filter(Boolean).join('\n');
+    if (type === 'metrics') return p.filter((r: any) => r.metric?.trim()).map((r: any) => `${r.metric}: target ${r.target}, actual ${r.actual}`).join('\n');
+    if (type === 'sliders') return p.filter((r: any) => r.label).map((r: any) => `${r.label}: ${r.score}/10${r.note ? ` — ${r.note}` : ''}`).join('\n');
+    if (type === 'testbrief') return [p.method ? `Method: ${p.method}` : '', p.duration ? `Duration: ${p.duration}` : '', p.sample ? `Sample: ${p.sample}` : ''].filter(Boolean).join('\n');
+    if (type === 'audienceprofile') return [p.who ? `Who: ${p.who}` : '', p.believes ? `They believe: ${p.believes}` : '', p.why ? `Why: ${p.why}` : ''].filter(Boolean).join('\n');
+    if (type === 'barriermoves') return p.filter((x: any) => x.barrier?.trim()).map((x: any) => `Barrier: ${x.barrier} → Move: ${x.move}`).join('\n');
+    if (type === 'evaluatebrief') return [p.goal ? `Goal: ${p.goal}` : '', p.audience ? `Audience: ${p.audience}` : '', p.metric ? `Current metric: ${p.metric}` : ''].filter(Boolean).join('\n');
     return v;
   } catch { return v; }
 }
 
+// ─── Numbered step builder ────────────────────────────────────────────────────
+
+function NumberedStepsInput({ value, onChange, placeholder }: {
+  value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  const items = value ? value.split('\n').filter(Boolean) : [];
+  const update = (i: number, v: string) => {
+    const next = [...items]; next[i] = v;
+    onChange(next.join('\n'));
+  };
+  const add = () => onChange([...items, ''].join('\n'));
+  const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i).join('\n'));
+
+  return (
+    <div className="space-y-2">
+      {(items.length === 0 ? [''] : items).map((item, i) => (
+        <div key={i} className="flex items-center gap-2 group">
+          <span className="w-5 h-5 rounded-full border border-fresco-border flex items-center justify-center text-fresco-xs text-fresco-graphite-light flex-shrink-0">{i + 1}</span>
+          <input value={item} onChange={e => update(i, e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+            placeholder={i === 0 ? (placeholder || 'First step…') : `Step ${i + 1}…`}
+            className="flex-1 h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          {items.length > 1 && (
+            <button type="button" onClick={() => remove(i)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <X className="w-3.5 h-3.5 text-fresco-graphite-light hover:text-red-400" />
+            </button>
+          )}
+        </div>
+      ))}
+      <button type="button" onClick={add} className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1.5 ml-7">
+        <span className="text-base leading-none">+</span> Add step
+      </button>
+    </div>
+  );
+}
+
+// ─── Test brief ───────────────────────────────────────────────────────────────
+
+function TestBriefInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const parse = () => { try { return value ? JSON.parse(value) : {}; } catch { return {}; } };
+  const data = parse();
+  const update = (field: string, v: string) => onChange(JSON.stringify({ ...data, [field]: v }));
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Method — what will you do?</p>
+        <input value={data.method || ''} onChange={e => update('method', e.target.value)}
+          placeholder="e.g. A/B test SMS vs email verification, 50/50 split"
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Duration</p>
+          <input value={data.duration || ''} onChange={e => update('duration', e.target.value)}
+            placeholder="e.g. 2 weeks"
+            className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+        </div>
+        <div>
+          <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Sample / split</p>
+          <input value={data.sample || ''} onChange={e => update('sample', e.target.value)}
+            placeholder="e.g. All new signups"
+            className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Audience profile ─────────────────────────────────────────────────────────
+
+function AudienceProfileInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const parse = () => { try { return value ? JSON.parse(value) : {}; } catch { return {}; } };
+  const data = parse();
+  const update = (field: string, v: string) => onChange(JSON.stringify({ ...data, [field]: v }));
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Who exactly?</p>
+        <input value={data.who || ''} onChange={e => update('who', e.target.value)}
+          placeholder="e.g. CFOs at mid-market SaaS companies, $5M–$50M ARR"
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+      </div>
+      <div>
+        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">What do they currently believe?</p>
+        <input value={data.believes || ''} onChange={e => update('believes', e.target.value)}
+          placeholder="e.g. AI tools are a cost centre, not an investment"
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+      </div>
+      <div>
+        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Why do they believe it?</p>
+        <input value={data.why || ''} onChange={e => update('why', e.target.value)}
+          placeholder="e.g. They've seen AI hype without measurable ROI"
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Barrier → move pairs ─────────────────────────────────────────────────────
+
+function BarrierMovesInput({ value, onChange, blockers }: {
+  value: string; onChange: (v: string) => void; blockers: string;
+}) {
+  const parse = () => { try { return value ? JSON.parse(value) : []; } catch { return []; } };
+  const chipList = blockers ? blockers.split('\n').filter(Boolean) : [];
+  const rawPairs: { barrier: string; move: string }[] = parse();
+  const pairs = rawPairs.length > 0 ? rawPairs : chipList.map(b => ({ barrier: b, move: '' }));
+
+  const update = (i: number, field: 'barrier' | 'move', v: string) =>
+    onChange(JSON.stringify(pairs.map((p, idx) => idx === i ? { ...p, [field]: v } : p)));
+  const add = () => onChange(JSON.stringify([...pairs, { barrier: '', move: '' }]));
+  const remove = (i: number) => onChange(JSON.stringify(pairs.filter((_, idx) => idx !== i)));
+
+  return (
+    <div className="space-y-3">
+      {pairs.map((pair, i) => (
+        <motion.div key={i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+          className="p-3 border border-fresco-border-light space-y-2 relative group">
+          <div>
+            <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1">Barrier</p>
+            <input value={pair.barrier} onChange={e => update(i, 'barrier', e.target.value)}
+              placeholder="e.g. We tried something similar and it failed"
+              className="w-full h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border-light rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          </div>
+          <div>
+            <p className="text-fresco-xs text-emerald-600 uppercase tracking-wide mb-1">How you'll move them past it</p>
+            <input value={pair.move} onChange={e => update(i, 'move', e.target.value)}
+              placeholder="e.g. Show a case study from a similar company"
+              className="w-full h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-emerald-200 rounded-none focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+          </div>
+          <button type="button" onClick={() => remove(i)}
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <X className="w-3.5 h-3.5 text-fresco-graphite-light hover:text-red-400" />
+          </button>
+        </motion.div>
+      ))}
+      <button type="button" onClick={add}
+        className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1.5">
+        <span className="text-base leading-none">+</span> Add barrier
+      </button>
+    </div>
+  );
+}
+
+// ─── Option costs ─────────────────────────────────────────────────────────────
+
+function OptionCostsInput({ value, onChange, optionsValue }: {
+  value: string; onChange: (v: string) => void; optionsValue: string;
+}) {
+  interface CostRow { label: string; gains: string; givesUp: string; }
+  const letters = 'ABCDEFGH';
+  const parseOptions = (): {label: string}[] => { try { return optionsValue ? JSON.parse(optionsValue) : []; } catch { return []; } };
+  const parse = (): CostRow[] => { try { return value ? JSON.parse(value) : []; } catch { return []; } };
+  const options = parseOptions();
+  const saved = parse();
+
+  const rows: CostRow[] = options.length > 0
+    ? options.map((opt, i) => ({ label: opt.label || `Option ${letters[i]}`, gains: saved[i]?.gains || '', givesUp: saved[i]?.givesUp || '' }))
+    : saved.length > 0 ? saved : [{ label: 'Option A', gains: '', givesUp: '' }];
+
+  const update = (i: number, field: 'gains' | 'givesUp', v: string) =>
+    onChange(JSON.stringify(rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r)));
+
+  return (
+    <div className="space-y-4">
+      {rows.map((row, i) => (
+        <div key={i} className="border border-fresco-border-light p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-6 h-6 rounded-full bg-fresco-black text-white text-fresco-xs font-medium flex items-center justify-center">{letters[i]}</span>
+            <span className="text-fresco-sm font-medium text-fresco-black">{row.label}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-fresco-xs text-emerald-600 uppercase tracking-wide mb-1.5">What you gain</p>
+              <textarea value={row.gains} onChange={e => update(i, 'gains', e.target.value)}
+                placeholder="e.g. Fastest to ship, proven pattern"
+                className="w-full px-3 py-2 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border-light rounded-none focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none"
+                style={{ minHeight: 64 }} />
+            </div>
+            <div>
+              <p className="text-fresco-xs text-amber-600 uppercase tracking-wide mb-1.5">What you give up</p>
+              <textarea value={row.givesUp} onChange={e => update(i, 'givesUp', e.target.value)}
+                placeholder="e.g. Higher fraud risk, no fallback"
+                className="w-full px-3 py-2 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border-light rounded-none focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none"
+                style={{ minHeight: 64 }} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Evaluate brief ───────────────────────────────────────────────────────────
+
+function EvaluateBriefInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const parse = () => { try { return value ? JSON.parse(value) : {}; } catch { return {}; } };
+  const data = parse();
+  const update = (field: string, v: string) => onChange(JSON.stringify({ ...data, [field]: v }));
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Goal of this page/flow</p>
+        <input value={data.goal || ''} onChange={e => update('goal', e.target.value)}
+          placeholder="e.g. Get mid-market buyers to book a demo"
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+      </div>
+      <div>
+        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Who's the audience?</p>
+        <input value={data.audience || ''} onChange={e => update('audience', e.target.value)}
+          placeholder="e.g. SaaS buyers at $10M–$100M ARR, evaluating 3–5 tools"
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+      </div>
+      <div>
+        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Current performance</p>
+        <input value={data.metric || ''} onChange={e => update('metric', e.target.value)}
+          placeholder="e.g. 2.1% conversion, 45s avg time, 70% scroll past pricing"
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Priority chips ───────────────────────────────────────────────────────────
+
+function PriorityChipsInput({ value, onChange, placeholder }: {
+  value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  const items = value ? value.split('\n').filter(Boolean) : [];
+  const [draft, setDraft] = useState('');
+  const add = () => { if (!draft.trim()) return; onChange([...items, draft.trim()].join('\n')); setDraft(''); };
+  const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i).join('\n'));
+
+  return (
+    <div>
+      <div className="space-y-2 mb-3">
+        {items.map((item, i) => (
+          <motion.div key={item + i} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2 group">
+            <span className="w-5 h-5 rounded-full bg-fresco-black text-white text-fresco-xs font-medium flex items-center justify-center flex-shrink-0">{i + 1}</span>
+            <span className="flex-1 text-fresco-sm text-fresco-black">{item}</span>
+            <button type="button" onClick={() => remove(i)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <X className="w-3.5 h-3.5 text-fresco-graphite-light hover:text-red-400" />
+            </button>
+          </motion.div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input value={draft} onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          placeholder={placeholder || 'Add item and press Enter'}
+          className="flex-1 h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+        <button type="button" onClick={add} disabled={!draft.trim()}
+          className="h-10 px-4 text-fresco-sm border border-fresco-border text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-all disabled:opacity-30">
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── House conversation configs ───────────────────────────────────────────────
 // ─── House conversation configs ───────────────────────────────────────────────
 
 const INVESTIGATE_STEPS: ConversationStep[] = [
@@ -801,6 +1079,7 @@ const INNOVATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'steps',
+    inputType: 'numberedsteps' as const,
     question: 'What are the key steps?',
     hint: 'List the major stages in order. What actually happens between start and end?',
     placeholder: "e.g. 1. Landing page → 2. Signup form → 3. Email verification → 4. Onboarding checklist → 5. First core action.",
@@ -834,6 +1113,7 @@ const INNOVATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'test',
+    inputType: 'testbrief' as const,
     question: 'How will you test it?',
     hint: 'What is the smallest, fastest experiment that could prove or disprove this belief?',
     placeholder: "e.g. A/B test SMS vs email verification for 2 weeks, 50/50 split. Measure confirmation rate and fraud rate.",
@@ -869,6 +1149,7 @@ const INNOVATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'option_costs',
+    inputType: 'optioncosts' as const,
     question: 'What does each option cost?',
     hint: 'For each option: what do you gain, what do you give up, and what does it require you to believe?',
     placeholder: "e.g. Magic link: faster for users, but requires believing email open rate is our bottleneck. Social login: highest UX lift but 6 weeks and requires trusting Google/Apple auth.",
@@ -897,6 +1178,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'criteria',
+    inputType: 'chips' as const,
     question: 'What will you score it on?',
     hint: 'Define 3–5 criteria that matter for this experience. Be specific about what good looks like for each.',
     placeholder: "e.g. 1. Time-to-first-value (under 5 mins = 10/10). 2. Clarity of next step. 3. Emotional tone. 4. Error recovery. 5. Mobile usability.",
@@ -915,6 +1197,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'fixes',
+    inputType: 'prioritychips' as const,
     question: 'What needs fixing first?',
     hint: 'Based on your scores, what are the 2–3 highest-leverage improvements?',
     placeholder: "e.g. 1. Reduce onboarding to 3 steps — biggest drop-off point. 2. Add progress indicator. 3. Send day-1 email with a single CTA.",
@@ -924,6 +1207,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   // ── Influence Map ──
   {
     id: 'audience',
+    inputType: 'audienceprofile' as const,
     question: 'Who are you trying to move?',
     hint: 'Describe the specific audience. What do they currently believe, and why do they believe it?',
     placeholder: "e.g. CFOs at mid-market SaaS companies. They believe AI tools are a cost, not an investment — because they've seen hype without ROI.",
@@ -940,6 +1224,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'blockers',
+    inputType: 'chips' as const,
     question: "What's in the way?",
     hint: "What objections, fears, or competing beliefs will block the change? Include the ones that are hard to counter.",
     placeholder: "e.g. 'We tried something similar and it failed.' 'Our team won\'t adopt it.' 'I need board approval for anything over $50k.'",
@@ -948,6 +1233,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'move_them',
+    inputType: 'barriermoves' as const,
     question: 'How will you move them?',
     hint: 'What specific messages, proof points, or experiences will overcome each barrier? Map it directly.',
     placeholder: "e.g. Lead with a 90-day ROI guarantee. Show a case study from a similar company. Let them speak to a reference customer before signing.",
@@ -982,6 +1268,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'changes',
+    inputType: 'prioritychips' as const,
     question: 'What needs to change?',
     hint: 'Based on the gap between targets and results — what specific actions will close the gap? Who owns each one?',
     placeholder: "e.g. 1. Pause Google Ads — high CAC, low quality. 2. A/B test pricing page — conversion gap. 3. Review ICP — we may be targeting the wrong segment.",
@@ -993,6 +1280,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
 const EVALUATE_STEPS_SINGLE: ConversationStep[] = [
   {
     id: 'subject',
+    inputType: 'evaluatebrief' as const,
     question: 'What page are you evaluating?',
     hint: 'Describe it: goal, audience, and what you know about performance.',
     placeholder: "e.g. Pricing page for mid-market SaaS buyers. Goal: book a demo. Conversion: 2.1%. Users spend 45s avg. 70% scroll past pricing without clicking.",
@@ -1001,6 +1289,7 @@ const EVALUATE_STEPS_SINGLE: ConversationStep[] = [
   },
   {
     id: 'score_criteria',
+    inputType: 'chips' as const,
     question: 'What will you score it on?',
     hint: 'Name the dimensions: clarity, trust, friction, CTA strength, value prop. Be specific about what good looks like.',
     placeholder: "e.g. Clarity (does value come through in 5s?), Trust (are there proof points?), CTA (is the action clear and low-friction?), Cognitive load (too much competing?).",
@@ -1091,15 +1380,20 @@ function ConversationFlow({
   const hasValue = (id: string): boolean => {
     const v = values[id] || '';
     const type = allSteps.find(s => s.id === id)?.inputType;
-    if (!type || type === 'textarea' || type === 'synthesis') return v.trim().length > 0;
-    if (type === 'chips') return v.split('\n').filter(Boolean).length > 0;
+    if (!type || type === 'textarea' || type === 'synthesis' || type === 'singleline') return v.trim().length > 0;
+    if (type === 'chips' || type === 'prioritychips' || type === 'numberedsteps') return v.split('\n').filter(Boolean).length > 0;
     try {
       const parsed = JSON.parse(v);
       if (type === 'contradictions') return parsed.some((p: any) => p.assumed?.trim());
-      if (type === 'options') return parsed.length > 0 && parsed[0]?.label?.trim();
-      if (type === 'passfail') return parsed.pass?.trim() || parsed.fail?.trim();
+      if (type === 'options') return parsed.length > 0 && !!parsed[0]?.label?.trim();
+      if (type === 'optioncosts') return parsed.some((r: any) => r.gains?.trim() || r.givesUp?.trim());
+      if (type === 'passfail') return !!(parsed.pass?.trim() || parsed.fail?.trim());
       if (type === 'metrics') return parsed.some((r: any) => r.metric?.trim());
       if (type === 'sliders') return parsed.some((r: any) => r.note?.trim());
+      if (type === 'testbrief') return !!(parsed.method?.trim());
+      if (type === 'audienceprofile') return !!(parsed.who?.trim());
+      if (type === 'barriermoves') return parsed.some((p: any) => p.barrier?.trim() || p.move?.trim());
+      if (type === 'evaluatebrief') return !!(parsed.goal?.trim() || parsed.audience?.trim() || parsed.metric?.trim());
       return false;
     } catch { return false; }
   };
@@ -1146,6 +1440,12 @@ function ConversationFlow({
             onActivate={() => setActiveIdx(idx)}
             showAgent={true}
             criteriaValue={values['criteria'] || ''}
+            secondaryValue={
+              step.id === 'move_them' ? (values['blockers'] || '') :
+              step.id === 'option_costs' ? (values['options'] || '') :
+              step.id === 'scores' ? (values['criteria'] || '') :
+              ''
+            }
           />
         );
       })}
