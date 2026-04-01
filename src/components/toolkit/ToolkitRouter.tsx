@@ -37,9 +37,12 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, 
       setActiveSession(null);
       setActiveWorkspace(null);
       setActiveSection('home');
+      // Navigate immediately — don't wait for the useEffect chain in FrescoAppContent
+      onBack?.();
     }
-  }, [session, workspace, setActiveSession, setActiveWorkspace, setActiveSection]);
+  }, [session, workspace, setActiveSession, setActiveWorkspace, setActiveSection, onBack]);
 
+  // Still mounting but session/workspace not yet resolved — render nothing visible
   if (!session || !workspace) return null;
 
   // ── House-mode session → HouseSession ─────────────────────────────────

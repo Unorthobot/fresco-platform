@@ -175,7 +175,7 @@ const CATEGORY_LABELS: Record<ToolkitCategory, string> = {
 };
 
 export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartToolkit, onStartHouse }: WorkspaceOverviewProps) {
-  const { workspaces, sessions, deleteSession } = useFrescoStore();
+  const { workspaces, sessions, deleteSession, activeSessionId } = useFrescoStore();
   const db = useDBWrite();
   const workspace = workspaces.find((w) => w.id === workspaceId);
   const workspaceSessions = sessions.filter((s) => s.workspaceId === workspaceId).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
@@ -256,8 +256,11 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
   };
 
   const handleDeleteSession = (sessionId: string) => {
+    const wasActive = activeSessionId === sessionId;
     deleteSession(sessionId);
     setDeleteConfirm(null);
+    // If the user deleted the session they were currently in, go back immediately
+    if (wasActive) onBack?.();
   };
 
   const handleSelectToolkit = (type: ToolkitType) => {
