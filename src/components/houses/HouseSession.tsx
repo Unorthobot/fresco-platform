@@ -523,9 +523,13 @@ function QuestionCard({
         >
           <div className="flex-1 pr-4 min-w-0">
             <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">{step.question}</p>
-            {step.inputType === 'chips' ? (
+            {step.inputType === 'chips' || step.inputType === 'prioritychips' ? (
               <p className="text-fresco-sm text-fresco-graphite-mid">
                 {value.split('\n').filter(Boolean).length} item{value.split('\n').filter(Boolean).length !== 1 ? 's' : ''} added
+              </p>
+            ) : step.inputType === 'numberedsteps' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {value.split('\n').filter(Boolean).length} step{value.split('\n').filter(Boolean).length !== 1 ? 's' : ''} mapped
               </p>
             ) : step.inputType === 'contradictions' ? (
               <p className="text-fresco-sm text-fresco-graphite-mid">
@@ -535,6 +539,8 @@ function QuestionCard({
               <p className="text-fresco-sm text-fresco-graphite-mid">
                 {(() => { try { return JSON.parse(value).length; } catch { return 0; } })()} option{(() => { try { return JSON.parse(value).length !== 1; } catch { return true; } })() ? 's' : ''} defined
               </p>
+            ) : step.inputType === 'optioncosts' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">Trade-offs mapped for each option</p>
             ) : step.inputType === 'passfail' ? (
               <p className="text-fresco-sm text-fresco-graphite-mid">Pass &amp; fail conditions defined</p>
             ) : step.inputType === 'metrics' ? (
@@ -544,6 +550,22 @@ function QuestionCard({
             ) : step.inputType === 'sliders' ? (
               <p className="text-fresco-sm text-fresco-graphite-mid">
                 {(() => { try { const rows = JSON.parse(value); const avg = rows.reduce((s: number, r: any) => s + r.score, 0) / rows.length; return `Avg score: ${avg.toFixed(1)}/10`; } catch { return 'Scored'; } })()}
+              </p>
+            ) : step.inputType === 'testbrief' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {(() => { try { const p = JSON.parse(value); return p.method ? p.method.slice(0, 60) : 'Test brief filled in'; } catch { return 'Test brief filled in'; } })()}
+              </p>
+            ) : step.inputType === 'audienceprofile' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {(() => { try { const p = JSON.parse(value); return p.who ? p.who.slice(0, 60) : 'Audience defined'; } catch { return 'Audience defined'; } })()}
+              </p>
+            ) : step.inputType === 'barriermoves' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {(() => { try { return JSON.parse(value).filter((p: any) => p.barrier).length; } catch { return 0; } })()} barrier{(() => { try { return JSON.parse(value).filter((p: any) => p.barrier).length !== 1; } catch { return true; } })() ? 's' : ''} mapped
+              </p>
+            ) : step.inputType === 'evaluatebrief' ? (
+              <p className="text-fresco-sm text-fresco-graphite-mid">
+                {(() => { try { const p = JSON.parse(value); return p.goal ? p.goal.slice(0, 60) : 'Brief filled in'; } catch { return 'Brief filled in'; } })()}
               </p>
             ) : (
               <p className="text-fresco-sm text-fresco-graphite-mid line-clamp-2 leading-relaxed">{value}</p>
@@ -720,17 +742,33 @@ function serializeStructuredField(type: ConversationStep['inputType'], v: string
 function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
   value: string; onChange: (v: string) => void; placeholder?: string; onInteract?: () => void;
 }) {
-  const items = value ? value.split('\n').filter(Boolean) : [];
+  // Split on newlines but keep all items including empty ones for tracking count
+  const savedItems = value ? value.split('\n').filter(Boolean) : [];
+  // Track how many input boxes to show (at least 1)
+  const [count, setCount] = useState(Math.max(1, savedItems.length));
+
   const update = (i: number, v: string) => {
-    const next = [...items]; next[i] = v;
-    onChange(next.join('\n'));
+    const next = Array.from({ length: count }, (_, idx) => savedItems[idx] || '');
+    next[i] = v;
+    onChange(next.filter(Boolean).join('\n'));
   };
-  const add = () => { onChange([...items, ''].join('\n')); onInteract?.(); };
-  const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i).join('\n'));
+
+  const add = () => {
+    setCount(c => c + 1);
+    onInteract?.();
+  };
+
+  const remove = (i: number) => {
+    const next = savedItems.filter((_, idx) => idx !== i);
+    onChange(next.join('\n'));
+    setCount(c => Math.max(1, c - 1));
+  };
+
+  const displayItems = Array.from({ length: count }, (_, i) => savedItems[i] || '');
 
   return (
     <div className="space-y-2">
-      {(items.length === 0 ? [''] : items).map((item, i) => (
+      {displayItems.map((item, i) => (
         <div key={i} className="flex items-center gap-2 group">
           <span className="w-5 h-5 rounded-full border border-fresco-border flex items-center justify-center text-fresco-xs text-fresco-graphite-light flex-shrink-0">{i + 1}</span>
           <input value={item} onChange={e => update(i, e.target.value)}
@@ -738,7 +776,7 @@ function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
             onBlur={() => { if (item.trim()) onInteract?.(); }}
             placeholder={i === 0 ? (placeholder || 'First step…') : `Step ${i + 1}…`}
             className="flex-1 h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
-          {items.length > 1 && (
+          {count > 1 && (
             <button type="button" onClick={() => remove(i)} className="opacity-0 group-hover:opacity-100 transition-opacity">
               <X className="w-3.5 h-3.5 text-fresco-graphite-light hover:text-red-400" />
             </button>
