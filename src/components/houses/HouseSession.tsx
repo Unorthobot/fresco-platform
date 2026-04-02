@@ -72,7 +72,7 @@ function ChipInput({ value, onChange, placeholder, onInteract }: {
     const next = [...chips, trimmed].join('\n');
     onChange(next);
     setDraft('');
-    onInteract?.();
+    // Do NOT advance here — user may want to add more chips
   };
 
   const remove = (i: number) => {
@@ -81,7 +81,11 @@ function ChipInput({ value, onChange, placeholder, onInteract }: {
   };
 
   return (
-    <div>
+    <div onBlur={e => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node) && chips.length > 0) {
+        onInteract?.();
+      }
+    }}>
       <div className="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
         <AnimatePresence>
           {chips.map((chip, i) => (
@@ -106,7 +110,6 @@ function ChipInput({ value, onChange, placeholder, onInteract }: {
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
-          onBlur={() => { if (draft.trim()) add(); else onInteract?.(); }}
           placeholder={placeholder || 'Type and press Enter to add'}
           className="flex-1 h-10 px-4 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black transition-all"
         />
@@ -742,9 +745,7 @@ function serializeStructuredField(type: ConversationStep['inputType'], v: string
 function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
   value: string; onChange: (v: string) => void; placeholder?: string; onInteract?: () => void;
 }) {
-  // Split on newlines but keep all items including empty ones for tracking count
   const savedItems = value ? value.split('\n').filter(Boolean) : [];
-  // Track how many input boxes to show (at least 1)
   const [count, setCount] = useState(Math.max(1, savedItems.length));
 
   const update = (i: number, v: string) => {
@@ -755,7 +756,7 @@ function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
 
   const add = () => {
     setCount(c => c + 1);
-    onInteract?.();
+    // Do NOT call onInteract here — user is still adding steps
   };
 
   const remove = (i: number) => {
@@ -767,13 +768,17 @@ function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
   const displayItems = Array.from({ length: count }, (_, i) => savedItems[i] || '');
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" onBlur={e => {
+      // Only fire onInteract when focus leaves the entire component
+      if (!e.currentTarget.contains(e.relatedTarget as Node) && savedItems.length > 0) {
+        onInteract?.();
+      }
+    }}>
       {displayItems.map((item, i) => (
         <div key={i} className="flex items-center gap-2 group">
           <span className="w-5 h-5 rounded-full border border-fresco-border flex items-center justify-center text-fresco-xs text-fresco-graphite-light flex-shrink-0">{i + 1}</span>
           <input value={item} onChange={e => update(i, e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
-            onBlur={() => { if (item.trim()) onInteract?.(); }}
             placeholder={i === 0 ? (placeholder || 'First step…') : `Step ${i + 1}…`}
             className="flex-1 h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
           {count > 1 && (
@@ -984,11 +989,20 @@ function PriorityChipsInput({ value, onChange, placeholder, onInteract }: {
 }) {
   const items = value ? value.split('\n').filter(Boolean) : [];
   const [draft, setDraft] = useState('');
-  const add = () => { if (!draft.trim()) return; onChange([...items, draft.trim()].join('\n')); setDraft(''); onInteract?.(); };
+  const add = () => {
+    if (!draft.trim()) return;
+    onChange([...items, draft.trim()].join('\n'));
+    setDraft('');
+    // Do NOT advance — user may want to add more
+  };
   const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i).join('\n'));
 
   return (
-    <div>
+    <div onBlur={e => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node) && items.length > 0) {
+        onInteract?.();
+      }
+    }}>
       <div className="space-y-2 mb-3">
         {items.map((item, i) => (
           <motion.div key={item + i} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
@@ -1004,7 +1018,6 @@ function PriorityChipsInput({ value, onChange, placeholder, onInteract }: {
       <div className="flex gap-2">
         <input value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
-          onBlur={() => { if (draft.trim()) add(); else onInteract?.(); }}
           placeholder={placeholder || 'Add item and press Enter'}
           className="flex-1 h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
         <button type="button" onClick={add} disabled={!draft.trim()}
@@ -1016,7 +1029,6 @@ function PriorityChipsInput({ value, onChange, placeholder, onInteract }: {
   );
 }
 
-// ─── House conversation configs ───────────────────────────────────────────────
 // ─── House conversation configs ───────────────────────────────────────────────
 
 const INVESTIGATE_STEPS: ConversationStep[] = [
