@@ -134,8 +134,8 @@ function ChipInput({ value, onChange, placeholder, onInteract }: {
 
 interface ContradictionPair { assumed: string; actually: string; }
 
-function ContradictionInput({ value, onChange }: {
-  value: string; onChange: (v: string) => void;
+function ContradictionInput({ value, onChange, onInteract }: {
+  value: string; onChange: (v: string) => void; onInteract?: () => void;
 }) {
   const parse = (): ContradictionPair[] => {
     try { return value ? JSON.parse(value) : []; } catch { return []; }
@@ -154,7 +154,7 @@ function ContradictionInput({ value, onChange }: {
   const removePair = (i: number) => onChange(serialize(pairs.filter((_, idx) => idx !== i)));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       {pairs.length === 0 && (
         <p className="text-fresco-sm text-fresco-graphite-light py-2">Add a contradiction — where do the facts conflict with your assumptions?</p>
       )}
@@ -208,8 +208,8 @@ function ContradictionInput({ value, onChange }: {
 
 interface OptionCard { label: string; description: string; }
 
-function OptionCardsInput({ value, onChange }: {
-  value: string; onChange: (v: string) => void;
+function OptionCardsInput({ value, onChange, onInteract }: {
+  value: string; onChange: (v: string) => void; onInteract?: () => void;
 }) {
   const parse = (): OptionCard[] => {
     try { return value ? JSON.parse(value) : []; } catch { return []; }
@@ -225,7 +225,7 @@ function OptionCardsInput({ value, onChange }: {
   const removeCard = (i: number) => onChange(serialize(cards.filter((_, idx) => idx !== i)));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       {cards.map((card, i) => (
         <motion.div
           key={i}
@@ -276,8 +276,8 @@ function OptionCardsInput({ value, onChange }: {
 
 // ─── Pass / Fail input ────────────────────────────────────────────────────────
 
-function PassFailInput({ value, onChange }: {
-  value: string; onChange: (v: string) => void;
+function PassFailInput({ value, onChange, onInteract }: {
+  value: string; onChange: (v: string) => void; onInteract?: () => void;
 }) {
   const parse = () => {
     try { return value ? JSON.parse(value) : { pass: '', fail: '' }; } catch { return { pass: '', fail: '' }; }
@@ -287,7 +287,7 @@ function PassFailInput({ value, onChange }: {
     onChange(JSON.stringify({ ...data, [field]: v }));
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       <div>
         <div className="flex items-center gap-2 mb-2">
           <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -320,8 +320,8 @@ function PassFailInput({ value, onChange }: {
 
 // ─── Metrics table ────────────────────────────────────────────────────────────
 
-function MetricsInput({ value, onChange }: {
-  value: string; onChange: (v: string) => void;
+function MetricsInput({ value, onChange, onInteract }: {
+  value: string; onChange: (v: string) => void; onInteract?: () => void;
 }) {
   interface MetricRow { metric: string; target: string; actual: string; }
   const parse = (): MetricRow[] => {
@@ -336,7 +336,7 @@ function MetricsInput({ value, onChange }: {
   const removeRow = (i: number) => onChange(JSON.stringify(rows.filter((_, idx) => idx !== i)));
 
   return (
-    <div>
+    <div onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       <div className="border border-fresco-border overflow-hidden">
         <div className="grid grid-cols-3 bg-fresco-light-gray border-b border-fresco-border px-0">
           {['Metric', 'Target', 'Actual'].map(h => (
@@ -383,8 +383,8 @@ function MetricsInput({ value, onChange }: {
 // ─── Slider ratings ───────────────────────────────────────────────────────────
 // For scoring criteria — each criterion gets a 1–10 slider + optional note
 
-function SliderRatings({ value, onChange, labels }: {
-  value: string; onChange: (v: string) => void; labels: string[];
+function SliderRatings({ value, onChange, labels, onInteract }: {
+  value: string; onChange: (v: string) => void; labels: string[]; onInteract?: () => void;
 }) {
   interface SliderRow { label: string; score: number; note: string; }
   const parse = (): SliderRow[] => {
@@ -402,7 +402,7 @@ function SliderRatings({ value, onChange, labels }: {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       {rows.map((row, i) => (
         <div key={i} className="space-y-1.5">
           <div className="flex items-center justify-between">
@@ -606,34 +606,34 @@ function QuestionCard({
                 <ChipInput value={value} onChange={onChange} placeholder={step.placeholder} onInteract={onBlur} />
               )}
               {step.inputType === 'contradictions' && (
-                <ContradictionInput value={value} onChange={onChange} />
+                <ContradictionInput value={value} onChange={onChange} onInteract={onBlur} />
               )}
               {step.inputType === 'options' && (
-                <OptionCardsInput value={value} onChange={onChange} />
+                <OptionCardsInput value={value} onChange={onChange} onInteract={onBlur} />
               )}
               {step.inputType === 'passfail' && (
-                <PassFailInput value={value} onChange={onChange} />
+                <PassFailInput value={value} onChange={onChange} onInteract={onBlur} />
               )}
               {step.inputType === 'metrics' && (
-                <MetricsInput value={value} onChange={onChange} />
+                <MetricsInput value={value} onChange={onChange} onInteract={onBlur} />
               )}
               {step.inputType === 'numberedsteps' && (
                 <NumberedStepsInput value={value} onChange={onChange} placeholder={step.placeholder} onInteract={onBlur} />
               )}
               {step.inputType === 'testbrief' && (
-                <TestBriefInput value={value} onChange={onChange} />
+                <TestBriefInput value={value} onChange={onChange} onInteract={onBlur} />
               )}
               {step.inputType === 'audienceprofile' && (
-                <AudienceProfileInput value={value} onChange={onChange} />
+                <AudienceProfileInput value={value} onChange={onChange} onInteract={onBlur} />
               )}
               {step.inputType === 'barriermoves' && (
-                <BarrierMovesInput value={value} onChange={onChange} blockers={secondaryValue || criteriaValue} />
+                <BarrierMovesInput value={value} onChange={onChange} blockers={secondaryValue || criteriaValue} onInteract={onBlur} />
               )}
               {step.inputType === 'optioncosts' && (
-                <OptionCostsInput value={value} onChange={onChange} optionsValue={secondaryValue || criteriaValue} />
+                <OptionCostsInput value={value} onChange={onChange} optionsValue={secondaryValue || criteriaValue} onInteract={onBlur} />
               )}
               {step.inputType === 'evaluatebrief' && (
-                <EvaluateBriefInput value={value} onChange={onChange} />
+                <EvaluateBriefInput value={value} onChange={onChange} onInteract={onBlur} />
               )}
               {step.inputType === 'prioritychips' && (
                 <PriorityChipsInput value={value} onChange={onChange} placeholder={step.placeholder} onInteract={onBlur} />
@@ -647,7 +647,7 @@ function QuestionCard({
                   : [];
                 const labels = rawLabels.length >= 2 ? rawLabels.slice(0, 5)
                   : (step.sliderLabels || ['Criterion 1', 'Criterion 2', 'Criterion 3']);
-                return <SliderRatings value={value} onChange={onChange} labels={labels} />;
+                return <SliderRatings value={value} onChange={onChange} labels={labels} onInteract={onBlur} />;
               })()}
 
               {/* Default textarea — with voice + file */}
@@ -797,12 +797,12 @@ function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
 
 // ─── Test brief ───────────────────────────────────────────────────────────────
 
-function TestBriefInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function TestBriefInput({ value, onChange, onInteract }: { value: string; onChange: (v: string) => void; onInteract?: () => void }) {
   const parse = () => { try { return value ? JSON.parse(value) : {}; } catch { return {}; } };
   const data = parse();
   const update = (field: string, v: string) => onChange(JSON.stringify({ ...data, [field]: v }));
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Method — what will you do?</p>
         <input value={data.method || ''} onChange={e => update('method', e.target.value)}
@@ -829,12 +829,12 @@ function TestBriefInput({ value, onChange }: { value: string; onChange: (v: stri
 
 // ─── Audience profile ─────────────────────────────────────────────────────────
 
-function AudienceProfileInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function AudienceProfileInput({ value, onChange, onInteract }: { value: string; onChange: (v: string) => void; onInteract?: () => void }) {
   const parse = () => { try { return value ? JSON.parse(value) : {}; } catch { return {}; } };
   const data = parse();
   const update = (field: string, v: string) => onChange(JSON.stringify({ ...data, [field]: v }));
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Who exactly?</p>
         <input value={data.who || ''} onChange={e => update('who', e.target.value)}
@@ -859,8 +859,8 @@ function AudienceProfileInput({ value, onChange }: { value: string; onChange: (v
 
 // ─── Barrier → move pairs ─────────────────────────────────────────────────────
 
-function BarrierMovesInput({ value, onChange, blockers }: {
-  value: string; onChange: (v: string) => void; blockers: string;
+function BarrierMovesInput({ value, onChange, blockers, onInteract }: {
+  value: string; onChange: (v: string) => void; blockers: string; onInteract?: () => void;
 }) {
   const parse = () => { try { return value ? JSON.parse(value) : []; } catch { return []; } };
   const chipList = blockers ? blockers.split('\n').filter(Boolean) : [];
@@ -873,7 +873,7 @@ function BarrierMovesInput({ value, onChange, blockers }: {
   const remove = (i: number) => onChange(JSON.stringify(pairs.filter((_, idx) => idx !== i)));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       {pairs.map((pair, i) => (
         <motion.div key={i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
           className="p-3 border border-fresco-border-light space-y-2 relative group">
@@ -905,8 +905,8 @@ function BarrierMovesInput({ value, onChange, blockers }: {
 
 // ─── Option costs ─────────────────────────────────────────────────────────────
 
-function OptionCostsInput({ value, onChange, optionsValue }: {
-  value: string; onChange: (v: string) => void; optionsValue: string;
+function OptionCostsInput({ value, onChange, optionsValue, onInteract }: {
+  value: string; onChange: (v: string) => void; optionsValue: string; onInteract?: () => void;
 }) {
   interface CostRow { label: string; gains: string; givesUp: string; }
   const letters = 'ABCDEFGH';
@@ -923,7 +923,7 @@ function OptionCostsInput({ value, onChange, optionsValue }: {
     onChange(JSON.stringify(rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r)));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       {rows.map((row, i) => (
         <div key={i} className="border border-fresco-border-light p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -954,12 +954,12 @@ function OptionCostsInput({ value, onChange, optionsValue }: {
 
 // ─── Evaluate brief ───────────────────────────────────────────────────────────
 
-function EvaluateBriefInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function EvaluateBriefInput({ value, onChange, onInteract }: { value: string; onChange: (v: string) => void; onInteract?: () => void }) {
   const parse = () => { try { return value ? JSON.parse(value) : {}; } catch { return {}; } };
   const data = parse();
   const update = (field: string, v: string) => onChange(JSON.stringify({ ...data, [field]: v }));
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Goal of this page/flow</p>
         <input value={data.goal || ''} onChange={e => update('goal', e.target.value)}
