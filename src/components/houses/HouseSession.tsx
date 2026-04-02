@@ -59,8 +59,8 @@ const VERDICT_STYLES: Record<string, { bg: string; text: string; border: string;
 // ─── Chip / tag input ────────────────────────────────────────────────────────
 // For discrete items: assumptions, patterns, signals
 
-function ChipInput({ value, onChange, placeholder }: {
-  value: string; onChange: (v: string) => void; placeholder?: string;
+function ChipInput({ value, onChange, placeholder, onInteract }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; onInteract?: () => void;
 }) {
   const chips = value ? value.split('\n').filter(Boolean) : [];
   const [draft, setDraft] = useState('');
@@ -72,6 +72,7 @@ function ChipInput({ value, onChange, placeholder }: {
     const next = [...chips, trimmed].join('\n');
     onChange(next);
     setDraft('');
+    onInteract?.();
   };
 
   const remove = (i: number) => {
@@ -105,6 +106,7 @@ function ChipInput({ value, onChange, placeholder }: {
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          onBlur={() => { if (draft.trim()) add(); else onInteract?.(); }}
           placeholder={placeholder || 'Type and press Enter to add'}
           className="flex-1 h-10 px-4 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black transition-all"
         />
@@ -576,7 +578,7 @@ function QuestionCard({
 
               {/* Specialised controls — no voice/file for structured inputs */}
               {step.inputType === 'chips' && (
-                <ChipInput value={value} onChange={onChange} placeholder={step.placeholder} />
+                <ChipInput value={value} onChange={onChange} placeholder={step.placeholder} onInteract={onBlur} />
               )}
               {step.inputType === 'contradictions' && (
                 <ContradictionInput value={value} onChange={onChange} />
@@ -591,7 +593,7 @@ function QuestionCard({
                 <MetricsInput value={value} onChange={onChange} />
               )}
               {step.inputType === 'numberedsteps' && (
-                <NumberedStepsInput value={value} onChange={onChange} placeholder={step.placeholder} />
+                <NumberedStepsInput value={value} onChange={onChange} placeholder={step.placeholder} onInteract={onBlur} />
               )}
               {step.inputType === 'testbrief' && (
                 <TestBriefInput value={value} onChange={onChange} />
@@ -609,7 +611,7 @@ function QuestionCard({
                 <EvaluateBriefInput value={value} onChange={onChange} />
               )}
               {step.inputType === 'prioritychips' && (
-                <PriorityChipsInput value={value} onChange={onChange} placeholder={step.placeholder} />
+                <PriorityChipsInput value={value} onChange={onChange} placeholder={step.placeholder} onInteract={onBlur} />
               )}
               {step.inputType === 'sliders' && (() => {
                 const source = secondaryValue || criteriaValue;
@@ -715,15 +717,15 @@ function serializeStructuredField(type: ConversationStep['inputType'], v: string
 
 // ─── Numbered step builder ────────────────────────────────────────────────────
 
-function NumberedStepsInput({ value, onChange, placeholder }: {
-  value: string; onChange: (v: string) => void; placeholder?: string;
+function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; onInteract?: () => void;
 }) {
   const items = value ? value.split('\n').filter(Boolean) : [];
   const update = (i: number, v: string) => {
     const next = [...items]; next[i] = v;
     onChange(next.join('\n'));
   };
-  const add = () => onChange([...items, ''].join('\n'));
+  const add = () => { onChange([...items, ''].join('\n')); onInteract?.(); };
   const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i).join('\n'));
 
   return (
@@ -733,6 +735,7 @@ function NumberedStepsInput({ value, onChange, placeholder }: {
           <span className="w-5 h-5 rounded-full border border-fresco-border flex items-center justify-center text-fresco-xs text-fresco-graphite-light flex-shrink-0">{i + 1}</span>
           <input value={item} onChange={e => update(i, e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+            onBlur={() => { if (item.trim()) onInteract?.(); }}
             placeholder={i === 0 ? (placeholder || 'First step…') : `Step ${i + 1}…`}
             className="flex-1 h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
           {items.length > 1 && (
@@ -938,12 +941,12 @@ function EvaluateBriefInput({ value, onChange }: { value: string; onChange: (v: 
 
 // ─── Priority chips ───────────────────────────────────────────────────────────
 
-function PriorityChipsInput({ value, onChange, placeholder }: {
-  value: string; onChange: (v: string) => void; placeholder?: string;
+function PriorityChipsInput({ value, onChange, placeholder, onInteract }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; onInteract?: () => void;
 }) {
   const items = value ? value.split('\n').filter(Boolean) : [];
   const [draft, setDraft] = useState('');
-  const add = () => { if (!draft.trim()) return; onChange([...items, draft.trim()].join('\n')); setDraft(''); };
+  const add = () => { if (!draft.trim()) return; onChange([...items, draft.trim()].join('\n')); setDraft(''); onInteract?.(); };
   const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i).join('\n'));
 
   return (
@@ -963,6 +966,7 @@ function PriorityChipsInput({ value, onChange, placeholder }: {
       <div className="flex gap-2">
         <input value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          onBlur={() => { if (draft.trim()) add(); else onInteract?.(); }}
           placeholder={placeholder || 'Add item and press Enter'}
           className="flex-1 h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
         <button type="button" onClick={add} disabled={!draft.trim()}
