@@ -157,12 +157,12 @@ SEQUENTIAL AGENT OUTPUTS (in execution order):
 ${agentSummaries}
 
 Produce the synthesis. Rules:
-- FIT_STRENGTH must be: "Strong", "Weak", or "Undecided"
-  - Strong: clear signal, confident direction
-  - Weak: significant concerns, needs work before proceeding
-  - Undecided: mixed signals, more information needed
-- VERDICT must be: "GO", "PIVOT", "INVESTIGATE FURTHER", or "STOP"
-  GO = proceed with confidence | PIVOT = better direction exists | INVESTIGATE FURTHER = not enough signal | STOP = wrong path
+- FIT_STRENGTH and VERDICT are linked — they must be consistent:
+  - Strong → GO (clear signal, proceed with confidence)
+  - Weak → PIVOT or STOP (significant concerns; PIVOT if a better path exists, STOP if the direction is fundamentally wrong)
+  - Undecided → INVESTIGATE FURTHER (mixed signals, more information needed)
+  - Never combine Strong with STOP, PIVOT, or INVESTIGATE FURTHER
+  - Never combine Weak with GO
 - SENTENCE OF TRUTH: ONE sharp statement — the thing the user sensed but hadn't articulated. Not a summary. An insight.
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to their situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
@@ -194,7 +194,16 @@ export function buildHouseResult(
   }
 ): HouseResult {
   const fitStrength = mergeResponse.fitStrength || 'Undecided';
-  const verdict = (mergeResponse.verdict as HouseResult['verdict']) || 'INVESTIGATE FURTHER';
+  const rawVerdict = (mergeResponse.verdict as HouseResult['verdict']) || 'INVESTIGATE FURTHER';
+
+  // Enforce consistency — fitStrength and verdict must not contradict
+  const verdict: HouseResult['verdict'] = (() => {
+    if (fitStrength === 'Strong' && rawVerdict !== 'GO') return 'GO';
+    if (fitStrength === 'Weak' && rawVerdict === 'GO') return 'PIVOT';
+    if (fitStrength === 'Undecided' && rawVerdict === 'GO') return 'INVESTIGATE FURTHER';
+    return rawVerdict;
+  })();
+
   const routing = determineNextHouse(house, fitStrength, verdict, mergeResponse.keyIssues || []);
 
   return {
