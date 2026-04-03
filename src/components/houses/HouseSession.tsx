@@ -70,23 +70,16 @@ function ChipInput({ value, onChange, placeholder, onInteract }: {
   const add = () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
-    const next = [...chips, trimmed].join('\n');
-    onChange(next);
+    onChange([...chips, trimmed].join('\n'));
     setDraft('');
-    // Do NOT advance here — user may want to add more chips
   };
 
   const remove = (i: number) => {
-    const next = chips.filter((_, idx) => idx !== i).join('\n');
-    onChange(next);
+    onChange(chips.filter((_, idx) => idx !== i).join('\n'));
   };
 
   return (
-    <div onBlur={e => {
-      if (!e.currentTarget.contains(e.relatedTarget as Node) && chips.length > 0) {
-        onInteract?.();
-      }
-    }}>
+    <div>
       <div className="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
         <AnimatePresence>
           {chips.map((chip, i) => (
@@ -126,6 +119,15 @@ function ChipInput({ value, onChange, placeholder, onInteract }: {
       {chips.length === 0 && (
         <p className="mt-2 text-fresco-xs text-fresco-graphite-light">Add each item separately — one per chip</p>
       )}
+      {chips.length > 0 && (
+        <button
+          type="button"
+          onClick={() => { if (draft.trim()) add(); onInteract?.(); }}
+          className="mt-3 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1"
+        >
+          Done adding <ArrowRight className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
@@ -155,7 +157,7 @@ function ContradictionInput({ value, onChange, onInteract }: {
   const removePair = (i: number) => onChange(serialize(pairs.filter((_, idx) => idx !== i)));
 
   return (
-    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div className="space-y-3">
       {pairs.length === 0 && (
         <p className="text-fresco-sm text-fresco-graphite-light py-2">Add a contradiction — where do the facts conflict with your assumptions?</p>
       )}
@@ -200,6 +202,12 @@ function ContradictionInput({ value, onChange, onInteract }: {
       >
         <span className="text-lg leading-none">+</span> Add contradiction
       </button>
+      {pairs.length > 0 && (
+        <button type="button" onClick={() => onInteract?.()}
+          className="mt-1 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1">
+          Done <ArrowRight className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
@@ -226,7 +234,7 @@ function OptionCardsInput({ value, onChange, onInteract }: {
   const removeCard = (i: number) => onChange(serialize(cards.filter((_, idx) => idx !== i)));
 
   return (
-    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div className="space-y-3">
       {cards.map((card, i) => (
         <motion.div
           key={i}
@@ -271,6 +279,12 @@ function OptionCardsInput({ value, onChange, onInteract }: {
       >
         <span className="text-lg leading-none">+</span> Add option
       </button>
+      {cards.length > 0 && (
+        <button type="button" onClick={() => onInteract?.()}
+          className="mt-1 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1">
+          Done <ArrowRight className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
@@ -288,7 +302,7 @@ function PassFailInput({ value, onChange, onInteract }: {
     onChange(JSON.stringify({ ...data, [field]: v }));
 
   return (
-    <div className="grid grid-cols-2 gap-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div className="grid grid-cols-2 gap-3">
       <div>
         <div className="flex items-center gap-2 mb-2">
           <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -337,7 +351,7 @@ function MetricsInput({ value, onChange, onInteract }: {
   const removeRow = (i: number) => onChange(JSON.stringify(rows.filter((_, idx) => idx !== i)));
 
   return (
-    <div onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div>
       <div className="border border-fresco-border overflow-hidden">
         <div className="grid grid-cols-3 bg-fresco-light-gray border-b border-fresco-border px-0">
           {['Metric', 'Target', 'Actual'].map(h => (
@@ -403,7 +417,7 @@ function SliderRatings({ value, onChange, labels, onInteract }: {
   };
 
   return (
-    <div className="space-y-4" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div className="space-y-4">
       {rows.map((row, i) => (
         <div key={i} className="space-y-1.5">
           <div className="flex items-center justify-between">
@@ -952,12 +966,7 @@ function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
   const displayItems = Array.from({ length: count }, (_, i) => savedItems[i] || '');
 
   return (
-    <div className="space-y-2" onBlur={e => {
-      // Only fire onInteract when focus leaves the entire component
-      if (!e.currentTarget.contains(e.relatedTarget as Node) && savedItems.length > 0) {
-        onInteract?.();
-      }
-    }}>
+    <div className="space-y-2">
       {displayItems.map((item, i) => (
         <div key={i} className="flex items-center gap-2 group">
           <span className="w-5 h-5 rounded-full border border-fresco-border flex items-center justify-center text-fresco-xs text-fresco-graphite-light flex-shrink-0">{i + 1}</span>
@@ -975,6 +984,15 @@ function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
       <button type="button" onClick={add} className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1.5 ml-7">
         <span className="text-base leading-none">+</span> Add step
       </button>
+      {savedItems.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onInteract?.()}
+          className="mt-2 ml-7 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1"
+        >
+          Done adding steps <ArrowRight className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
@@ -986,7 +1004,7 @@ function TestBriefInput({ value, onChange, onInteract }: { value: string; onChan
   const data = parse();
   const update = (field: string, v: string) => onChange(JSON.stringify({ ...data, [field]: v }));
   return (
-    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div className="space-y-3">
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Method — what will you do?</p>
         <input value={data.method || ''} onChange={e => update('method', e.target.value)}
@@ -1007,6 +1025,10 @@ function TestBriefInput({ value, onChange, onInteract }: { value: string; onChan
             className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
         </div>
       </div>
+      <button type="button" onClick={() => onInteract?.()}
+        className="mt-3 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1">
+        Done <ArrowRight className="w-3 h-3" />
+      </button>
     </div>
   );
 }
@@ -1018,7 +1040,7 @@ function AudienceProfileInput({ value, onChange, onInteract }: { value: string; 
   const data = parse();
   const update = (field: string, v: string) => onChange(JSON.stringify({ ...data, [field]: v }));
   return (
-    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div className="space-y-3">
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Who exactly?</p>
         <input value={data.who || ''} onChange={e => update('who', e.target.value)}
@@ -1037,6 +1059,10 @@ function AudienceProfileInput({ value, onChange, onInteract }: { value: string; 
           placeholder="e.g. They've seen AI hype without measurable ROI"
           className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
       </div>
+      <button type="button" onClick={() => onInteract?.()}
+        className="mt-3 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1">
+        Done <ArrowRight className="w-3 h-3" />
+      </button>
     </div>
   );
 }
@@ -1057,7 +1083,7 @@ function BarrierMovesInput({ value, onChange, blockers, onInteract }: {
   const remove = (i: number) => onChange(JSON.stringify(pairs.filter((_, idx) => idx !== i)));
 
   return (
-    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div className="space-y-3">
       {pairs.map((pair, i) => (
         <motion.div key={i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
           className="p-3 border border-fresco-border-light space-y-2 relative group">
@@ -1083,6 +1109,12 @@ function BarrierMovesInput({ value, onChange, blockers, onInteract }: {
         className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1.5">
         <span className="text-base leading-none">+</span> Add barrier
       </button>
+      {pairs.length > 0 && (
+        <button type="button" onClick={() => onInteract?.()}
+          className="mt-1 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1">
+          Done <ArrowRight className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
@@ -1107,7 +1139,7 @@ function OptionCostsInput({ value, onChange, optionsValue, onInteract }: {
     onChange(JSON.stringify(rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r)));
 
   return (
-    <div className="space-y-4" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div className="space-y-4">
       {rows.map((row, i) => (
         <div key={i} className="border border-fresco-border-light p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -1143,7 +1175,7 @@ function EvaluateBriefInput({ value, onChange, onInteract }: { value: string; on
   const data = parse();
   const update = (field: string, v: string) => onChange(JSON.stringify({ ...data, [field]: v }));
   return (
-    <div className="space-y-3" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onInteract?.(); }}>
+    <div className="space-y-3">
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Goal of this page/flow</p>
         <input value={data.goal || ''} onChange={e => update('goal', e.target.value)}
@@ -1162,6 +1194,10 @@ function EvaluateBriefInput({ value, onChange, onInteract }: { value: string; on
           placeholder="e.g. 2.1% conversion, 45s avg time, 70% scroll past pricing"
           className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
       </div>
+      <button type="button" onClick={() => onInteract?.()}
+        className="mt-3 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1">
+        Done <ArrowRight className="w-3 h-3" />
+      </button>
     </div>
   );
 }
@@ -1182,11 +1218,7 @@ function PriorityChipsInput({ value, onChange, placeholder, onInteract }: {
   const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i).join('\n'));
 
   return (
-    <div onBlur={e => {
-      if (!e.currentTarget.contains(e.relatedTarget as Node) && items.length > 0) {
-        onInteract?.();
-      }
-    }}>
+    <div>
       <div className="space-y-2 mb-3">
         {items.map((item, i) => (
           <motion.div key={item + i} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
@@ -1209,6 +1241,15 @@ function PriorityChipsInput({ value, onChange, placeholder, onInteract }: {
           Add
         </button>
       </div>
+      {items.length > 0 && (
+        <button
+          type="button"
+          onClick={() => { if (draft.trim()) add(); onInteract?.(); }}
+          className="mt-3 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1"
+        >
+          Done adding <ArrowRight className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
