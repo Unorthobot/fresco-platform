@@ -31,6 +31,7 @@ export interface HouseResult {
   verdict: 'GO' | 'PIVOT' | 'INVESTIGATE FURTHER' | 'STOP';
   verdictRationale: string;
   // Outputs
+  povStatement?: string;        // Investigate only: User/Context/Need/Insight POV
   sentenceOfTruth: string;
   keyIssues: string[];
   necessaryMoves: string[];
@@ -138,6 +139,13 @@ Risks: ${a.risks.join(' | ')}
 Recommendations: ${a.recommendations.join(' | ')}
 ${a.structured_artifact ? `Structured artifact: ${a.structured_artifact}` : ''}`).join('\n\n');
 
+  const investigateExtra = house === 'investigate' ? `
+- POV_STATEMENT (Investigate only): A single polished sentence structured as: "[User] needs [what they actually need] because [the non-obvious insight that reframes the problem]." This is the Position Builder's UCNI framework collapsed into one sentence. It should feel like the user's own position, articulated precisely. Not a summary — a stance.
+` : '';
+
+  const investigateJsonField = house === 'investigate' ? `,
+  "povStatement": "For [specific user]: they need [real need], because [non-obvious insight]"` : '';
+
   return `You are FRESCO's ${houseName} synthesis engine. Three specialist agents have run sequentially on the user's input. Each one built on the previous agent's findings.
 
 Your job: synthesise their combined outputs into a single integrated result.
@@ -158,7 +166,7 @@ Produce the synthesis. Rules:
 - SENTENCE OF TRUTH: ONE sharp statement — the thing the user sensed but hadn't articulated. Not a summary. An insight.
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to their situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
-- VERDICT RATIONALE: 1–2 sentences. Reference their specific situation.
+- VERDICT RATIONALE: 1–2 sentences. Reference their specific situation.${investigateExtra}
 
 Respond ONLY with valid JSON:
 {
@@ -167,7 +175,7 @@ Respond ONLY with valid JSON:
   "verdictRationale": "1-2 sentences",
   "sentenceOfTruth": "Single sharp insight",
   "keyIssues": ["issue 1", "issue 2", "issue 3"],
-  "necessaryMoves": ["move 1", "move 2", "move 3"]
+  "necessaryMoves": ["move 1", "move 2", "move 3"]${investigateJsonField}
 }`;
 }
 
@@ -182,6 +190,7 @@ export function buildHouseResult(
     sentenceOfTruth: string;
     keyIssues: string[];
     necessaryMoves: string[];
+    povStatement?: string;
   }
 ): HouseResult {
   const fitStrength = mergeResponse.fitStrength || 'Undecided';
@@ -194,6 +203,7 @@ export function buildHouseResult(
     fitStrength,
     verdict,
     verdictRationale: mergeResponse.verdictRationale,
+    povStatement: mergeResponse.povStatement || undefined,
     sentenceOfTruth: mergeResponse.sentenceOfTruth,
     keyIssues: (mergeResponse.keyIssues || []).slice(0, 5),
     necessaryMoves: (mergeResponse.necessaryMoves || []).slice(0, 5),

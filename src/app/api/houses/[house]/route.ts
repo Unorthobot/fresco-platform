@@ -187,6 +187,7 @@ export async function POST(
               signal: output.signal,
               summary: output.summary,
               confidence: output.confidence,
+              structured_artifact: output.structured_artifact || null,
             });
           } catch (err) {
             console.error(`Agent ${agent.id} failed:`, err);

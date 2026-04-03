@@ -36,6 +36,7 @@ interface AgentStreamEvent {
   signal: string;
   summary: string;
   confidence: 'high' | 'medium' | 'low';
+  structured_artifact?: string;
 }
 
 interface ConversationStep {
@@ -427,6 +428,189 @@ function SliderRatings({ value, onChange, labels, onInteract }: {
           />
         </div>
       ))}
+    </div>
+  );
+}
+
+// ─── Challenge Panel ──────────────────────────────────────────────────────────
+// Reads user inputs before Run. Asks the question they avoided.
+
+interface ChallengeQuestion {
+  question: string;
+  why: string;
+}
+
+function ChallengePanel({ questions, onRespond, onDismiss }: {
+  questions: ChallengeQuestion[];
+  onRespond: (responses: Record<string, string>) => void;
+  onDismiss: () => void;
+}) {
+  const [responses, setResponses] = useState<Record<string, string>>({});
+
+  const handleSubmit = () => {
+    onRespond(responses);
+  };
+
+  const allAnswered = questions.every((_, i) => (responses[i] || '').trim().length > 0);
+  const anyAnswered = questions.some((_, i) => (responses[i] || '').trim().length > 0);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      className="border border-fresco-black bg-fresco-white p-5 space-y-5"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <span className="fresco-label block mb-1">Before you run</span>
+          <p className="text-fresco-sm text-fresco-graphite-mid">
+            {questions.length === 1
+              ? 'One gap worth closing. Answer it to sharpen the analysis — or skip to run anyway.'
+              : 'Two gaps worth closing. Answer them to sharpen the analysis — or skip to run anyway.'}
+          </p>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors flex-shrink-0 mt-0.5"
+        >
+          Skip →
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {questions.map((q, i) => (
+          <div key={i} className="space-y-2">
+            <p className="text-fresco-sm font-medium text-fresco-black">{q.question}</p>
+            <p className="text-fresco-xs text-fresco-graphite-light">{q.why}</p>
+            <textarea
+              value={responses[i] || ''}
+              onChange={e => setResponses(prev => ({ ...prev, [i]: e.target.value }))}
+              placeholder="Answer here — 2-3 sentences is enough"
+              className="w-full fresco-input-lg"
+              style={{ minHeight: 80 }}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          onClick={handleSubmit}
+          disabled={!anyAnswered}
+          className="fresco-btn disabled:opacity-40"
+        >
+          <span>{allAnswered ? 'Add to analysis' : 'Add partial answers'}</span>
+        </button>
+        <button
+          onClick={onDismiss}
+          className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors"
+        >
+          Skip, run without answers
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Editable Sentence of Truth ──────────────────────────────────────────────
+// The AI suggests. The user owns.
+
+function EditableSentenceOfTruth({ value, onSave }: {
+  value: string;
+  onSave: (edited: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saved, setSaved] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [userVersion, setUserVersion] = useState<string | null>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editing && textRef.current) {
+      textRef.current.focus();
+      textRef.current.select();
+    }
+  }, [editing]);
+
+  const handleSave = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    setUserVersion(trimmed);
+    onSave(trimmed);
+    setEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleCancel = () => {
+    setDraft(userVersion || value);
+    setEditing(false);
+  };
+
+  const displayValue = userVersion || value;
+  const isEdited = userVersion && userVersion !== value;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <span className="fresco-label">Sentence of Truth</span>
+        <div className="flex items-center gap-3">
+          {isEdited && (
+            <button
+              onClick={() => setShowOriginal(v => !v)}
+              className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors"
+            >
+              {showOriginal ? 'Show yours' : 'Show AI original'}
+            </button>
+          )}
+          {!editing && (
+            <button
+              onClick={() => { setDraft(displayValue); setEditing(true); }}
+              className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors"
+            >
+              {isEdited ? 'Edit yours' : 'Make it yours →'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {editing ? (
+        <div className="bg-fresco-black p-4">
+          <textarea
+            ref={textRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            className="w-full bg-transparent text-white text-fresco-base font-medium leading-relaxed italic resize-none border-none outline-none"
+            style={{ minHeight: 80 }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave(); }
+              if (e.key === 'Escape') handleCancel();
+            }}
+          />
+          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/10">
+            <button onClick={handleSave} className="text-fresco-xs font-medium text-white hover:opacity-70 transition-opacity">
+              Save — Enter
+            </button>
+            <button onClick={handleCancel} className="text-fresco-xs text-white/50 hover:text-white/80 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 bg-fresco-black relative group">
+          <p className="text-fresco-base text-white font-medium leading-relaxed italic">
+            "{showOriginal ? value : displayValue}"
+          </p>
+          {isEdited && !showOriginal && (
+            <span className="absolute top-3 right-3 text-fresco-xs text-white/30">yours</span>
+          )}
+          {saved && (
+            <span className="absolute top-3 right-3 text-fresco-xs text-white/50">saved</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1656,6 +1840,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [isRunning, setIsRunning] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
   const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
+
+  // Challenge step state
+  const [challengeQuestions, setChallengeQuestions] = useState<ChallengeQuestion[]>([]);
+  const [challengeResponses, setChallengeResponses] = useState<Record<string, string>>({});
+  const [challengeDismissed, setChallengeDismissed] = useState(false);
+  const [isFetchingChallenge, setIsFetchingChallenge] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -1677,11 +1867,52 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     };
     const allSteps = [...INVESTIGATE_STEPS, ...INNOVATE_STEPS, ...VALIDATE_STEPS,
       ...EVALUATE_STEPS_SINGLE, ...EVALUATE_STEPS_JOURNEY, ...EVALUATE_STEPS_COMPARISON];
-    return order[houseId]
+    let input = order[houseId]
       .map(k => serializeStructuredField(getInputTypeForId(k, allSteps), values[k] || ''))
       .filter(Boolean)
       .join('\n\n');
+
+    // Append challenge responses if any were given
+    const answered = Object.entries(challengeResponses)
+      .filter(([, v]) => v.trim())
+      .map(([i, v]) => {
+        const q = challengeQuestions[parseInt(i)];
+        return q ? `Q: ${q.question}\nA: ${v.trim()}` : null;
+      })
+      .filter(Boolean);
+    if (answered.length > 0) {
+      input += '\n\n## Additional context (answered before running):\n' + answered.join('\n\n');
+    }
+    return input;
   };
+
+  // Fetch challenge questions when canRun becomes true for the first time
+  const fetchChallenge = useCallback(async () => {
+    if (!canRun || challengeDismissed || challengeQuestions.length > 0 || isFetchingChallenge || result) return;
+    const input = buildUserInput();
+    if (input.trim().length < 30) return;
+    setIsFetchingChallenge(true);
+    try {
+      const res = await fetch('/api/challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ house: houseId, userInput: input }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.questions?.length > 0) {
+          setChallengeQuestions(data.questions);
+        }
+      }
+    } catch { /* silently ignore */ }
+    setIsFetchingChallenge(false);
+  }, [canRun, challengeDismissed, challengeQuestions.length, isFetchingChallenge, result, houseId]);
+
+  // Trigger challenge fetch when run becomes possible
+  useEffect(() => {
+    if (canRun && !result) fetchChallenge();
+  }, [canRun]);
+
 
   const handleRun = useCallback(async () => {
     if (!canRun) return;
@@ -1727,6 +1958,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 setAgentEvents(prev => [...prev, {
                   displayName: ev.displayName, signal: ev.signal,
                   summary: ev.summary || '', confidence: ev.confidence || 'medium',
+                  structured_artifact: ev.structured_artifact || undefined,
                 }]);
               } else if (ev.type === 'verdict') {
                 const { type: _, ...vd } = ev;
@@ -1826,6 +2058,29 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             )}
           </div>
 
+          {/* Challenge Panel — appears when canRun, before result */}
+          <AnimatePresence>
+            {canRun && !result && !isRunning && (
+              isFetchingChallenge ? (
+                <motion.div key="challenge-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light py-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Reviewing your inputs…</span>
+                </motion.div>
+              ) : challengeQuestions.length > 0 && !challengeDismissed ? (
+                <ChallengePanel
+                  key="challenge"
+                  questions={challengeQuestions}
+                  onRespond={responses => {
+                    setChallengeResponses(responses);
+                    setChallengeDismissed(true);
+                  }}
+                  onDismiss={() => setChallengeDismissed(true)}
+                />
+              ) : null
+            )}
+          </AnimatePresence>
+
           {/* Run */}
           <button onClick={handleRun} disabled={!canRun}
             className={cn('fresco-btn w-full', !canRun && 'opacity-40 cursor-not-allowed pointer-events-none')}>
@@ -1899,6 +2154,19 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           <AnimatePresence mode="wait">
             {result && (
               <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+
+                {/* POV Statement — Investigate only, shown first */}
+                {(result as any).povStatement && (
+                  <div>
+                    <span className="fresco-label block mb-3">Point of View</span>
+                    <div className="p-4 border-l-4 border-fresco-black bg-fresco-light-gray">
+                      <p className="text-fresco-base font-medium text-fresco-black leading-relaxed">
+                        {(result as any).povStatement}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <span className="fresco-label block mb-3">Verdict</span>
                   <div className={cn('px-4 py-3 border', vs?.bg, vs?.text, vs?.border)}>
@@ -1917,12 +2185,28 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 </div>
 
-                <div>
-                  <span className="fresco-label block mb-3">Sentence of Truth</span>
-                  <div className="p-4 bg-fresco-black">
-                    <p className="text-fresco-base text-white font-medium leading-relaxed italic">"{result.sentenceOfTruth}"</p>
-                  </div>
-                </div>
+                <EditableSentenceOfTruth
+                  value={result.sentenceOfTruth}
+                  onSave={edited => db.setSentenceOfTruth(sessionId, edited)}
+                />
+
+                {/* Belief Mapper mental model callout — Investigate only */}
+                {houseId === 'investigate' && (() => {
+                  const bmEvent = agentEvents.find(e => e.displayName === 'Belief Mapper');
+                  if (!bmEvent?.structured_artifact) return null;
+                  return (
+                    <div>
+                      <span className="fresco-label block mb-3">Mental Model Detected</span>
+                      <div className="p-4 border border-fresco-border bg-fresco-white flex items-start gap-3">
+                        <div className="w-1.5 h-1.5 bg-fresco-black rounded-full flex-shrink-0 mt-1.5" />
+                        <p className="text-fresco-sm text-fresco-black font-medium">{bmEvent.structured_artifact}</p>
+                      </div>
+                      <p className="text-fresco-xs text-fresco-graphite-light mt-2">
+                        This is the belief structure driving the situation — the mental model your analysis exposed.
+                      </p>
+                    </div>
+                  );
+                })()}
 
                 <div>
                   <span className="fresco-label block mb-3">Key Issues</span>
