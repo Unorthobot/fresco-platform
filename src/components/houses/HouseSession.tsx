@@ -1897,7 +1897,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     : houseId === 'innovate' ? 'start'
     : houseId === 'validate' ? 'subject'
     : 'goal';
-  const canRun = !isRunning && (values[primaryField] || '').trim().length >= 10;
+  const canRun = !isRunning && (values[primaryField] || '').trim().length >= 3;
 
   const buildUserInput = () => {
     const order: Record<HouseId, string[]> = {
@@ -1928,30 +1928,28 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   };
 
   // Fetch challenge questions when canRun becomes true for the first time
-  const fetchChallenge = useCallback(async () => {
-    if (!canRun || challengeDismissed || challengeQuestions.length > 0 || isFetchingChallenge || result) return;
-    const input = buildUserInput();
-    if (input.trim().length < 30) return;
-    setIsFetchingChallenge(true);
-    try {
-      const res = await fetch('/api/challenge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ house: houseId, userInput: input }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.questions?.length > 0) {
-          setChallengeQuestions(data.questions);
-        }
-      }
-    } catch { /* silently ignore */ }
-    setIsFetchingChallenge(false);
-  }, [canRun, challengeDismissed, challengeQuestions.length, isFetchingChallenge, result, houseId]);
+  const challengeFetchedRef = useRef(false);
 
-  // Trigger challenge fetch when run becomes possible
+  // Trigger challenge fetch when canRun first becomes true
   useEffect(() => {
-    if (canRun && !result) fetchChallenge();
+    if (!canRun || result || challengeFetchedRef.current) return;
+    challengeFetchedRef.current = true;
+
+    const input = buildUserInput();
+    if (input.trim().length < 10) return;
+
+    setIsFetchingChallenge(true);
+    fetch('/api/challenge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ house: houseId, userInput: input }),
+    })
+      .then(res => res.ok ? res.json() : { questions: [] })
+      .then(data => {
+        if (data.questions?.length > 0) setChallengeQuestions(data.questions);
+      })
+      .catch(() => {})
+      .finally(() => setIsFetchingChallenge(false));
   }, [canRun]);
 
 
