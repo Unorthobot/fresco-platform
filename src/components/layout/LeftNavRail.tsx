@@ -187,20 +187,17 @@ export function LeftNavRail({ onNavigate, onStartHouse }: LeftNavRailProps) {
                               onNavigate?.('workspaces');
                             }}
                             className={cn(
-                              'flex items-center gap-2.5 w-full px-3 py-2 text-fresco-sm rounded-none transition-all',
+                              'flex items-center gap-2.5 w-full px-3 py-2 text-fresco-sm rounded-none transition-all text-left',
+                              hoveredWorkspace === workspace.id ? 'pr-8' : '',
                               activeWorkspace?.id === workspace.id
                                 ? 'text-fresco-black bg-fresco-light-gray font-medium'
                                 : 'text-fresco-graphite-mid hover:text-fresco-black hover:bg-fresco-light-gray'
                             )}
                           >
                             <Folder className="w-4 h-4 flex-shrink-0" />
-                            <span className="truncate flex-1">{workspace.title}</span>
-                            {workspace.teamId && (
-                              <span className="w-3.5 flex-shrink-0" title={hoveredWorkspace !== workspace.id ? "Shared workspace" : undefined}>
-                                {hoveredWorkspace !== workspace.id && (
-                                  <Users className="w-3 h-3 text-fresco-graphite-light" />
-                                )}
-                              </span>
+                            <span className="truncate flex-1 min-w-0 text-left">{workspace.title}</span>
+                            {workspace.teamId && hoveredWorkspace !== workspace.id && (
+                              <Users className="w-3 h-3 text-fresco-graphite-light flex-shrink-0" />
                             )}
                           </button>
                           
