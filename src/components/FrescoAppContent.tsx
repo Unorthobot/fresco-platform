@@ -86,7 +86,10 @@ export default function FrescoAppContent() {
   // Compute effective view - ensures we never show a blank screen
   const effectiveView = (() => {
     if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
-    if (currentView === 'session' && (!activeWorkspaceId || !currentSession)) return 'home';
+    if (currentView === 'session' && !currentSession) {
+      // Session gone — go to workspace if we have one, otherwise home
+      return activeWorkspaceId ? 'workspace' : 'home';
+    }
     return currentView;
   })();
 
