@@ -210,7 +210,7 @@ export function HomeDashboard({
                 {/* Agent names — subtle, shows depth */}
                 <div className="flex flex-wrap gap-1 mb-5">
                   {agents.map(a => (
-                    <span key={a} className="text-fresco-xs text-fresco-graphite-light bg-fresco-light-gray px-2 py-0.5 rounded-full">{a}</span>
+                    <span key={a} className="text-[10px] leading-tight text-fresco-graphite-light bg-fresco-light-gray px-1.5 py-0.5 rounded-full">{a}</span>
                   ))}
                 </div>
 
