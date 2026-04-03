@@ -85,6 +85,7 @@ export function HomeDashboard({
 
   const { data: session } = useSession();
   const isGuest = !session && (!user || user.id === 'guest');
+  const isNewUser = isGuest && sessions.length === 0; // truly first-time: no auth, no sessions
   const firstName = isGuest ? '' : (session?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || '');
   const hasActivity = sessions.length > 0;
 
@@ -112,15 +113,15 @@ export function HomeDashboard({
           <div className="flex items-start justify-between gap-8">
             <div className="flex-1">
               <span className="fresco-label block mb-2">
-                {isGuest ? 'GET STARTED' : `WELCOME BACK${firstName ? `, ${firstName.toUpperCase()}` : ''}`}
+                {isNewUser ? 'GET STARTED' : `WELCOME BACK${firstName ? `, ${firstName.toUpperCase()}` : ''}`}
               </span>
               <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight mb-3">
-                {isGuest
+                {isNewUser
                   ? 'Pick a house. Run your first analysis.'
                   : 'What are you working on today?'}
               </h1>
               <p className="text-fresco-base text-fresco-graphite-mid max-w-2xl">
-                {isGuest
+                {isNewUser
                   ? 'Four houses. Twelve agents. One verdict.'
                   : 'Choose a house. Three agents analyse your input and return a verdict.'}
               </p>
@@ -142,7 +143,7 @@ export function HomeDashboard({
           </div>
 
           {/* Recent sessions — slim strip, only for returning users */}
-          {!isGuest && recentSessions.length > 0 && (
+          {recentSessions.length > 0 && (
             <div className="flex items-center gap-2 mt-5 flex-wrap">
               <span className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mr-1">Recent</span>
               {recentSessions.map(s => {
@@ -164,7 +165,7 @@ export function HomeDashboard({
           )}
 
           {/* Guest CTA */}
-          {isGuest && (
+          {isNewUser && (
             <div className="mt-6">
               <button onClick={onCreateWorkspace} className="fresco-btn">
                 <Plus className="w-4 h-4" /><span>New Workspace</span>
