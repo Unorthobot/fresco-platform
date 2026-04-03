@@ -112,29 +112,18 @@ export function HomeDashboard({
           <div className="flex items-start justify-between gap-8">
             <div className="flex-1">
               <span className="fresco-label block mb-2">
-                {isGuest ? 'Thinking Infrastructure' : `Welcome back${firstName ? `, ${firstName}` : ''}`}
+                {isGuest ? 'GET STARTED' : `WELCOME BACK${firstName ? `, ${firstName.toUpperCase()}` : ''}`}
               </span>
               <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight mb-3">
                 {isGuest
-                  ? 'Investigate. Innovate. Validate. Evaluate.'
-                  : 'What are you working on?'}
+                  ? 'Pick a house. Run your first analysis.'
+                  : 'What are you working on today?'}
               </h1>
               <p className="text-fresco-base text-fresco-graphite-mid max-w-2xl">
                 {isGuest
-                  ? 'Fresco helps teams validate problem-solution fit, product-market fit, and commercial viability before building — then measure results to close the loop.'
+                  ? 'Four houses. Twelve agents. One verdict.'
                   : 'Choose a house. Three agents analyse your input and return a verdict.'}
               </p>
-
-              {isGuest && (
-                <div className="flex items-center gap-5 mt-4">
-                  {['Decide What to Build', 'Understand Performance', 'Close the Loop'].map(l => (
-                    <div key={l} className="flex items-center gap-1.5 text-fresco-sm text-fresco-graphite-mid">
-                      <div className="w-1.5 h-1.5 bg-fresco-black flex-shrink-0" />
-                      {l}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Time / weather — right of header, only when mounted */}
