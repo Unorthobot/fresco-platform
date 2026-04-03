@@ -166,13 +166,26 @@ export function HomeDashboard({
             animate={{ opacity: 1, y: 0 }}
             className="flex-1"
           >
-            <span className="fresco-label mb-3 block">{isGuest ? 'Stop debating. Decide.' : `Welcome back, ${firstName}!`}</span>
+            <span className="fresco-label mb-3 block">{isGuest ? 'Thinking Infrastructure' : `Welcome back, ${firstName}!`}</span>
             <h1 className="text-fresco-4xl font-medium text-fresco-black tracking-tight mb-4">
-              What decision are you working toward?
+              {isGuest ? 'Investigate. Innovate. Validate. Evaluate.' : 'What are you working on?'}
             </h1>
-            <p className="text-fresco-lg text-fresco-graphite-mid max-w-xl mb-6">
-              Fresco makes decision discipline visible. Choose a house to define the problem, design the solution, or validate before you commit.
+            <p className="text-fresco-lg text-fresco-graphite-mid max-w-xl mb-4">
+              {isGuest
+                ? 'Fresco helps teams validate problem-solution fit, product-market fit, and commercial viability before building — then measure results to close the loop between strategy and execution.'
+                : 'Choose a house. Three agents analyse your input and return a verdict.'}
             </p>
+
+            {isGuest && (
+              <div className="flex items-center gap-4 mb-6">
+                {['Decide What to Build', 'Understand Performance', 'Close the Loop'].map(label => (
+                  <div key={label} className="flex items-center gap-1.5 text-fresco-sm text-fresco-graphite-mid">
+                    <div className="w-1.5 h-1.5 bg-fresco-black rounded-none flex-shrink-0" />
+                    {label}
+                  </div>
+                ))}
+              </div>
+            )}
             
             {/* Recent Sessions */}
             {recentSessions.length > 0 && (
@@ -323,7 +336,7 @@ export function HomeDashboard({
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
             <h2 className="text-fresco-2xl font-medium text-fresco-black mb-2">The Four Houses</h2>
             <p className="text-fresco-base text-fresco-graphite-mid">
-              Select a house. Three agents analyse your input and return a verdict.
+              You interact with houses. Behind each house, three specialised agents collaborate to produce structured outputs.
             </p>
           </motion.div>
 
