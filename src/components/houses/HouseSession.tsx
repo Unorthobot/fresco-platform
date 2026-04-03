@@ -1930,28 +1930,44 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   // Fetch challenge questions when canRun becomes true for the first time
   const challengeFetchedRef = useRef(false);
 
-  // Trigger challenge fetch when canRun first becomes true
-  useEffect(() => {
-    if (!canRun || result || challengeFetchedRef.current) return;
-    challengeFetchedRef.current = true;
+  // Challenge is triggered by handleRunWithChallenge — not on mount
 
+
+  // Phase 1: user clicks Run → fetch challenge questions if not yet done
+  // Phase 2: user dismisses/answers challenge → actually run the analysis
+  const handleRunWithChallenge = useCallback(async () => {
+    if (!canRun) return;
+
+    // If challenge already dismissed or already fetched with no questions, go straight to analysis
+    if (challengeDismissed || challengeQuestions.length > 0) {
+      handleRun();
+      return;
+    }
+
+    // Fetch challenge questions first
     const input = buildUserInput();
-    if (input.trim().length < 10) return;
-
     setIsFetchingChallenge(true);
-    fetch('/api/challenge', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ house: houseId, userInput: input }),
-    })
-      .then(res => res.ok ? res.json() : { questions: [] })
-      .then(data => {
-        if (data.questions?.length > 0) setChallengeQuestions(data.questions);
-      })
-      .catch(() => {})
-      .finally(() => setIsFetchingChallenge(false));
-  }, [canRun]);
-
+    try {
+      const res = await fetch('/api/challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ house: houseId, userInput: input }),
+      });
+      const data = res.ok ? await res.json() : { questions: [] };
+      if (data.questions?.length > 0) {
+        setChallengeQuestions(data.questions);
+        // Don't run yet — ChallengePanel will be shown, user responds/skips → handleRun
+      } else {
+        // No questions — run immediately
+        handleRun();
+      }
+    } catch {
+      // On error, run anyway
+      handleRun();
+    } finally {
+      setIsFetchingChallenge(false);
+    }
+  }, [canRun, challengeDismissed, challengeQuestions.length, houseId]);
 
   const handleRun = useCallback(async () => {
     if (!canRun) return;
@@ -2097,34 +2113,34 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             )}
           </div>
 
-          {/* Challenge Panel — appears when canRun, before result */}
+          {/* Challenge Panel — shown after first Run click if questions exist */}
           <AnimatePresence>
-            {canRun && !result && !isRunning && (
-              isFetchingChallenge ? (
-                <motion.div key="challenge-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light py-2">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Reviewing your inputs…</span>
-                </motion.div>
-              ) : challengeQuestions.length > 0 && !challengeDismissed ? (
-                <ChallengePanel
-                  key="challenge"
-                  questions={challengeQuestions}
-                  onRespond={responses => {
-                    setChallengeResponses(responses);
-                    setChallengeDismissed(true);
-                  }}
-                  onDismiss={() => setChallengeDismissed(true)}
-                />
-              ) : null
+            {canRun && !result && !isRunning && challengeQuestions.length > 0 && !challengeDismissed && (
+              <ChallengePanel
+                key="challenge"
+                questions={challengeQuestions}
+                onRespond={responses => {
+                  setChallengeResponses(responses);
+                  setChallengeDismissed(true);
+                  handleRun();
+                }}
+                onDismiss={() => {
+                  setChallengeDismissed(true);
+                  handleRun();
+                }}
+              />
             )}
           </AnimatePresence>
 
           {/* Run */}
-          <button onClick={handleRun} disabled={!canRun}
-            className={cn('fresco-btn w-full', !canRun && 'opacity-40 cursor-not-allowed pointer-events-none')}>
+          <button
+            onClick={handleRunWithChallenge}
+            disabled={!canRun || isFetchingChallenge}
+            className={cn('fresco-btn w-full', (!canRun || isFetchingChallenge) && 'opacity-40 cursor-not-allowed pointer-events-none')}>
             {isRunning
               ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Running analysis…</span></>
+              : isFetchingChallenge
+              ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Reviewing your inputs…</span></>
               : <><Sparkles className="w-4 h-4" /><span>Run {meta.name}</span></>
             }
           </button>

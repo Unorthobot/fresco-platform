@@ -87,14 +87,13 @@ export function LeftNavRail({ onNavigate, onStartHouse }: LeftNavRailProps) {
   };
   
   const handleDeleteWorkspace = (workspaceId: string) => {
-    if (activeWorkspace?.id === workspaceId) {
-      setActiveWorkspace(null);
-      setActiveSession(null);
-      setActiveSection('home');
-    }
-    setTimeout(() => db.deleteWorkspace(workspaceId), 50);
-    setDeleteConfirm(null);
+    // Navigate first, then delete — no blank screen gap
+    setActiveWorkspace(null);
+    setActiveSession(null);
+    setActiveSection('home');
     onNavigate?.('home');
+    db.deleteWorkspace(workspaceId);
+    setDeleteConfirm(null);
   };
   
   const handleNavClick = (section: string) => {
