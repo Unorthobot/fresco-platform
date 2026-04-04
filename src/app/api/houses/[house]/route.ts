@@ -20,14 +20,19 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 async function fetchPageContent(url: string): Promise<{ content: string; title: string; fetched: boolean }> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; FrescoBot/1.0; +https://frescolab.io)',
-        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
       },
     });
     clearTimeout(timeout);
@@ -41,40 +46,56 @@ async function fetchPageContent(url: string): Promise<{ content: string; title: 
 
     // Extract title
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    const title = titleMatch ? titleMatch[1].trim() : '';
+    const title = titleMatch ? titleMatch[1].trim().replace(/\s+/g, ' ') : '';
 
-    // Extract meta description
+    // Extract meta description + OG fallback
     const metaMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
     const metaDesc = metaMatch ? metaMatch[1].trim() : '';
+    const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+    const ogDesc = ogDescMatch ? ogDescMatch[1].trim() : '';
 
-    // Strip scripts, styles, nav, footer, head
+    // Try to extract Next.js pre-rendered data from __NEXT_DATA__
+    let spaText = '';
+    const nextDataMatch = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+    if (nextDataMatch) {
+      try {
+        const nextData = JSON.parse(nextDataMatch[1]);
+        const extractStrings = (obj: any, depth = 0): string[] => {
+          if (depth > 4) return [];
+          if (typeof obj === 'string' && obj.length > 20 && obj.length < 500) return [obj];
+          if (Array.isArray(obj)) return obj.flatMap((v: any) => extractStrings(v, depth + 1));
+          if (obj && typeof obj === 'object') return Object.values(obj).flatMap((v: any) => extractStrings(v, depth + 1));
+          return [];
+        };
+        spaText = extractStrings(nextData?.props?.pageProps || nextData?.props || nextData).slice(0, 40).join('\n');
+      } catch { /* ignore */ }
+    }
+
+    // Strip noise
     let text = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
-      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
-      .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+      .replace(/<nav[\s>][\s\S]*?<\/nav>/gi, '')
+      .replace(/<footer[\s>][\s\S]*?<\/footer>/gi, '')
+      .replace(/<header[\s>][\s\S]*?<\/header>/gi, '')
+      .replace(/<head[\s>][\s\S]*?<\/head>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\s{3,}/g, '\n\n')
-      .trim();
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 
-    // Truncate to ~3000 chars to stay within token budget
-    if (text.length > 3000) text = text.slice(0, 3000) + '…';
+    const mainText = text.length < 200 && spaText ? spaText : text;
+    const truncated = mainText.length > 6000 ? mainText.slice(0, 6000) + '…' : mainText;
 
     const content = [
-      title ? `Title: ${title}` : '',
-      metaDesc ? `Meta description: ${metaDesc}` : '',
-      text ? `Page content:\n${text}` : '',
+      title ? `Page title: ${title}` : '',
+      metaDesc ? `Meta description: ${metaDesc}` : (ogDesc ? `Description: ${ogDesc}` : ''),
+      truncated ? `Page content:\n${truncated}` : '',
     ].filter(Boolean).join('\n\n');
 
-    return { content, title, fetched: true };
+    return { content, title, fetched: content.length > 100 };
   } catch {
     return { content: '', title: '', fetched: false };
   }
@@ -92,7 +113,7 @@ async function runAgent(
     ? `\n\nWORKSPACE CONTEXT (from prior sessions):\n${context}`
     : '';
   const pageSection = pageContent
-    ? `\n\nACTUAL PAGE CONTENT (fetched live from the URL):\n${pageContent}\n\nAnalyse the actual content above — do not rely on assumptions about this page.`
+    ? `\n\n━━━ LIVE PAGE CONTENT (fetched directly from the URL) ━━━\n${pageContent}\n━━━ END PAGE CONTENT ━━━\n\nIMPORTANT: The content above is the actual live page. Base your entire analysis on what is written there — the real headlines, copy, CTAs, structure, and messaging. Do not substitute generic assumptions. Quote specific text from the page in your findings where relevant.`
     : pageFetchStatus === 'failed'
     ? `\n\nNOTE: A URL was provided but the page could not be fetched (likely a JavaScript-rendered site, auth wall, or bot protection). Analyse based on the user's description only — do not assume the page is broken or non-functional.`
     : '';
