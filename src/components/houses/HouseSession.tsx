@@ -2009,13 +2009,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const handleRunWithChallenge = useCallback(async () => {
     if (!canRun) return;
 
-    // If challenge already dismissed or already fetched with no questions, go straight to analysis
-    if (challengeDismissed || challengeQuestions.length > 0) {
+    // Questions shown but not yet dismissed — do nothing, wait for panel
+    if (challengeQuestions.length > 0 && !challengeDismissed) return;
+
+    // Already dismissed (answered or skipped) — run immediately
+    if (challengeDismissed) {
       handleRun();
       return;
     }
 
-    // Fetch challenge questions first
+    // First click — fetch challenge questions
     const input = buildUserInput();
     setIsFetchingChallenge(true);
     try {
@@ -2027,13 +2030,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       const data = res.ok ? await res.json() : { questions: [] };
       if (data.questions?.length > 0) {
         setChallengeQuestions(data.questions);
-        // Don't run yet — ChallengePanel will be shown, user responds/skips → handleRun
+        // Panel is now visible — user must respond or skip to proceed
       } else {
         // No questions — run immediately
         handleRun();
       }
     } catch {
-      // On error, run anyway
       handleRun();
     } finally {
       setIsFetchingChallenge(false);
@@ -2290,12 +2292,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
             <button
               onClick={handleRunWithChallenge}
-              disabled={!canRun || isFetchingChallenge}
-              className={cn('fresco-btn w-full', (!canRun || isFetchingChallenge) && 'opacity-40 cursor-not-allowed pointer-events-none')}>
+              disabled={!canRun || isFetchingChallenge || (challengeQuestions.length > 0 && !challengeDismissed)}
+              className={cn('fresco-btn w-full', (!canRun || isFetchingChallenge || (challengeQuestions.length > 0 && !challengeDismissed)) && 'opacity-40 cursor-not-allowed pointer-events-none')}>
               {isRunning
                 ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Running analysis…</span></>
                 : isFetchingChallenge
                 ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Reviewing your inputs…</span></>
+                : challengeQuestions.length > 0 && !challengeDismissed
+                ? <><span>Answer or skip the question above to run</span></>
                 : <><Sparkles className="w-4 h-4" /><span>Run {meta.name}</span></>
               }
             </button>
