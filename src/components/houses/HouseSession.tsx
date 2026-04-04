@@ -117,7 +117,10 @@ function ChipInput({ value, onChange, placeholder, onInteract }: {
         </button>
       </div>
       {chips.length === 0 && (
-        <p className="mt-2 text-fresco-xs text-fresco-graphite-light">Add each item separately — one per chip</p>
+        <p className="mt-2 text-fresco-xs text-fresco-graphite-light">Add each item separately — aim for 3 or more</p>
+      )}
+      {chips.length > 0 && chips.length < 3 && (
+        <p className="mt-1.5 text-fresco-xs text-fresco-graphite-light">{3 - chips.length} more recommended</p>
       )}
       {chips.length > 0 && (
         <button
@@ -401,6 +404,15 @@ function MetricsInput({ value, onChange, onInteract }: {
 function SliderRatings({ value, onChange, labels, onInteract }: {
   value: string; onChange: (v: string) => void; labels: string[]; onInteract?: () => void;
 }) {
+  // #6 — auto-advance 2s after last interaction when all criteria have notes
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleAdvance = (rows: {note: string}[]) => {
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    if (rows.every(r => r.note?.trim())) {
+      idleTimer.current = setTimeout(() => onInteract?.(), 2000);
+    }
+  };
+  useEffect(() => () => { if (idleTimer.current) clearTimeout(idleTimer.current); }, []);
   interface SliderRow { label: string; score: number; note: string; }
   const parse = (): SliderRow[] => {
     try {
@@ -414,6 +426,7 @@ function SliderRatings({ value, onChange, labels, onInteract }: {
   const update = (i: number, field: 'score' | 'note', v: string | number) => {
     const next = rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r);
     onChange(JSON.stringify(next));
+    if (field === 'note') scheduleAdvance(next);
   };
 
   return (
@@ -477,18 +490,18 @@ function ChallengePanel({ questions, onRespond, onDismiss }: {
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="fresco-label block mb-1">Before you run</span>
+          <span className="fresco-label block mb-1">One thing before we run</span>
           <p className="text-fresco-sm text-fresco-graphite-mid">
             {questions.length === 1
-              ? 'One gap worth closing. Answer it to sharpen the analysis — or skip to run anyway.'
-              : 'Two gaps worth closing. Answer them to sharpen the analysis — or skip to run anyway.'}
+              ? "A gap in your input that's worth closing — answer it to sharpen the analysis."
+              : 'Two gaps worth closing before the analysis runs.'}
           </p>
         </div>
         <button
           onClick={onDismiss}
           className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors flex-shrink-0 mt-0.5"
         >
-          Skip →
+          Skip
         </button>
       </div>
 
@@ -582,9 +595,9 @@ function EditableSentenceOfTruth({ value, onSave }: {
           {!editing && (
             <button
               onClick={() => { setDraft(displayValue); setEditing(true); }}
-              className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors"
+              className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors flex items-center gap-1"
             >
-              {isEdited ? 'Edit yours' : 'Make it yours →'}
+              ✎ {isEdited ? 'Edit yours' : 'Make it yours'}
             </button>
           )}
         </div>
@@ -613,8 +626,12 @@ function EditableSentenceOfTruth({ value, onSave }: {
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-fresco-black relative group">
-          <p className="text-fresco-base text-white font-medium leading-relaxed italic">
+        <div
+          className="p-4 bg-fresco-black relative group cursor-pointer"
+          onClick={() => !showOriginal && (() => { setDraft(displayValue); setEditing(true); })()}
+          title={showOriginal ? '' : 'Click to edit'}
+        >
+          <p className="text-fresco-base text-white font-medium leading-relaxed italic group-hover:opacity-90 transition-opacity">
             "{showOriginal ? value : displayValue}"
           </p>
           {isEdited && !showOriginal && (
@@ -733,12 +750,23 @@ function QuestionCard({
                 {value.split('\n').filter(Boolean).length} step{value.split('\n').filter(Boolean).length !== 1 ? 's' : ''} mapped
               </p>
             ) : step.inputType === 'contradictions' ? (
-              <p className="text-fresco-sm text-fresco-graphite-mid">
-                {(() => { try { return JSON.parse(value).filter((p: any) => p.assumed).length; } catch { return 0; } })()} contradiction{(() => { try { return JSON.parse(value).filter((p: any) => p.assumed).length !== 1; } catch { return true; } })() ? 's' : ''} mapped
-              </p>
+              <div>
+                {(() => {
+                  try {
+                    const pairs = JSON.parse(value).filter((p: any) => p.assumed?.trim());
+                    if (pairs.length === 0) return <p className="text-fresco-sm text-fresco-graphite-mid">No contradictions yet</p>;
+                    return <p className="text-fresco-sm text-fresco-graphite-mid line-clamp-1">"{pairs[0].assumed}" → "{pairs[0].actually}"{pairs.length > 1 ? ` +${pairs.length - 1} more` : ''}</p>;
+                  } catch { return <p className="text-fresco-sm text-fresco-graphite-mid">Contradictions mapped</p>; }
+                })()}
+              </div>
             ) : step.inputType === 'options' ? (
-              <p className="text-fresco-sm text-fresco-graphite-mid">
-                {(() => { try { return JSON.parse(value).length; } catch { return 0; } })()} option{(() => { try { return JSON.parse(value).length !== 1; } catch { return true; } })() ? 's' : ''} defined
+              <p className="text-fresco-sm text-fresco-graphite-mid line-clamp-1">
+                {(() => {
+                  try {
+                    const cards = JSON.parse(value).filter((c: any) => c.label?.trim());
+                    return cards.map((c: any) => c.label).join(', ') || `${cards.length} options`;
+                  } catch { return 'Options defined'; }
+                })()}
               </p>
             ) : step.inputType === 'optioncosts' ? (
               <p className="text-fresco-sm text-fresco-graphite-mid">Trade-offs mapped for each option</p>
@@ -769,7 +797,9 @@ function QuestionCard({
                 {(() => { try { const p = JSON.parse(value); return p.goal ? p.goal.slice(0, 60) : 'Brief filled in'; } catch { return 'Brief filled in'; } })()}
               </p>
             ) : (
-              <p className="text-fresco-sm text-fresco-graphite-mid line-clamp-2 leading-relaxed">{value}</p>
+              <p className="text-fresco-sm text-fresco-graphite-mid line-clamp-2 leading-relaxed">
+                {value.split('\n')[0] || value}
+              </p>
             )}
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0 mt-1">
@@ -900,6 +930,11 @@ function QuestionCard({
                 <p className="mt-1.5 text-fresco-xs text-red-500 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
                   {Math.floor(voice.time / 60)}:{(voice.time % 60).toString().padStart(2, '0')}
+                </p>
+              )}
+              {!voice.recording && !value && (
+                <p className="mt-1.5 text-fresco-xs text-fresco-graphite-light">
+                  Tip: use the mic icon to speak your answer, or upload a file
                 </p>
               )}
             </motion.div>
@@ -1701,12 +1736,23 @@ function ConversationFlow({
       {steps.map((step, idx) => {
         const isVisible = idx < unlockedUpTo;
         const isActive = idx === activeIdx;
+        // #5 — Show agent divider when agent changes from previous step
+        const prevAgent = idx > 0 ? steps[idx - 1].agent : null;
+        const showAgentDivider = isVisible && step.agent && step.agent !== prevAgent && idx > 0;
         const isAnswered = hasValue(step.id) && !isActive;
         const isLocked = !isVisible;
 
         if (!isVisible) return null;
 
         return (
+          <>
+          {showAgentDivider && (
+            <div className="flex items-center gap-3 py-2 mb-1">
+              <div className="flex-1 h-px bg-fresco-border-light" />
+              <span className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wider">{step.agent}</span>
+              <div className="flex-1 h-px bg-fresco-border-light" />
+            </div>
+          )}
           <QuestionCard
             key={step.id}
             step={step}
@@ -1726,19 +1772,31 @@ function ConversationFlow({
               ''
             }
           />
+          </>
         );
       })}
 
-      {/* Progress indicator */}
+      {/* #2 — Progress with agent context */}
       {unlockedUpTo > 1 && (
-        <div className="flex items-center gap-1 pt-1">
-          {steps.map((_, idx) => (
-            <div key={idx} className={cn(
-              'h-0.5 flex-1 rounded-full transition-all',
-              (values[steps[idx].id] || '').trim().length > 0 ? 'bg-fresco-black' :
-              idx === activeIdx ? 'bg-fresco-graphite-light' : 'bg-fresco-border'
-            )} />
-          ))}
+        <div className="pt-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-fresco-xs text-fresco-graphite-light">
+              {steps.filter(s => hasValue(s.id)).length} of {steps.length}
+              {steps[activeIdx]?.agent ? <span className="text-fresco-graphite-light"> · {steps[activeIdx].agent}</span> : ''}
+            </span>
+            <span className="text-fresco-xs text-fresco-graphite-light">
+              {Math.round((steps.filter(s => hasValue(s.id)).length / steps.length) * 100)}%
+            </span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            {steps.map((step, idx) => (
+              <div key={idx} className={cn(
+                'h-0.5 flex-1 rounded-full transition-all duration-300',
+                hasValue(step.id) ? 'bg-fresco-black' :
+                idx === activeIdx ? 'bg-fresco-graphite-light' : 'bg-fresco-border'
+              )} />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -1774,7 +1832,37 @@ function EvaluateFlow({
 
   return (
     <div className="space-y-6">
-      {/* Goal — always first */}
+      {/* #12 — Mode selector first, prominent, required */}
+      <div className="p-4 border-2 border-fresco-black bg-fresco-white">
+        <p className="text-fresco-xs font-medium text-fresco-black uppercase tracking-wide mb-1">
+          Start here — what are you evaluating?
+        </p>
+        <p className="text-fresco-xs text-fresco-graphite-light mb-3">Choose your mode — this determines which questions you'll answer.</p>
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            { id: 'single',     label: 'Single page',    desc: 'One page or feature' },
+            { id: 'journey',    label: 'Multi-step flow', desc: 'A funnel or sequence' },
+            { id: 'comparison', label: 'Two versions',    desc: 'A/B or current vs target' },
+          ] as const).map(m => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setMode(m.id)}
+              className={cn(
+                'flex flex-col items-start p-3 text-left border transition-all',
+                mode === m.id
+                  ? 'bg-fresco-black text-white border-fresco-black'
+                  : 'bg-transparent text-fresco-graphite-mid border-fresco-border hover:border-fresco-black hover:text-fresco-black'
+              )}
+            >
+              <span className="text-fresco-sm font-medium">{m.label}</span>
+              <span className={cn('text-fresco-xs mt-0.5', mode === m.id ? 'text-white/70' : 'text-fresco-graphite-light')}>{m.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Goal — after mode is chosen */}
       <QuestionCard
         step={{
           id: 'goal',
@@ -1790,34 +1878,6 @@ function EvaluateFlow({
         isLocked={false}
         onActivate={() => {}}
       />
-
-      {/* Mode selector */}
-      <div>
-        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide font-medium mb-3">
-          What are you evaluating?
-        </p>
-        <div className="flex gap-2">
-          {([
-            { id: 'single',     label: 'A single page' },
-            { id: 'journey',    label: 'A multi-step flow' },
-            { id: 'comparison', label: 'Two versions' },
-          ] as const).map(m => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setMode(m.id)}
-              className={cn(
-                'px-3 py-1.5 text-fresco-sm rounded-none border transition-all',
-                mode === m.id
-                  ? 'bg-fresco-black text-white border-fresco-black'
-                  : 'bg-transparent text-fresco-graphite-mid border-fresco-border hover:border-fresco-black hover:text-fresco-black'
-              )}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* URL input */}
       <div>
@@ -1879,6 +1939,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [values, setValues] = useState<Record<string, string>>({});
   const [url, setUrl] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
   const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
 
@@ -2036,7 +2097,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     await db.saveAIOutputs(sessionId, {
       insights: data.keyIssues, sentenceOfTruth: data.sentenceOfTruth, necessaryMoves: data.necessaryMoves,
     });
+    // #15 — use Sentence of Truth as session title (truncated to 60 chars)
+    const autoTitle = data.sentenceOfTruth
+      ? data.sentenceOfTruth.replace(/^["'""]|["'""]$/g, '').slice(0, 60) + (data.sentenceOfTruth.length > 60 ? '…' : '')
+      : null;
     useFrescoStore.getState().updateSession(sessionId, {
+      ...(autoTitle ? { title: autoTitle } : {}),
       aiOutputs: {
         houseResult: data, verdict: data.verdict, fitLabel: (data as any).fitLabel, fitStrength: (data as any).fitStrength,
         verdictRationale: data.verdictRationale, keyIssues: data.keyIssues, necessaryMoves: data.necessaryMoves,
@@ -2077,16 +2143,52 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     <div className="flex flex-col md:flex-row h-full bg-fresco-white">
 
       {/* ── LEFT / MIDDLE: Conversation input ─────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
-        <div className="max-w-[640px] mx-auto px-4 md:px-8 py-6 md:py-10">
+      <motion.div
+        animate={{ flexBasis: result ? '320px' : '100%', maxWidth: result ? '320px' : '100%' }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
+        className="flex flex-col overflow-hidden flex-shrink-0 border-r border-fresco-border-light"
+        style={{ minWidth: result ? 260 : undefined }}
+      >
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-[640px] mx-auto px-4 md:px-8 py-6 md:py-10">
 
           {/* Back + header */}
           <div className="mb-10">
-            <button type="button" onClick={onBack}
-              className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors mb-8">
-              <ChevronLeft className="w-4 h-4" />
-              Back to {workspace?.title || 'Workspace'}
-            </button>
+            <div className="flex items-center justify-between mb-8">
+              <button type="button" onClick={onBack}
+                className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+                Back to {workspace?.title || 'Workspace'}
+              </button>
+              {(result || Object.values(values).some(v => v?.trim())) && (
+                <button type="button" onClick={() => setShowStartOver(true)}
+                  className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
+                  Start over
+                </button>
+              )}
+            </div>
+            <AnimatePresence>
+              {showStartOver && (
+                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  className="mb-6 p-4 border border-fresco-border bg-fresco-white">
+                  <p className="text-fresco-sm text-fresco-black mb-3">Clear all answers and start this session fresh?</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => {
+                      Object.keys(values).forEach(k => setValue(k, ''));
+                      setResult(null); setAgentEvents([]); setChallengeQuestions([]);
+                      setChallengeResponses({}); setChallengeDismissed(false);
+                      setShowStartOver(false);
+                    }} className="text-fresco-sm font-medium text-red-500 hover:text-red-700 transition-colors">
+                      Yes, clear everything
+                    </button>
+                    <button onClick={() => setShowStartOver(false)} className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div className="flex items-center gap-2 mb-3">
               <img src={meta.icon} alt={meta.name} className="w-4 h-4 opacity-60 icon-theme"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -2112,48 +2214,57 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               <EvaluateFlow values={values} onChange={setValue} url={url} onUrlChange={setUrl} />
             )}
           </div>
-
-          {/* Challenge Panel — shown after first Run click if questions exist */}
-          <AnimatePresence>
-            {canRun && !result && !isRunning && challengeQuestions.length > 0 && !challengeDismissed && (
-              <ChallengePanel
-                key="challenge"
-                questions={challengeQuestions}
-                onRespond={responses => {
-                  setChallengeResponses(responses);
-                  setChallengeDismissed(true);
-                  handleRun();
-                }}
-                onDismiss={() => {
-                  setChallengeDismissed(true);
-                  handleRun();
-                }}
-              />
-            )}
-          </AnimatePresence>
-
-          {/* Run */}
-          <button
-            onClick={handleRunWithChallenge}
-            disabled={!canRun || isFetchingChallenge}
-            className={cn('fresco-btn w-full', (!canRun || isFetchingChallenge) && 'opacity-40 cursor-not-allowed pointer-events-none')}>
-            {isRunning
-              ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Running analysis…</span></>
-              : isFetchingChallenge
-              ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Reviewing your inputs…</span></>
-              : <><Sparkles className="w-4 h-4" /><span>Run {meta.name}</span></>
-            }
-          </button>
-          {!canRun && !isRunning && (
-            <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
-              Answer the first question to run the analysis
-            </p>
-          )}
         </div>
-      </div>
+        </div>
+
+        {/* #3 — Sticky Run footer */}
+        <div className="border-t border-fresco-border-light bg-fresco-white px-4 md:px-8 py-4">
+          <div className="max-w-[640px] mx-auto">
+            <AnimatePresence>
+              {canRun && !result && !isRunning && challengeQuestions.length > 0 && !challengeDismissed && (
+                <ChallengePanel
+                  key="challenge"
+                  questions={challengeQuestions}
+                  onRespond={responses => {
+                    setChallengeResponses(responses);
+                    setChallengeDismissed(true);
+                    handleRun();
+                  }}
+                  onDismiss={() => {
+                    setChallengeDismissed(true);
+                    handleRun();
+                  }}
+                />
+              )}
+            </AnimatePresence>
+
+            <button
+              onClick={handleRunWithChallenge}
+              disabled={!canRun || isFetchingChallenge}
+              className={cn('fresco-btn w-full', (!canRun || isFetchingChallenge) && 'opacity-40 cursor-not-allowed pointer-events-none')}>
+              {isRunning
+                ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Running analysis…</span></>
+                : isFetchingChallenge
+                ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Reviewing your inputs…</span></>
+                : <><Sparkles className="w-4 h-4" /><span>Run {meta.name}</span></>
+              }
+            </button>
+            {!canRun && !isRunning && (
+              <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
+                Answer the first question to run the analysis
+              </p>
+            )}
+          </div>
+        </div>
+      </motion.div>
 
       {/* ── RIGHT: Output ──────────────────────────────────────────────────── */}
-      <div className="w-full md:w-[360px] max-h-[60vh] md:max-h-none border-t md:border-t-0 md:border-l border-fresco-border-light bg-fresco-off-white overflow-y-auto">
+      <motion.div
+        animate={{ flex: result ? '1 1 0%' : '0 0 360px', minWidth: result ? 360 : 320 }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
+        className="flex flex-col border-t md:border-t-0 md:border-l border-fresco-border-light bg-fresco-off-white overflow-hidden"
+      >
+        <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
@@ -2165,12 +2276,27 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           </div>
 
           {!result && agentEvents.length === 0 && !isRunning && (
-            <div className="py-12 text-center">
+            <div className="py-8 text-center">
               <img src={meta.icon} alt="" className="w-8 h-8 mx-auto mb-4 opacity-20 icon-theme"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <p className="text-fresco-sm text-fresco-graphite-light">
-                Answer the questions and run {meta.name} to see your output here.
-              </p>
+              {canRun ? (
+                <div>
+                  <p className="text-fresco-sm text-fresco-graphite-mid font-medium mb-1">Ready to run</p>
+                  <p className="text-fresco-xs text-fresco-graphite-light">Your output will include a verdict, sentence of truth, key issues, and necessary moves.</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-fresco-sm text-fresco-graphite-light mb-3">Answer the questions on the left — your output appears here.</p>
+                  <div className="space-y-1 text-left inline-block">
+                    {['Verdict', 'Sentence of Truth', 'Key Issues', 'Necessary Moves'].map(item => (
+                      <div key={item} className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light/50">
+                        <div className="w-1 h-1 rounded-full bg-fresco-graphite-light/30" />
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2240,6 +2366,21 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 </div>
 
+                {/* #11 — Suggested next step immediately after verdict */}
+                {result.suggestedNextHouse && (
+                  <div className="p-4 border border-fresco-black/10 bg-fresco-light-gray flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">Suggested next step</p>
+                      <p className="text-fresco-sm font-medium text-fresco-black capitalize">{HOUSE_META[result.suggestedNextHouse].name}</p>
+                      <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5">{result.suggestedNextHouseReason}</p>
+                    </div>
+                    <button onClick={() => onNavigateToHouse?.(result.suggestedNextHouse!)}
+                      className="flex-shrink-0 flex items-center gap-1.5 text-fresco-xs font-medium text-fresco-black border border-fresco-black px-3 py-1.5 hover:bg-fresco-black hover:text-white transition-colors">
+                      Open <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
                 <EditableSentenceOfTruth
                   value={result.sentenceOfTruth}
                   onSave={edited => db.setSentenceOfTruth(sessionId, edited)}
@@ -2291,27 +2432,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 </div>
 
-                {result.suggestedNextHouse && (
-                  <div className="pt-2">
-                    <span className="fresco-label block mb-3">Suggested Next Step</span>
-                    <div className="p-4 border border-fresco-border">
-                      <div className="flex items-center gap-2 mb-2">
-                        <img src={HOUSE_META[result.suggestedNextHouse].icon} alt=""
-                          className="w-4 h-4 icon-theme opacity-60"
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                        <span className="text-fresco-sm font-medium text-fresco-black capitalize">
-                          {result.suggestedNextHouse}
-                        </span>
-                      </div>
-                      <p className="text-fresco-xs text-fresco-graphite-mid mb-3">{result.suggestedNextHouseReason}</p>
-                      <button onClick={() => onNavigateToHouse?.(result.suggestedNextHouse!)}
-                        className="flex items-center gap-2 text-fresco-sm font-medium text-fresco-black hover:text-fresco-graphite transition-colors">
-                        Open {HOUSE_META[result.suggestedNextHouse].name} <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 <div className="pt-2 border-t border-fresco-border-light">
                   <button onClick={() => setShowExportModal(true)} className="fresco-btn w-full">
                     <Download className="w-4 h-4" /><span>Export</span>
@@ -2323,7 +2443,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         </div>
       </div>
 
-      {/* Export modal */}
+      {/* Export modal — inside right panel motion.div but outside scroll */}
       <AnimatePresence>
         {showExportModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -2358,6 +2478,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           </motion.div>
         )}
       </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
