@@ -1925,6 +1925,27 @@ function EvaluateFlow({
             className="w-full h-10 px-4 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black font-mono"
           />
         )}
+        {/* URL validation warnings */}
+        {url.trim() && (() => {
+          const lines = url.split('\n').map(l => l.trim()).filter(Boolean);
+          const nonUrls = lines.filter(l => !l.startsWith('http'));
+          const hashUrls = lines.filter(l => l.startsWith('http') && l.includes('/#/'));
+          if (nonUrls.length > 0) return (
+            <p className="mt-2 text-fresco-xs text-amber-600">
+              ⚠ {nonUrls.length === 1 ? `"${nonUrls[0]}" isn't` : `${nonUrls.length} lines aren't`} a valid URL — must start with https://
+            </p>
+          );
+          if (hashUrls.length > 0) return (
+            <p className="mt-2 text-fresco-xs text-amber-600">
+              ⚠ Hash-based URLs (/#/) can't be fetched server-side — content is rendered by JavaScript. Describe the page content in the fields below instead.
+            </p>
+          );
+          return (
+            <p className="mt-2 text-fresco-xs text-fresco-graphite-light">
+              Fresco will fetch the page content and pass it to the agents.
+            </p>
+          );
+        })()}
       </div>
 
       {/* Mode-specific questions */}

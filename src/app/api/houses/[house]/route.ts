@@ -86,12 +86,15 @@ async function runAgent(
   priorOutputs: AgentOutput[],
   context?: string,
   pageContent?: string,
+  pageFetchStatus?: 'fetched' | 'failed' | 'none',
 ): Promise<AgentOutput> {
   const contextSection = context
     ? `\n\nWORKSPACE CONTEXT (from prior sessions):\n${context}`
     : '';
   const pageSection = pageContent
     ? `\n\nACTUAL PAGE CONTENT (fetched live from the URL):\n${pageContent}\n\nAnalyse the actual content above — do not rely on assumptions about this page.`
+    : pageFetchStatus === 'failed'
+    ? `\n\nNOTE: A URL was provided but the page could not be fetched (likely a JavaScript-rendered site, auth wall, or bot protection). Analyse based on the user's description only — do not assume the page is broken or non-functional.`
     : '';
 
   // Sequential context: each agent sees what prior agents found
@@ -256,7 +259,7 @@ export async function POST(
             message: pageFetchStatus === 'fetched'
               ? 'Page content retrieved — agents are analysing the actual content.'
               : pageFetchStatus === 'failed'
-              ? 'Could not retrieve the page — agents will work from your description.'
+              ? 'Page couldn\'t be fetched (likely JS-rendered or bot-protected) — agents will work from your description.'
               : null,
           });
         }
@@ -276,7 +279,8 @@ export async function POST(
               userInput.trim() + modeContext,
               agentOutputs,
               context,
-              pageContent
+              pageContent,
+              pageFetchStatus
             );
             agentOutputs.push(output);
 
