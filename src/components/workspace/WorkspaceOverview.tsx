@@ -568,7 +568,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                   <JourneyMap 
                     sessions={workspaceSessions}
                     onSessionClick={(id) => onOpenSession?.(id)}
-                    onToolkitStart={(type) => onStartToolkit?.(type)}
+                    onHouseStart={(houseId) => onStartHouse?.(houseId)}
                   />
                 </motion.div>
               )}

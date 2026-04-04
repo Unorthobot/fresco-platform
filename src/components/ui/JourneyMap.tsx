@@ -2,168 +2,164 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Check, ChevronRight, Sparkles } from 'lucide-react';
+import { Check, ChevronRight, ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TOOLKITS, type ToolkitType, type ToolkitCategory } from '@/types';
+import { HOUSE_META, type HouseId } from '@/lib/agents';
+
 type Session = any;
 
 interface JourneyMapProps {
   sessions: Session[];
   onSessionClick?: (sessionId: string) => void;
-  onToolkitStart?: (toolkitType: ToolkitType) => void;
+  onHouseStart?: (houseId: HouseId) => void;
   className?: string;
 }
 
-const HOUSES: { category: ToolkitCategory; label: string; toolkits: ToolkitType[] }[] = [
-  { 
-    category: 'investigate', 
-    label: 'Investigate',
-    toolkits: ['insight_stack', 'pov_generator', 'mental_model_mapper']
-  },
-  { 
-    category: 'innovate', 
-    label: 'Innovate',
-    toolkits: ['flow_board', 'experiment_brief', 'strategy_sketchbook']
-  },
-  { 
-    category: 'validate', 
-    label: 'Validate',
-    toolkits: ['ux_scorecard', 'persuasion_canvas', 'performance_grid']
-  },
-];
+const HOUSE_ORDER: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
 
-export function JourneyMap({ sessions, onSessionClick, onToolkitStart, className }: JourneyMapProps) {
-  const sessionsByToolkit = useMemo(() => {
-    const map: Record<ToolkitType, Session[]> = {} as any;
-    HOUSES.flatMap(h => h.toolkits).forEach(t => map[t] = []);
+const HOUSE_AGENTS: Record<HouseId, string[]> = {
+  investigate: ['Insight Stack', 'Belief Mapper', 'Position Builder'],
+  innovate:    ['Flow Board', 'Strategy Sketchbook', 'Experiment Brief'],
+  validate:    ['Experience Scorecard', 'Influence Map', 'Results Tracker'],
+  evaluate:    ['Page Scorecard', 'Variant Lens', 'Journey Trace'],
+};
+
+export function JourneyMap({ sessions, onSessionClick, onHouseStart, className }: JourneyMapProps) {
+  const sessionsByHouse = useMemo(() => {
+    const map: Record<HouseId, Session[]> = {
+      investigate: [], innovate: [], validate: [], evaluate: [],
+    };
     sessions.forEach(s => {
-      if (map[s.toolkitType as ToolkitType]) map[s.toolkitType as ToolkitType].push(s);
+      const houseType = s.houseType as HouseId | undefined;
+      if (houseType && map[houseType]) map[houseType].push(s);
     });
     return map;
   }, [sessions]);
 
-  const completedToolkits = useMemo(() => {
-    return new Set(sessions.map(s => s.toolkitType));
-  }, [sessions]);
-
   return (
-    <div className={cn("space-y-8", className)}>
-      {HOUSES.map((house, houseIndex) => {
-        const houseComplete = house.toolkits.every(t => completedToolkits.has(t));
-        const houseStarted = house.toolkits.some(t => completedToolkits.has(t));
-        
+    <div className={cn('space-y-6', className)}>
+      {HOUSE_ORDER.map((houseId, idx) => {
+        const house = HOUSE_META[houseId];
+        const houseSessions = sessionsByHouse[houseId];
+        const hasRun = houseSessions.length > 0;
+        const latestSession = houseSessions[0];
+        const verdict = latestSession?.aiOutputs?.verdict;
+        const sentenceOfTruth = latestSession?.sentenceOfTruth?.content;
+        const agents = HOUSE_AGENTS[houseId];
+
         return (
           <motion.div
-            key={house.category}
-            initial={{ opacity: 0, y: 20 }}
+            key={houseId}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: houseIndex * 0.1 }}
-            className="relative"
+            transition={{ delay: idx * 0.08 }}
           >
-            {/* House header */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className={cn(
-                "w-10 h-10 rounded-none flex items-center justify-center",
-                houseComplete ? "bg-fresco-black" : "bg-fresco-light-gray"
-              )}>
-                {houseComplete ? (
-                  <Check className="w-5 h-5 text-white" />
-                ) : (
-                  <img 
-                    src={`/0${houseIndex + 1}-${house.category}.png`} 
-                    alt="" 
-                    className="w-5 h-5 icon-themed" 
-                  />
+            <div className={cn(
+              'border rounded-none transition-all',
+              hasRun ? 'border-fresco-black bg-fresco-white' : 'border-fresco-border bg-fresco-white'
+            )}>
+              {/* House header */}
+              <div className="flex items-start justify-between p-4 border-b border-fresco-border-light">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    'w-8 h-8 flex items-center justify-center border',
+                    hasRun ? 'border-fresco-black bg-fresco-black' : 'border-fresco-border'
+                  )}>
+                    {hasRun
+                      ? <Check className="w-4 h-4 text-white" />
+                      : <img src={house.icon} alt="" className="w-4 h-4 opacity-40 icon-theme"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    }
+                  </div>
+                  <div>
+                    <p className="text-fresco-sm font-medium text-fresco-black">{house.name}</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">→ {house.output}</p>
+                  </div>
+                </div>
+
+                {/* Verdict badge */}
+                {verdict && (
+                  <span className={cn(
+                    'text-fresco-xs font-medium px-2 py-1 border',
+                    verdict === 'GO'                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    verdict === 'PIVOT'               ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    verdict === 'STOP'                ? 'bg-red-50 text-red-600 border-red-200' :
+                    'bg-blue-50 text-blue-700 border-blue-200'
+                  )}>
+                    {verdict}
+                  </span>
                 )}
               </div>
-              <div>
-                <h3 className="text-fresco-base font-medium text-fresco-black">{house.label}</h3>
-                <p className="text-fresco-xs text-fresco-graphite-light">
-                  {house.toolkits.filter(t => completedToolkits.has(t)).length} of {house.toolkits.length} complete
-                </p>
+
+              {/* Agent pills */}
+              <div className="px-4 py-3 flex items-center gap-2 border-b border-fresco-border-light/50">
+                {agents.map((agent, ai) => (
+                  <span key={agent} className="flex items-center gap-1">
+                    <span className="text-[10px] text-fresco-graphite-light bg-fresco-light-gray px-2 py-0.5 rounded-full">
+                      {agent}
+                    </span>
+                    {ai < agents.length - 1 && <ArrowRight className="w-2.5 h-2.5 text-fresco-border" />}
+                  </span>
+                ))}
+              </div>
+
+              {/* Sessions or CTA */}
+              <div className="p-4">
+                {hasRun ? (
+                  <div className="space-y-2">
+                    {/* Sentence of truth */}
+                    {sentenceOfTruth && (
+                      <div className="flex items-start gap-2 mb-3">
+                        <Sparkles className="w-3.5 h-3.5 text-fresco-graphite-light flex-shrink-0 mt-0.5" />
+                        <p className="text-fresco-xs text-fresco-graphite-mid italic">"{sentenceOfTruth}"</p>
+                      </div>
+                    )}
+                    {/* Session list */}
+                    {houseSessions.map((s: Session) => (
+                      <button
+                        key={s.id}
+                        onClick={() => onSessionClick?.(s.id)}
+                        className="w-full flex items-center justify-between p-2.5 bg-fresco-light-gray hover:bg-fresco-border transition-colors text-left group"
+                      >
+                        <div>
+                          <p className="text-fresco-xs font-medium text-fresco-black">
+                            {s.title || `${house.name} Analysis`}
+                          </p>
+                          <p className="text-fresco-xs text-fresco-graphite-light">
+                            {new Date(s.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-fresco-graphite-light group-hover:text-fresco-black transition-colors" />
+                      </button>
+                    ))}
+                    {/* Run again */}
+                    <button
+                      onClick={() => onHouseStart?.(houseId)}
+                      className="w-full text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors text-left pt-1 flex items-center gap-1"
+                    >
+                      + Run again
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => onHouseStart?.(houseId)}
+                    className="w-full flex items-center justify-between p-3 border border-dashed border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors group"
+                  >
+                    <div>
+                      <p className="text-fresco-xs font-medium text-fresco-black">{house.description}</p>
+                      <p className="text-fresco-xs text-fresco-graphite-light mt-0.5 flex items-center gap-1">
+                        Run {house.name} <ArrowRight className="w-3 h-3" />
+                      </p>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
-            
-            {/* Toolkits in this house */}
-            <div className="ml-5 pl-5 border-l-2 border-fresco-border space-y-3">
-              {house.toolkits.map((toolkitType, toolkitIndex) => {
-                const toolkit = TOOLKITS[toolkitType];
-                const toolkitSessions = sessionsByToolkit[toolkitType];
-                const isComplete = toolkitSessions.length > 0;
-                const hasTruth = toolkitSessions.some(s => s.sentenceOfTruth?.content);
-                
-                return (
-                  <motion.div
-                    key={toolkitType}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: houseIndex * 0.1 + toolkitIndex * 0.05 }}
-                    className="relative"
-                  >
-                    {/* Connection dot */}
-                    <div className={cn(
-                      "absolute -left-[25px] top-4 w-3 h-3 rounded-full border-2",
-                      isComplete 
-                        ? "bg-fresco-black border-fresco-black" 
-                        : "bg-fresco-white border-fresco-border"
-                    )} />
-                    
-                    {/* Toolkit card */}
-                    <div className={cn(
-                      "p-4 rounded-none transition-all",
-                      isComplete 
-                        ? "bg-fresco-light-gray hover:bg-fresco-warm-gray cursor-pointer transition-colors" 
-                        : "bg-fresco-white border border-dashed border-fresco-border hover:border-fresco-graphite-light transition-colors"
-                    )}
-                    onClick={() => {
-                      if (isComplete && toolkitSessions[0]) {
-                        onSessionClick?.(toolkitSessions[0].id);
-                      } else {
-                        onToolkitStart?.(toolkitType);
-                      }
-                    }}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-fresco-sm font-medium text-fresco-black">
-                              {toolkit.name}
-                            </h4>
-                            {hasTruth && (
-                              <Sparkles className="w-3.5 h-3.5 text-fresco-graphite" />
-                            )}
-                          </div>
-                          <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
-                            {toolkit.subtitle}
-                          </p>
-                          
-                          {/* Session count or CTA */}
-                          {isComplete ? (
-                            <p className="text-fresco-xs text-fresco-graphite-mid mt-2">
-                              {toolkitSessions.length} session{toolkitSessions.length > 1 ? 's' : ''}
-                            </p>
-                          ) : (
-                            <p className="text-fresco-xs text-fresco-graphite-mid mt-2 flex items-center gap-1">
-                              <span>Start this toolkit</span>
-                              <ChevronRight className="w-3 h-3" />
-                            </p>
-                          )}
-                        </div>
-                        
-                        {isComplete && (
-                          <Check className="w-4 h-4 text-fresco-black" />
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-            
-            {/* House connector */}
-            {houseIndex < HOUSES.length - 1 && (
-              <div className="flex justify-center my-4">
-                <ChevronRight className="w-5 h-5 text-fresco-border rotate-90" />
+
+            {/* Connector */}
+            {idx < HOUSE_ORDER.length - 1 && (
+              <div className="flex justify-center my-2">
+                <ChevronRight className="w-4 h-4 text-fresco-border rotate-90" />
               </div>
             )}
           </motion.div>
