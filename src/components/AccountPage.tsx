@@ -240,7 +240,7 @@ export function AccountPage() {
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-none">
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">{user?.aiGenerationsThisMonth || 0}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">AI Generations (this month)</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">House Runs (this month)</p>
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-none">
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white capitalize">{currentPlan}</p>
@@ -269,8 +269,8 @@ export function AccountPage() {
                 <p className="font-medium text-gray-900 dark:text-white capitalize">{currentPlan} Plan</p>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {currentPlan === 'free' ? '3 workspaces, 10 AI generations/month' :
-                 currentPlan === 'pro' ? 'Unlimited workspaces & AI generations' :
+                {currentPlan === 'free' ? '3 workspaces, 10 house runs/month' :
+                 currentPlan === 'pro' ? 'Unlimited workspaces & house runs' :
                  'Everything in Pro + Team features'}
               </p>
             </div>
@@ -326,7 +326,7 @@ export function AccountPage() {
             </h3>
             <ul className="space-y-2 text-sm text-amber-800 dark:text-amber-200">
               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-amber-600" /> Unlimited workspaces</li>
-              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-amber-600" /> Unlimited AI generations</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-amber-600" /> Unlimited house runs</li>
               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-amber-600" /> PDF & DOCX export</li>
               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-amber-600" /> Priority support</li>
             </ul>

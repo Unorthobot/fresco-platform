@@ -188,6 +188,10 @@ export async function POST(
               summary: output.summary,
               confidence: output.confidence,
               structured_artifact: output.structured_artifact || null,
+              // Full fields for lens reframe
+              key_findings: output.key_findings,
+              risks: output.risks,
+              recommendations: output.recommendations,
             });
           } catch (err) {
             console.error(`Agent ${agent.id} failed:`, err);

@@ -20,6 +20,8 @@ import { useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { HOUSE_META, type HouseId } from '@/lib/agents';
 import type { HouseResult } from '@/lib/orchestrator';
+import { PricingModal } from '@/components/ui/PricingModal';
+import { useAIGeneration } from '@/lib/useAIGeneration';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1916,6 +1918,8 @@ function EvaluateFlow({
 export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNavigateToHouse }: HouseSessionProps) {
   const { sessions, workspaces } = useFrescoStore();
   const db = useDBWrite();
+  const { canGenerate, isLimitReached, currentUsage, limit, incrementUsage } = useAIGeneration();
+  const [showPricingModal, setShowPricingModal] = useState(false);
 
   const session = sessions.find(s => s.id === sessionId);
   const workspace = workspaces.find(w => w.id === workspaceId);
@@ -1943,6 +1947,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [isRunning, setIsRunning] = useState(false);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
+  const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>([]);
+  const [activeLens, setActiveLens] = useState<string | null>(null);
+  const [isReframing, setIsReframing] = useState(false);
+  const [showLensPicker, setShowLensPicker] = useState(false);
   const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
 
   // Challenge step state
@@ -2034,7 +2042,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
   const handleRun = useCallback(async () => {
     if (!canRun) return;
-    setIsRunning(true); setResult(null); setAgentEvents([]);
+    // Check generation limit
+    if (!canGenerate) { setShowPricingModal(true); return; }
+    setIsRunning(true); setResult(null); setAgentEvents([]); setStoredAgentOutputs([]);
     const userInput = buildUserInput();
 
     try {
@@ -2078,10 +2088,22 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   summary: ev.summary || '', confidence: ev.confidence || 'medium',
                   structured_artifact: ev.structured_artifact || undefined,
                 }]);
+                // Store full output for lens reframe
+                setStoredAgentOutputs(prev => [...prev, {
+                  agentId: ev.displayName,
+                  displayName: ev.displayName,
+                  summary: ev.summary || '',
+                  key_findings: ev.key_findings || [],
+                  signal: ev.signal || '',
+                  confidence: ev.confidence || 'medium',
+                  risks: ev.risks || [],
+                  recommendations: ev.recommendations || [],
+                }]);
               } else if (ev.type === 'verdict') {
                 const { type: _, ...vd } = ev;
                 setResult(vd as HouseResult);
                 await persistResult(vd as HouseResult);
+                incrementUsage();
               }
             } catch { /* skip */ }
           }
@@ -2114,6 +2136,31 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     } as any);
   };
 
+  const handleReframe = async (lens: string) => {
+    if (!result || storedAgentOutputs.length === 0) return;
+    setIsReframing(true);
+    setShowLensPicker(false);
+    setActiveLens(lens);
+    try {
+      const res = await fetch('/api/houses/reframe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          house: houseId,
+          lens,
+          agentOutputs: storedAgentOutputs,
+          userInput: buildUserInput(),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setResult(data as HouseResult);
+        await persistResult(data as HouseResult);
+      }
+    } catch { /* silently fail — keep current result */ }
+    setIsReframing(false);
+  };
+
   const generateExportText = () => {
     if (!result) return '';
     return [
@@ -2142,6 +2189,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const vs = result ? (VERDICT_STYLES[result.verdict] || VERDICT_STYLES['INVESTIGATE FURTHER']) : null;
 
   return (
+    <>
     <div className="flex flex-col md:flex-row h-full bg-fresco-white">
 
       {/* ── LEFT / MIDDLE: Conversation input ─────────────────────────────── */}
@@ -2434,7 +2482,90 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-fresco-border-light">
+                <div className="pt-2 border-t border-fresco-border-light space-y-3">
+
+                  {/* Post-run upgrade nudge — free plan only */}
+                  {limit !== -1 && limit > 0 && (
+                    <div className={cn(
+                      'p-3 border',
+                      currentUsage >= limit
+                        ? 'border-fresco-black bg-fresco-black text-white'
+                        : 'border-fresco-border bg-fresco-light-gray'
+                    )}>
+                      {currentUsage >= limit ? (
+                        <>
+                          <p className="text-fresco-sm font-medium text-white mb-1">You've used all your free runs</p>
+                          <p className="text-fresco-xs text-white/70 mb-3">Upgrade to keep analysing across all four houses.</p>
+                          <button onClick={() => setShowPricingModal(true)}
+                            className="w-full py-2 bg-white text-fresco-black text-fresco-xs font-medium hover:bg-fresco-light-gray transition-colors">
+                            See plans →
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-fresco-xs text-fresco-graphite-mid">
+                            {limit - currentUsage} of {limit} free house run{limit !== 1 ? 's' : ''} remaining this month.
+                          </p>
+                          <button onClick={() => setShowPricingModal(true)}
+                            className="text-fresco-xs text-fresco-graphite-mid hover:text-fresco-black transition-colors mt-1 underline underline-offset-2">
+                            Upgrade for unlimited →
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Lens reframe */}
+                  {storedAgentOutputs.length > 0 && (
+                    <div>
+                      {!showLensPicker ? (
+                        <button
+                          onClick={() => setShowLensPicker(true)}
+                          disabled={isReframing}
+                          className="w-full flex items-center justify-between px-4 py-2.5 border border-fresco-border text-fresco-sm text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
+                        >
+                          <span>{isReframing ? 'Reframing…' : activeLens ? `Lens: ${activeLens.charAt(0).toUpperCase() + activeLens.slice(1)} — change` : 'Reframe through a thinking lens →'}</span>
+                          {isReframing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        </button>
+                      ) : (
+                        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="border border-fresco-black p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-fresco-xs font-medium text-fresco-black uppercase tracking-wide">Choose a thinking lens</p>
+                            <button onClick={() => setShowLensPicker(false)} className="text-fresco-graphite-light hover:text-fresco-black"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                          <p className="text-fresco-xs text-fresco-graphite-light mb-3">Re-runs the synthesis with a different analytical frame. Same agent findings, different perspective.</p>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {[
+                              { id: 'critical',   label: 'Critical',    desc: 'Assumptions & evidence' },
+                              { id: 'systems',    label: 'Systems',     desc: 'Loops & root causes' },
+                              { id: 'design',     label: 'Design',      desc: 'Human & experience' },
+                              { id: 'product',    label: 'Product',     desc: 'Build decisions' },
+                              { id: 'strategic',  label: 'Strategic',   desc: 'Competitive direction' },
+                              { id: 'analytical', label: 'Analytical',  desc: 'Data & measurement' },
+                              { id: 'futures',    label: 'Futures',     desc: 'Trajectory & signals' },
+                              { id: 'economic',   label: 'Economic',    desc: 'Incentives & value' },
+                            ].map(lens => (
+                              <button
+                                key={lens.id}
+                                onClick={() => handleReframe(lens.id)}
+                                className={cn(
+                                  'flex flex-col items-start p-2.5 border text-left transition-all',
+                                  activeLens === lens.id
+                                    ? 'bg-fresco-black text-white border-fresco-black'
+                                    : 'border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray'
+                                )}
+                              >
+                                <span className={cn('text-fresco-xs font-medium', activeLens === lens.id ? 'text-white' : 'text-fresco-black')}>{lens.label}</span>
+                                <span className={cn('text-[10px] mt-0.5', activeLens === lens.id ? 'text-white/70' : 'text-fresco-graphite-light')}>{lens.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Export */}
                   <button onClick={() => setShowExportModal(true)} className="fresco-btn w-full">
                     <Download className="w-4 h-4" /><span>Export</span>
                   </button>
@@ -2482,5 +2613,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       </AnimatePresence>
       </motion.div>
     </div>
+    <PricingModal isOpen={showPricingModal} onClose={() => setShowPricingModal(false)} triggerHouse={meta.name} />
+    </>
   );
 }

@@ -526,7 +526,7 @@ export const useFrescoStore = create<FrescoState>()(
         const state = get();
         const tier = state.user?.subscription || 'free';
         const limits = {
-          free: { workspaces: 3, aiGenerationsPerMonth: 10 },
+          free: { workspaces: 3, aiGenerationsPerMonth: 3 },  // 3 house runs/month
           pro: { workspaces: -1, aiGenerationsPerMonth: -1 },
           studio: { workspaces: -1, aiGenerationsPerMonth: -1 },
         };

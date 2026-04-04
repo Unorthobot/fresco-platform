@@ -101,7 +101,7 @@ export function HomeDashboard({
       {/* Upgrade banner */}
       {!isGuest && user?.subscription === 'free' && (
         <div className="bg-fresco-black text-white px-6 py-2.5 flex items-center justify-between">
-          <p className="text-fresco-xs text-white/50">Free plan · 3 workspaces · 10 AI generations/month</p>
+          <p className="text-fresco-xs text-white/50">Free plan · 3 workspaces · 10 house runs/month</p>
           <button onClick={() => setShowPricingModal(true)} className="text-fresco-xs font-medium text-white hover:opacity-70 transition-opacity">Upgrade →</button>
         </div>
       )}
