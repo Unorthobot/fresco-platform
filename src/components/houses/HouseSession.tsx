@@ -2018,27 +2018,30 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     return input;
   };
 
-  // Fetch challenge questions when canRun becomes true for the first time
+  // Challenge — use refs to avoid stale closure issues
   const challengeFetchedRef = useRef(false);
+  const challengeQuestionsRef = useRef<ChallengeQuestion[]>([]);
+  const challengeDismissedRef = useRef(false);
+  useEffect(() => { challengeQuestionsRef.current = challengeQuestions; }, [challengeQuestions]);
+  useEffect(() => { challengeDismissedRef.current = challengeDismissed; }, [challengeDismissed]);
 
-  // Challenge is triggered by handleRunWithChallenge — not on mount
-
-
-  // Phase 1: user clicks Run → fetch challenge questions if not yet done
-  // Phase 2: user dismisses/answers challenge → actually run the analysis
   const handleRunWithChallenge = useCallback(async () => {
     if (!canRun) return;
 
-    // Questions shown but not yet dismissed — do nothing, wait for panel
-    if (challengeQuestions.length > 0 && !challengeDismissed) return;
+    const currentQuestions = challengeQuestionsRef.current;
+    const currentDismissed = challengeDismissedRef.current;
 
-    // Already dismissed (answered or skipped) — run immediately
-    if (challengeDismissed) {
-      handleRun();
-      return;
-    }
+    // Panel is visible, waiting for user — do nothing
+    if (currentQuestions.length > 0 && !currentDismissed) return;
 
-    // First click — fetch challenge questions
+    // Dismissed (answered or skipped) — run
+    if (currentDismissed) { handleRun(); return; }
+
+    // Already fetched, no questions found — run
+    if (challengeFetchedRef.current) { handleRun(); return; }
+
+    // First click — fetch
+    challengeFetchedRef.current = true;
     const input = buildUserInput();
     setIsFetchingChallenge(true);
     try {
@@ -2050,9 +2053,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       const data = res.ok ? await res.json() : { questions: [] };
       if (data.questions?.length > 0) {
         setChallengeQuestions(data.questions);
-        // Panel is now visible — user must respond or skip to proceed
       } else {
-        // No questions — run immediately
         handleRun();
       }
     } catch {
@@ -2060,7 +2061,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     } finally {
       setIsFetchingChallenge(false);
     }
-  }, [canRun, challengeDismissed, challengeQuestions.length, houseId]);
+  }, [canRun, houseId]);
 
   const handleRun = useCallback(async () => {
     if (!canRun) return;
