@@ -211,8 +211,9 @@ export async function POST(
   let pageContent: string | undefined;
   let pageFetchStatus: 'fetched' | 'failed' | 'none' = 'none';
 
-  if (url && url.trim().startsWith('http')) {
-    const urls = url.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
+  const normaliseUrl = (u: string) => u.startsWith('http') ? u : `https://${u}`;
+  if (url && url.trim()) {
+    const urls = url.split('\n').map(u => normaliseUrl(u.trim())).filter(u => u.length > 8);
     if (urls.length > 0) {
       const results = await Promise.all(urls.slice(0, 3).map(u => fetchPageContent(u)));
       const fetched = results.filter(r => r.fetched);

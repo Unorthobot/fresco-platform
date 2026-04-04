@@ -1839,9 +1839,9 @@ function UrlTagInput({ urls, onChange, maxUrls, label }: {
 
   const validate = (raw: string): { url: string; warning: string | null } => {
     const u = raw.trim();
-    if (!u.startsWith('http')) return { url: u, warning: 'Must start with https://' };
-    if (u.includes('/#/')) return { url: u, warning: 'Hash-based URL — JS-rendered, can\'t be fetched. Describe the page instead.' };
-    return { url: u, warning: null };
+    const normalised = u.startsWith('http') ? u : `https://${u}`;
+    if (normalised.includes('/#/')) return { url: normalised, warning: 'Hash-based URL — JS-rendered, may not fetch. Describe the page instead.' };
+    return { url: normalised, warning: null };
   };
 
   const add = () => {
@@ -1937,14 +1937,16 @@ function UrlTagInput({ urls, onChange, maxUrls, label }: {
 // ─── Evaluate mode selector ───────────────────────────────────────────────────
 
 function EvaluateFlow({
-  values, onChange, url, onUrlChange,
+  values, onChange, url, onUrlChange, mode, onModeChange,
 }: {
   values: Record<string, string>;
   onChange: (k: string, v: string) => void;
   url: string;
   onUrlChange: (v: string) => void;
+  mode: 'single' | 'journey' | 'comparison';
+  onModeChange: (m: 'single' | 'journey' | 'comparison') => void;
 }) {
-  const [mode, setMode] = useState<'single' | 'journey' | 'comparison'>('single');
+  const setMode = onModeChange;
   const [goalAnswered, setGoalAnswered] = useState(false);
 
   const steps = {
@@ -2057,6 +2059,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [url, setUrl] = useState('');
+  const [evaluateMode, setEvaluateMode] = useState<'single' | 'journey' | 'comparison'>('single');
   const [isRunning, setIsRunning] = useState(false);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
@@ -2085,18 +2088,41 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const canRun = !isRunning && (values[primaryField] || '').trim().length >= 3;
 
   const buildUserInput = () => {
+    // Evaluate uses only the fields relevant to the selected mode
+    const evaluateModeFields: Record<string, string[]> = {
+      single:     ['goal', 'subject', 'score_criteria', 'concerns'],
+      journey:    ['goal', 'subject', 'trust_drops', 'transitions'],
+      comparison: ['goal', 'version_a', 'version_b', 'delta_focus'],
+    };
     const order: Record<HouseId, string[]> = {
       investigate: ['situation', 'observations', 'patterns', 'contradictions', 'truth', 'assumptions', 'assumption_chains', 'ignored', 'new_model', 'position_synthesis'],
       innovate:    ['start', 'steps', 'breakdown', 'success', 'hypothesis', 'test', 'pass_fail', 'wrong', 'options', 'option_costs', 'recommendation'],
       validate:    ['subject', 'criteria', 'scores', 'fixes', 'audience', 'desired_action', 'blockers', 'move_them', 'measuring', 'targets', 'actuals', 'changes'],
-      evaluate:    ['goal', 'subject', 'score_criteria', 'concerns', 'trust_drops', 'transitions', 'version_a', 'version_b', 'delta_focus'],
+      evaluate:    evaluateModeFields[evaluateMode] || evaluateModeFields.single,
     };
     const allSteps = [...INVESTIGATE_STEPS, ...INNOVATE_STEPS, ...VALIDATE_STEPS,
       ...EVALUATE_STEPS_SINGLE, ...EVALUATE_STEPS_JOURNEY, ...EVALUATE_STEPS_COMPARISON];
-    let input = order[houseId]
+
+    const fieldLines = order[houseId]
       .map(k => serializeStructuredField(getInputTypeForId(k, allSteps), values[k] || ''))
       .filter(Boolean)
       .join('\n\n');
+
+    // For Evaluate, prepend mode and URL(s) so agents always know the context
+    let input = fieldLines;
+    if (houseId === 'evaluate') {
+      const modeLabel = evaluateMode === 'single' ? 'Single page' : evaluateMode === 'journey' ? 'Multi-step flow' : 'Two versions (A/B)';
+      const urlLines = url.trim()
+        ? url.split('\n').map(u => u.trim()).filter(Boolean)
+            .map(u => (u.startsWith('http') ? u : `https://${u}`))
+            .join(', ')
+        : null;
+      const header = [
+        `Mode: ${modeLabel}`,
+        urlLines ? `URL(s): ${urlLines}` : null,
+      ].filter(Boolean).join('\n');
+      input = header + (fieldLines ? '\n\n' + fieldLines : '');
+    }
 
     // Append challenge responses if any were given
     const answered = Object.entries(challengeResponses)
@@ -2380,7 +2406,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               <ConversationFlow steps={VALIDATE_STEPS} values={values} onChange={setValue} />
             )}
             {houseId === 'evaluate' && (
-              <EvaluateFlow values={values} onChange={setValue} url={url} onUrlChange={setUrl} />
+              <EvaluateFlow values={values} onChange={setValue} url={url} onUrlChange={setUrl} mode={evaluateMode} onModeChange={setEvaluateMode} />
             )}
           </div>
         </div>
