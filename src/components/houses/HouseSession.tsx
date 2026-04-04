@@ -1968,6 +1968,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
   const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>([]);
+  const [pageFetchMessage, setPageFetchMessage] = useState<string | null>(null);
   const [activeLens, setActiveLens] = useState<string | null>(null);
   const [isReframing, setIsReframing] = useState(false);
   const [showLensPicker, setShowLensPicker] = useState(false);
@@ -2067,7 +2068,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (!canRun) return;
     // Check generation limit
     if (!canGenerate) { setShowPricingModal(true); return; }
-    setIsRunning(true); setResult(null); setAgentEvents([]); setStoredAgentOutputs([]);
+    setIsRunning(true); setResult(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null);
     const userInput = buildUserInput();
 
     try {
@@ -2105,7 +2106,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             if (!line.startsWith('data: ')) continue;
             try {
               const ev = JSON.parse(line.slice(6));
-              if (ev.type === 'agent') {
+              if (ev.type === 'pageFetch') {
+                if (ev.message) setPageFetchMessage(ev.message);
+              } else if (ev.type === 'agent') {
                 setAgentEvents(prev => [...prev, {
                   displayName: ev.displayName, signal: ev.signal,
                   summary: ev.summary || '', confidence: ev.confidence || 'medium',
@@ -2380,6 +2383,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             {(isRunning || (!result && agentEvents.length > 0)) && agentEvents.length > 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-6 space-y-3">
                 <span className="fresco-label block mb-3">Thinking…</span>
+                {pageFetchMessage && (
+                  <div className="mb-3 flex items-center gap-2 text-fresco-xs text-fresco-graphite-mid p-2 bg-fresco-light-gray">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                    {pageFetchMessage}
+                  </div>
+                )}
                 {agentEvents.map((ev, i) => (
                   <motion.div key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
                     className="p-3 bg-fresco-light-gray border-l-2 border-fresco-black/20">

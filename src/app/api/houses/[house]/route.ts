@@ -15,17 +15,84 @@ import { buildMergePrompt, buildHouseResult, mergeAgentOutputsLocally } from '@/
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
+// ── URL content fetcher ───────────────────────────────────────────────────────
+
+async function fetchPageContent(url: string): Promise<{ content: string; title: string; fetched: boolean }> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; FrescoBot/1.0; +https://frescolab.io)',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) return { content: '', title: '', fetched: false };
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('text/html')) return { content: '', title: '', fetched: false };
+
+    const html = await res.text();
+
+    // Extract title
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+
+    // Extract meta description
+    const metaMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+    const metaDesc = metaMatch ? metaMatch[1].trim() : '';
+
+    // Strip scripts, styles, nav, footer, head
+    let text = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+      .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s{3,}/g, '\n\n')
+      .trim();
+
+    // Truncate to ~3000 chars to stay within token budget
+    if (text.length > 3000) text = text.slice(0, 3000) + '…';
+
+    const content = [
+      title ? `Title: ${title}` : '',
+      metaDesc ? `Meta description: ${metaDesc}` : '',
+      text ? `Page content:\n${text}` : '',
+    ].filter(Boolean).join('\n\n');
+
+    return { content, title, fetched: true };
+  } catch {
+    return { content: '', title: '', fetched: false };
+  }
+}
+
 async function runAgent(
   agent: { id: string; displayName: string; systemPrompt: string },
   userInput: string,
   priorOutputs: AgentOutput[],
   context?: string,
-  url?: string,
+  pageContent?: string,
 ): Promise<AgentOutput> {
   const contextSection = context
     ? `\n\nWORKSPACE CONTEXT (from prior sessions):\n${context}`
     : '';
-  const urlSection = url ? `\n\nURL BEING EVALUATED: ${url}` : '';
+  const pageSection = pageContent
+    ? `\n\nACTUAL PAGE CONTENT (fetched live from the URL):\n${pageContent}\n\nAnalyse the actual content above — do not rely on assumptions about this page.`
+    : '';
 
   // Sequential context: each agent sees what prior agents found
   const priorSection = priorOutputs.length > 0
@@ -35,7 +102,7 @@ async function runAgent(
       ).join('\n\n')
     : '';
 
-  const userMessage = `${contextSection}${urlSection}${priorSection}\n\nUSER INPUT:\n${userInput}\n\nReturn your JSON analysis.`;
+  const userMessage = `${contextSection}${pageSection}${priorSection}\n\nUSER INPUT:\n${userInput}\n\nReturn your JSON analysis.`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -116,6 +183,26 @@ export async function POST(
     return new Response(JSON.stringify({ error: 'userInput required (min 10 chars)' }), { status: 400 });
   }
 
+  // ── Fetch page content if URL provided (Evaluate house) ──────────────────
+  let pageContent: string | undefined;
+  let pageFetchStatus: 'fetched' | 'failed' | 'none' = 'none';
+
+  if (url && url.trim().startsWith('http')) {
+    const urls = url.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
+    if (urls.length > 0) {
+      const results = await Promise.all(urls.slice(0, 3).map(u => fetchPageContent(u)));
+      const fetched = results.filter(r => r.fetched);
+      if (fetched.length > 0) {
+        pageContent = urls.length === 1
+          ? fetched[0].content
+          : fetched.map((r, i) => `=== Page ${i + 1}: ${urls[i]} ===\n${r.content}`).join('\n\n');
+        pageFetchStatus = 'fetched';
+      } else {
+        pageFetchStatus = 'failed';
+      }
+    }
+  }
+
   if (!ANTHROPIC_API_KEY) {
     const fallback = {
       type: 'verdict',
@@ -161,6 +248,19 @@ export async function POST(
       try {
         const agentOutputs: AgentOutput[] = [];
 
+        // ── Send page fetch status if URL was provided ────────────────────────
+        if (url && url.trim()) {
+          send({
+            type: 'pageFetch',
+            status: pageFetchStatus,
+            message: pageFetchStatus === 'fetched'
+              ? 'Page content retrieved — agents are analysing the actual content.'
+              : pageFetchStatus === 'failed'
+              ? 'Could not retrieve the page — agents will work from your description.'
+              : null,
+          });
+        }
+
         // ── Sequential execution ─────────────────────────────────────────────
         for (const agent of agents) {
           try {
@@ -174,9 +274,9 @@ export async function POST(
             const output = await runAgent(
               agent,
               userInput.trim() + modeContext,
-              agentOutputs,   // each agent receives all prior outputs
+              agentOutputs,
               context,
-              url
+              pageContent
             );
             agentOutputs.push(output);
 
