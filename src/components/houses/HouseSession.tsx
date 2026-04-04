@@ -56,6 +56,7 @@ const VERDICT_STYLES: Record<string, { bg: string; text: string; border: string;
   'GO':                  { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-600', dot: 'bg-white', label: 'text-white/70' },
   'PIVOT':               { bg: 'bg-amber-500',   text: 'text-white', border: 'border-amber-500',   dot: 'bg-white', label: 'text-white/70' },
   'INVESTIGATE FURTHER': { bg: 'bg-blue-600',    text: 'text-white', border: 'border-blue-600',    dot: 'bg-white', label: 'text-white/70' },
+  'Needs more signal':    { bg: 'bg-blue-600',    text: 'text-white', border: 'border-blue-600',    dot: 'bg-white', label: 'text-white/70' },
   'STOP':                { bg: 'bg-red-600',     text: 'text-white', border: 'border-red-600',     dot: 'bg-white', label: 'text-white/70' },
 };
 
@@ -515,8 +516,8 @@ function ChallengePanel({ questions, onRespond, onDismiss }: {
           <span className="fresco-label block mb-1">One thing before we run</span>
           <p className="text-fresco-sm text-fresco-graphite-mid">
             {questions.length === 1
-              ? "A gap in your input that's worth closing — answer it to sharpen the analysis."
-              : 'Two gaps worth closing before the analysis runs.'}
+              ? "Something worth thinking through before you run."
+              : 'Two things worth thinking through before you run.'}
           </p>
         </div>
         <button
@@ -2044,7 +2045,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (ao?.houseResult) return ao.houseResult as HouseResult;
     if (ao?.sentenceOfTruth && ao?.keyIssues?.length) {
       return {
-        house: houseId, fitLabel: ao.fitLabel ?? meta.output, fitStrength: ao.fitStrength ?? 'Undecided',
+        house: houseId, fitLabel: ao.fitLabel ?? meta.output, fitStrength: ao.fitStrength ?? 'Mixed',
         verdict: ao.verdict ?? 'INVESTIGATE FURTHER', verdictRationale: ao.verdictRationale ?? '',
         sentenceOfTruth: ao.sentenceOfTruth, keyIssues: ao.keyIssues ?? [],
         necessaryMoves: ao.necessaryMoves ?? [], suggestedNextHouse: ao.suggestedNextHouse ?? null,
@@ -2285,10 +2286,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       `# ${meta.name} — ${result.outputLabel}`,
       `Workspace: ${workspace?.title || 'Unknown'} · ${new Date().toLocaleDateString()}`,
       '', '## Input', buildUserInput(),
-      '', `## Verdict: ${result.verdict}`, result.verdictRationale,
+      '', `## Verdict: ${result.verdict === 'INVESTIGATE FURTHER' ? 'Needs more signal' : result.verdict}`, result.verdictRationale,
       '', '## Sentence of Truth', result.sentenceOfTruth,
-      '', '## Key Issues', ...result.keyIssues.map((x, i) => `${i + 1}. ${x}`),
-      '', '## Necessary Moves', ...result.necessaryMoves.map((x, i) => `${i + 1}. ${x}`),
+      '', "## What's going wrong", ...result.keyIssues.map((x, i) => `${i + 1}. ${x}`),
+      '', '## What to do now', ...result.necessaryMoves.map((x, i) => `${i + 1}. ${x}`),
     ].join('\n');
   };
 
@@ -2416,12 +2417,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Reviewing your inputs…</span></>
                 : challengeQuestions.length > 0 && !challengeDismissed
                 ? <><span>Answer or skip the question above to run</span></>
-                : <><Sparkles className="w-4 h-4" /><span>Run {meta.name}</span></>
+                : <><Sparkles className="w-4 h-4" /><span>Run the analysis</span></>
               }
             </button>
             {!canRun && !isRunning && (
               <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
-                Answer the first question to run the analysis
+                Answer the first question to get started
               </p>
             )}
           </div>
@@ -2437,7 +2438,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-fresco-lg font-medium text-fresco-black">Output</h2>
+            <h2 className="text-fresco-lg font-medium text-fresco-black">Results</h2>
             {isRunning && (
               <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-light">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Analysing…</span>
@@ -2451,14 +2452,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               {canRun ? (
                 <div>
-                  <p className="text-fresco-sm text-fresco-graphite-mid font-medium mb-1">Ready to run</p>
-                  <p className="text-fresco-xs text-fresco-graphite-light">Your output will include a verdict, sentence of truth, key issues, and necessary moves.</p>
+                  <p className="text-fresco-sm text-fresco-graphite-mid font-medium mb-1">Ready to go</p>
+                  <p className="text-fresco-xs text-fresco-graphite-light">You'll get a verdict, a sentence of truth, what's going wrong, and what to do next.</p>
                 </div>
               ) : (
                 <div>
-                  <p className="text-fresco-sm text-fresco-graphite-light mb-3">Answer the questions on the left — your output appears here.</p>
+                  <p className="text-fresco-sm text-fresco-graphite-light mb-3">Answer the questions on the left — your results appear here.</p>
                   <div className="space-y-1 text-left inline-block">
-                    {['Verdict', 'Sentence of Truth', 'Key Issues', 'Necessary Moves'].map(item => (
+                    {['Verdict', 'Sentence of Truth', 'What\'s going wrong', 'What to do now'].map(item => (
                       <div key={item} className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light/50">
                         <div className="w-1 h-1 rounded-full bg-fresco-graphite-light/30" />
                         {item}
@@ -2474,7 +2475,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           <AnimatePresence>
             {(isRunning || (!result && agentEvents.length > 0)) && agentEvents.length > 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-6 space-y-3">
-                <span className="fresco-label block mb-3">Thinking…</span>
+                <span className="fresco-label block mb-3">Working through it…</span>
                 {pageFetchMessage && (
                   <div className="mb-3 flex items-center gap-2 text-fresco-xs text-fresco-graphite-mid p-2 bg-fresco-light-gray">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
@@ -2515,7 +2516,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 {/* POV Statement — Investigate only, shown first */}
                 {(result as any).povStatement && (
                   <div>
-                    <span className="fresco-label block mb-3">Point of View</span>
+                    <span className="fresco-label block mb-3">Your position</span>
                     <div className="p-4 border-l-4 border-fresco-black bg-fresco-light-gray">
                       <p className="text-fresco-base font-medium text-fresco-black leading-relaxed">
                         {(result as any).povStatement}
@@ -2533,7 +2534,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </div>
                       {(result as any).fitStrength && (
                         <span className={cn('text-fresco-xs', vs?.label)}>
-                          {(result as any).fitLabel}: {(result as any).fitStrength}
+                          {(result as any).fitLabel}: {(result as any).fitStrength === 'Undecided' ? 'Mixed' : (result as any).fitStrength}
                         </span>
                       )}
                     </div>
@@ -2568,7 +2569,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   if (!bmEvent?.structured_artifact) return null;
                   return (
                     <div>
-                      <span className="fresco-label block mb-3">Mental Model Detected</span>
+                      <span className="fresco-label block mb-3">The belief driving this</span>
                       <div className="p-4 border border-fresco-border bg-fresco-white flex items-start gap-3">
                         <div className="w-1.5 h-1.5 bg-fresco-black rounded-full flex-shrink-0 mt-1.5" />
                         <p className="text-fresco-sm text-fresco-black font-medium">{bmEvent.structured_artifact}</p>
@@ -2581,7 +2582,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 })()}
 
                 <div>
-                  <span className="fresco-label block mb-3">Key Issues</span>
+                  <span className="fresco-label block mb-3">What's going wrong</span>
                   <div className="space-y-2">
                     {result.keyIssues.map((issue, i) => (
                       <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
@@ -2595,7 +2596,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 </div>
 
                 <div>
-                  <span className="fresco-label block mb-3">Necessary Moves</span>
+                  <span className="fresco-label block mb-3">What to do now</span>
                   <div className="space-y-2">
                     {result.necessaryMoves.map((move, i) => (
                       <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
@@ -2650,7 +2651,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                           disabled={isReframing}
                           className="w-full flex items-center justify-between px-4 py-2.5 border border-fresco-border text-fresco-sm text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
                         >
-                          <span>{isReframing ? 'Reframing…' : activeLens ? `Lens: ${activeLens.charAt(0).toUpperCase() + activeLens.slice(1)} — change` : 'Reframe through a thinking lens →'}</span>
+                          <span>{isReframing ? 'Reframing…' : activeLens ? `Lens: ${activeLens.charAt(0).toUpperCase() + activeLens.slice(1)} — change` : 'See this differently →'}</span>
                           {isReframing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         </button>
                       ) : (
@@ -2693,7 +2694,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
                   {/* Export */}
                   <button onClick={() => setShowExportModal(true)} className="fresco-btn w-full">
-                    <Download className="w-4 h-4" /><span>Export</span>
+                    <Download className="w-4 h-4" /><span>Save results</span>
                   </button>
                 </div>
               </motion.div>
@@ -2712,7 +2713,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               onClick={e => e.stopPropagation()}
               className="bg-white rounded-fresco-lg p-6 max-w-md w-full mx-4 shadow-fresco-lg">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-fresco-lg font-medium text-fresco-black">Export</h3>
+                <h3 className="text-fresco-lg font-medium text-fresco-black">Save your results</h3>
                 <button onClick={() => setShowExportModal(false)}><X className="w-5 h-5 text-fresco-graphite-light" /></button>
               </div>
               <div className="space-y-3">

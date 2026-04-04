@@ -445,7 +445,7 @@ export function InsightStack({ sessionId, workspaceId, onBack }: InsightStackPro
     lines.push('## Insights', '');
     allInsights.forEach((insight, i) => { lines.push(`${i + 1}. ${insight}`); });
     lines.push('', '## Sentence of Truth', '', manualSentence || aiContent.sentenceOfTruth || '(Not yet defined)', '');
-    lines.push('## Necessary Moves', '');
+    lines.push('## What to do now', '');
     aiContent.necessaryMoves.forEach((move, i) => { lines.push(`${i + 1}. ${move}`); });
     return lines.join('\n');
   };
@@ -641,9 +641,9 @@ export function InsightStack({ sessionId, workspaceId, onBack }: InsightStackPro
             />
           </div>
           
-          {/* Necessary Moves */}
+          {/* What to do now */}
           <div className="mb-8">
-            <span className="fresco-label block mb-4">Necessary Moves</span>
+            <span className="fresco-label block mb-4">What to do now</span>
             {aiContent.necessaryMoves.length === 0 ? (
               <p className="text-fresco-sm text-fresco-graphite-light">Generate insights to see suggested next moves...</p>
             ) : (

@@ -302,7 +302,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
           toolkitName: toolkit.name,
           steps,
           thinkingLens: session?.thinkingLens || 'automatic',
-          outputLabels: { primary: 'Insights', secondary: 'Sentence of Truth', action: 'Necessary Moves' },
+          outputLabels: { primary: 'Insights', secondary: 'Sentence of Truth', action: 'What to do now' },
           workspaceContext, // Include context from other sessions
         }),
       });
@@ -939,7 +939,7 @@ export function InsightStackSession({ sessionId, workspaceId, onBack, onStartToo
             </div>
           )}
           
-          {/* Necessary Moves */}
+          {/* What to do now */}
           {aiContent.necessaryMoves.length > 0 && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">

@@ -11,10 +11,10 @@ interface PricingModalProps {
 }
 
 const HOUSES = [
-  { name: 'Investigate', output: 'Problem-Solution Fit', agents: ['Insight Stack', 'Belief Mapper', 'Position Builder'] },
-  { name: 'Innovate',    output: 'Product-Market Fit',  agents: ['Flow Board', 'Strategy Sketchbook', 'Experiment Brief'] },
-  { name: 'Validate',    output: 'Commercial Viability', agents: ['Experience Scorecard', 'Influence Map', 'Results Tracker'] },
-  { name: 'Evaluate',    output: 'Performance Reality', agents: ['Page Scorecard', 'Variant Lens', 'Journey Trace'] },
+  { name: 'Investigate', output: 'Is the problem real?', agents: ['Insight Stack', 'Belief Mapper', 'Position Builder'] },
+  { name: 'Innovate',    output: 'Will people want this?',  agents: ['Flow Board', 'Strategy Sketchbook', 'Experiment Brief'] },
+  { name: 'Validate',    output: 'Will it sell?', agents: ['Experience Scorecard', 'Influence Map', 'Results Tracker'] },
+  { name: 'Evaluate',    output: 'How is it actually doing?', agents: ['Page Scorecard', 'Variant Lens', 'Journey Trace'] },
 ];
 
 const PLANS = [

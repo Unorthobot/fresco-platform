@@ -134,7 +134,7 @@ export function ExportModal({ isOpen, onClose, data, includeJSON = false }: Expo
     const movesHTML = data.necessaryMoves.length > 0 ? `
       <div style="margin-bottom: 24px;">
         <h2 style="font-size: 16px; font-weight: 600; color: #111827; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">
-          Necessary Moves
+          What to do now
         </h2>
         <ol style="margin: 0; padding-left: 20px;">
           ${data.necessaryMoves.map(move => `

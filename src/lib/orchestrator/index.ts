@@ -26,7 +26,7 @@ export interface HouseResult {
   house: HouseId;
   // Core judgement — house-specific fit label
   fitLabel: string;                 // e.g. "Problem–Solution Fit"
-  fitStrength: 'Strong' | 'Weak' | 'Undecided';
+  fitStrength: 'Strong' | 'Shaky' | 'Mixed';
   // Legacy verdict for UI colour coding
   verdict: 'GO' | 'PIVOT' | 'INVESTIGATE FURTHER' | 'STOP';
   verdictRationale: string;
@@ -45,17 +45,17 @@ export interface HouseResult {
 // ─── House configuration ──────────────────────────────────────────────────────
 
 export const HOUSE_FIT_LABELS: Record<HouseId, string> = {
-  investigate: 'Problem–Solution Fit',
-  innovate: 'Product–Market Fit',
-  validate: 'Commercial Viability',
-  evaluate: 'Performance Reality',
+  investigate: 'Is the problem real?',
+  innovate: 'Will people want this?',
+  validate: 'Will it sell?',
+  evaluate: 'How is it actually doing?',
 };
 
 export const HOUSE_OUTPUT_LABELS: Record<HouseId, string> = {
-  investigate: 'Problem–Solution Fit',
-  innovate: 'Product–Market Fit',
-  validate: 'Commercial and Market Viability',
-  evaluate: 'Performance Reality',
+  investigate: 'Is the problem real?',
+  innovate: 'Will people want this?',
+  validate: 'Will it sell?',
+  evaluate: 'How is it actually doing?',
 };
 
 // Sequential agent order per house (from spec)
@@ -79,7 +79,7 @@ export interface RoutingDecision {
 
 export function determineNextHouse(
   house: HouseId,
-  fitStrength: 'Strong' | 'Weak' | 'Undecided',
+  fitStrength: 'Strong' | 'Shaky' | 'Mixed',
   verdict: string,
   keyIssues: string[]
 ): RoutingDecision {
@@ -90,22 +90,22 @@ export function determineNextHouse(
 
   if (house === 'investigate') {
     return fitStrength === 'Strong'
-      ? { nextHouse: 'innovate', reason: 'Problem is well-defined. Move to Innovate to shape the right solution path.' }
-      : { nextHouse: 'investigate', reason: 'The problem needs more clarity before solutioning. Run another Investigate cycle with sharper input.' };
+      ? { nextHouse: 'innovate', reason: 'Good. Now figure out the right solution — move to Innovate.' }
+      : { nextHouse: 'investigate', reason: 'The problem still isn\'t clear enough. Run Investigate again with sharper input.' };
   }
 
   if (house === 'innovate') {
     return fitStrength === 'Strong'
-      ? { nextHouse: 'validate', reason: 'A promising solution path exists. Move to Validate to test viability before committing.' }
-      : { nextHouse: 'investigate', reason: 'The solution isn\'t clear yet — this often means the problem definition needs sharpening. Return to Investigate.' };
+      ? { nextHouse: 'validate', reason: 'You have a solid direction. Now test if it will actually work — move to Validate.' }
+      : { nextHouse: 'investigate', reason: 'The solution isn\'t clear yet. Go back to Investigate — the problem definition probably needs work.' };
   }
 
   if (house === 'validate') {
     return fitStrength === 'Strong'
-      ? { nextHouse: 'evaluate', reason: 'Viability is confirmed. Move to Evaluate to assess the live experience.' }
+      ? { nextHouse: 'evaluate', reason: 'It should sell. Now ship it and see how it actually performs — move to Evaluate.' }
       : verdict === 'PIVOT'
-      ? { nextHouse: 'innovate', reason: 'The concept needs rethinking. Return to Innovate to explore alternative solution paths.' }
-      : { nextHouse: 'investigate', reason: 'Viability concerns suggest the problem itself may be misunderstood. Return to Investigate.' };
+      ? { nextHouse: 'innovate', reason: 'This direction isn\'t working. Go back to Innovate and explore other options.' }
+      : { nextHouse: 'investigate', reason: 'Something\'s off at a deeper level. Go back to Investigate — the original problem may be wrong.' };
   }
 
   if (house === 'evaluate') {
@@ -114,12 +114,12 @@ export function determineNextHouse(
     const needsStrategy = issuesText.includes('positioning') || issuesText.includes('market') || issuesText.includes('commercial') || issuesText.includes('viability');
     const needsUnderstanding = issuesText.includes('problem') || issuesText.includes('assumption') || issuesText.includes('misunderstand');
 
-    if (needsUnderstanding) return { nextHouse: 'investigate', reason: 'Performance issues reveal the original problem may have been misunderstood. Return to Investigate.' };
-    if (needsStrategy) return { nextHouse: 'validate', reason: 'The issue is commercial or market logic, not design. Return to Validate.' };
-    if (needsRedesign) return { nextHouse: 'innovate', reason: 'Performance reveals the solution needs redesign. Return to Innovate.' };
+    if (needsUnderstanding) return { nextHouse: 'investigate', reason: 'The performance issues suggest you were solving the wrong problem. Go back to Investigate.' };
+    if (needsStrategy) return { nextHouse: 'validate', reason: 'This is a commercial problem, not a design one. Go back to Validate.' };
+    if (needsRedesign) return { nextHouse: 'innovate', reason: 'The solution needs rethinking. Go back to Innovate.' };
     return fitStrength === 'Strong'
-      ? { nextHouse: null, reason: 'Performance is strong. The loop is complete.' }
-      : { nextHouse: 'innovate', reason: 'Performance gaps point to solution-level issues. Return to Innovate.' };
+      ? { nextHouse: null, reason: 'Strong performance. The loop is complete.' }
+      : { nextHouse: 'innovate', reason: 'Something in the solution isn\'t working. Go back to Innovate.' };
   }
 
   return { nextHouse: null, reason: '' };
@@ -159,10 +159,10 @@ ${agentSummaries}
 Produce the synthesis. Rules:
 - FIT_STRENGTH and VERDICT are linked — they must be consistent:
   - Strong → GO (clear signal, proceed with confidence)
-  - Weak → PIVOT or STOP (significant concerns; PIVOT if a better path exists, STOP if the direction is fundamentally wrong)
-  - Undecided → INVESTIGATE FURTHER (mixed signals, more information needed)
+  - Shaky → PIVOT or STOP (significant concerns; PIVOT if a better path exists, STOP if the direction is fundamentally wrong)
+  - Mixed → INVESTIGATE FURTHER (mixed signals, more information needed)
   - Never combine Strong with STOP, PIVOT, or INVESTIGATE FURTHER
-  - Never combine Weak with GO
+  - Never combine Shaky with GO
 - SENTENCE OF TRUTH: ONE sharp statement — the thing the user sensed but hadn't articulated. Not a summary. An insight.
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to their situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
@@ -170,7 +170,7 @@ Produce the synthesis. Rules:
 
 Respond ONLY with valid JSON:
 {
-  "fitStrength": "Strong | Weak | Undecided",
+  "fitStrength": "Strong | Shaky | Mixed",
   "verdict": "GO | PIVOT | INVESTIGATE FURTHER | STOP",
   "verdictRationale": "1-2 sentences",
   "sentenceOfTruth": "Single sharp insight",
@@ -184,7 +184,7 @@ Respond ONLY with valid JSON:
 export function buildHouseResult(
   house: HouseId,
   mergeResponse: {
-    fitStrength: 'Strong' | 'Weak' | 'Undecided';
+    fitStrength: 'Strong' | 'Shaky' | 'Mixed';
     verdict: string;
     verdictRationale: string;
     sentenceOfTruth: string;
@@ -193,14 +193,14 @@ export function buildHouseResult(
     povStatement?: string;
   }
 ): HouseResult {
-  const fitStrength = mergeResponse.fitStrength || 'Undecided';
+  const fitStrength = mergeResponse.fitStrength || 'Mixed';
   const rawVerdict = (mergeResponse.verdict as HouseResult['verdict']) || 'INVESTIGATE FURTHER';
 
   // Enforce consistency — fitStrength and verdict must not contradict
   const verdict: HouseResult['verdict'] = (() => {
     if (fitStrength === 'Strong' && rawVerdict !== 'GO') return 'GO';
-    if (fitStrength === 'Weak' && rawVerdict === 'GO') return 'PIVOT';
-    if (fitStrength === 'Undecided' && rawVerdict === 'GO') return 'INVESTIGATE FURTHER';
+    if (fitStrength === 'Shaky' && rawVerdict === 'GO') return 'PIVOT';
+    if (fitStrength === 'Mixed' && rawVerdict === 'GO') return 'INVESTIGATE FURTHER';
     return rawVerdict;
   })();
 
@@ -239,12 +239,12 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
     }).slice(0, max);
   };
 
-  const routing = determineNextHouse(house, 'Undecided', 'INVESTIGATE FURTHER', allIssues);
+  const routing = determineNextHouse(house, 'Mixed', 'INVESTIGATE FURTHER', allIssues);
 
   return {
     house,
     fitLabel: HOUSE_FIT_LABELS[house],
-    fitStrength: 'Undecided',
+    fitStrength: 'Mixed',
     verdict: 'INVESTIGATE FURTHER',
     verdictRationale: 'Multiple perspectives analysed. Review key issues and necessary moves before committing.',
     sentenceOfTruth: allSignals[0] || 'The real insight lies in the tension between what you know and what you\'re assuming.',

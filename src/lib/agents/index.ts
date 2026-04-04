@@ -581,26 +581,26 @@ export const HOUSE_META: Record<HouseId, {
 }> = {
   investigate: {
     name: 'Investigate',
-    output: 'Problem-Solution Fit',
-    description: 'Replace opinion with evidence. Define the real problem before solutions are proposed.',
+    output: 'Is the problem real?',
+    description: 'Figure out what\'s actually going on before you commit to a direction.',
     icon: '/01-investigate.png',
   },
   innovate: {
     name: 'Innovate',
-    output: 'Product-Market Fit',
-    description: 'Turn complexity into focused solution paths. Narrow before you build.',
+    output: 'Will people want this?',
+    description: 'Turn the real problem into focused options worth building.',
     icon: '/02-innovate.png',
   },
   validate: {
     name: 'Validate',
-    output: 'Commercial Viability',
-    description: 'Replace hope with signal. Validate before you commit budget.',
+    output: 'Will it sell?',
+    description: 'Find out if it will sell before you spend to build it.',
     icon: '/03-validate.png',
   },
   evaluate: {
     name: 'Evaluate',
-    output: 'Performance Reality',
-    description: 'Replace assumptions with reality. Understand how what you built actually performs.',
+    output: 'How is it actually doing?',
+    description: 'Understand how what you built is actually performing.',
     icon: '/04-evaluate.png',
   },
 };

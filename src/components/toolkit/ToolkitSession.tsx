@@ -56,7 +56,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 // Output labels per toolkit type
 const OUTPUT_LABELS: Record<ToolkitType, { primary: string; secondary: string; action: string }> = {
-  insight_stack: { primary: 'Insights', secondary: 'Sentence of Truth', action: 'Necessary Moves' },
+  insight_stack: { primary: 'Insights', secondary: 'Sentence of Truth', action: 'What to do now' },
   pov_generator: { primary: 'Position Summary', secondary: 'Your Position Statement', action: 'What This Changes' },
   mental_model_mapper: { primary: 'Model Components', secondary: 'Mental Model Summary', action: 'Model Applications' },
   flow_board: { primary: 'Flow Analysis', secondary: 'Optimal Path', action: 'Flow Improvements' },
@@ -514,7 +514,7 @@ export function ToolkitSession({ sessionId, workspaceId, onBack }: ToolkitSessio
             />
           </div>
           
-          {/* Action Output (Necessary Moves) */}
+          {/* Action Output (What to do now) */}
           <div className="mb-8">
             <span className="fresco-label block mb-4">{outputLabels.action}</span>
             {aiContent.necessaryMoves.length === 0 ? (

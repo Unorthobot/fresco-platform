@@ -46,10 +46,10 @@ const HOUSE_NAMES: Record<HouseId, string> = {
 };
 
 const HOUSE_OUTPUTS: Record<HouseId, string> = {
-  investigate: 'Problem–Solution Fit',
-  innovate:    'Product–Market Fit',
-  validate:    'Commercial Viability',
-  evaluate:    'Performance Reality',
+  investigate: 'Is the problem real?',
+  innovate:    'Will people want this?',
+  validate:    'Will it sell?',
+  evaluate:    'How is it actually doing?',
 };
 
 const HOUSE_BORDER: Record<HouseId, string> = {

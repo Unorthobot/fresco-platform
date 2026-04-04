@@ -15,10 +15,10 @@ const CHALLENGE_PROMPTS: Record<HouseId, string> = {
 Your job: read what they've written and identify the 1-2 most important gaps, contradictions, or avoided questions in their inputs.
 
 Look specifically for these failure patterns:
-- They've described symptoms but haven't named a cause ("60% drop-off" without a theory of why)
-- They've stated a belief but provided no contradicting evidence or scenario where they'd be wrong
-- They've listed assumptions but haven't connected how they affect each other causally
-- Their "truth" is still a hypothesis — stated with more certainty than the evidence supports
+- They've described what they're seeing but haven't said why they think it's happening ("60% drop-off" without a theory of why)
+- They've stated what they think is true but haven't considered where they might be wrong
+- They've listed assumptions but haven't said how these connect or affect each other
+- Their answer reads more like a guess stated confidently — the evidence doesn't fully support it
 - They're describing what they observe about others without examining their own assumptions
 - The contradiction they named doesn't actually challenge their central belief
 
@@ -44,9 +44,9 @@ Return JSON only:
 Your job: read what they've written and identify the 1-2 most important gaps in their thinking.
 
 Look specifically for these failure patterns:
-- Their hypothesis has no falsification condition — they haven't said what would prove them wrong
+- They haven't said what would prove them wrong
 - All their "options" are variations of the same idea, not genuinely different paths
-- Their success metric can't actually be measured in the timeframe they've described
+- Their measure of success doesn't seem possible to track in the time they've described
 - They've named where the flow breaks down but not why users behave that way at that point
 - The experiment they've described would tell them if something worked, but not why
 - They're optimising the wrong step — the real bottleneck is upstream of where they're looking
@@ -73,11 +73,11 @@ Return JSON only:
 Your job: read what they've written and identify the 1-2 most important gaps.
 
 Look specifically for these failure patterns:
-- Their scores are stated without evidence — they say 6/10 but give no data, quote, or observation to back it
-- Their audience is described too broadly to be useful ("SMB companies" not "CFOs at Series B SaaS companies")
+- Their scores aren't backed by anything — no data, quotes, or observations
+- Their audience description is too vague to be useful ("SMB companies" not "CFOs at Series B SaaS companies")
 - They've listed barriers but haven't said which one is the actual blocker vs. noise
-- Their targets look aspirational rather than grounded — no basis given for why that number is the right target
-- They're measuring what's easy to measure, not what actually indicates success
+- Their targets look like wishes rather than numbers grounded in evidence
+- They're tracking what's easy to track, not what would actually tell them if it's working
 - The gap between target and actual is named but no theory of why it exists
 
 Rules for your questions:
