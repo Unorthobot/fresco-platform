@@ -345,10 +345,19 @@ function MetricsInput({ value, onChange, onInteract }: {
 }) {
   interface MetricRow { metric: string; target: string; actual: string; }
   const parse = (): MetricRow[] => {
-    try { return value ? JSON.parse(value) : [{ metric: '', target: '', actual: '' }]; }
+    try {
+      const parsed = value ? JSON.parse(value) : [];
+      const rows = Array.isArray(parsed) ? parsed.map((r: MetricRow) => ({
+        metric: r.metric === 'N/A' ? '' : (r.metric || ''),
+        target: r.target === 'N/A' ? '' : (r.target || ''),
+        actual: r.actual === 'N/A' ? '' : (r.actual || ''),
+      })) : [];
+      return rows.length > 0 ? rows : [{ metric: '', target: '', actual: '' }];
+    }
     catch { return [{ metric: '', target: '', actual: '' }]; }
   };
   const rows = parse();
+  const hasContent = rows.some(r => r.metric.trim());
   const update = (i: number, field: keyof MetricRow, v: string) => {
     onChange(JSON.stringify(rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r)));
   };
@@ -389,13 +398,24 @@ function MetricsInput({ value, onChange, onInteract }: {
           </div>
         ))}
       </div>
-      <button
-        type="button"
-        onClick={addRow}
-        className="mt-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1.5"
-      >
-        <span className="text-lg leading-none">+</span> Add metric
-      </button>
+      <div className="flex items-center justify-between mt-2">
+        <button
+          type="button"
+          onClick={addRow}
+          className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1.5"
+        >
+          <span className="text-lg leading-none">+</span> Add metric
+        </button>
+        {hasContent && (
+          <button
+            type="button"
+            onClick={() => onInteract?.()}
+            className="text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1"
+          >
+            Done <ArrowRight className="w-3 h-3" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1704,7 +1724,7 @@ function ConversationFlow({
       if (type === 'options') return parsed.length > 0 && !!parsed[0]?.label?.trim();
       if (type === 'optioncosts') return parsed.some((r: any) => r.gains?.trim() || r.givesUp?.trim());
       if (type === 'passfail') return !!(parsed.pass?.trim() || parsed.fail?.trim());
-      if (type === 'metrics') return parsed.some((r: any) => r.metric?.trim());
+      if (type === 'metrics') return parsed.some((r: any) => r.metric?.trim() && r.metric !== 'N/A');
       if (type === 'sliders') return parsed.some((r: any) => r.note?.trim());
       if (type === 'testbrief') return !!(parsed.method?.trim());
       if (type === 'audienceprofile') return !!(parsed.who?.trim());
