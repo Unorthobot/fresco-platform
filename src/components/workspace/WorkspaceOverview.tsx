@@ -11,6 +11,8 @@ import type { HouseId } from '@/lib/agents';
 import { HOUSE_META } from '@/lib/agents';
 type Session = any;
 import { JourneyMap } from '@/components/ui/JourneyMap';
+import { HouseJourneyViz } from '@/components/ui/HouseJourneyViz';
+import { VerdictPatterns } from '@/components/ui/VerdictPatterns';
 import { TimelineView } from '@/components/ui/TimelineView';
 import { ConnectedInsights } from '@/components/ui/ConnectedInsights';
 import { WorkspaceSynthesis } from '@/components/ui/WorkspaceSynthesis';
@@ -565,10 +567,9 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                 >
-                  <JourneyMap 
+                  <HouseJourneyViz
                     sessions={workspaceSessions}
                     onSessionClick={(id) => onOpenSession?.(id)}
-                    onHouseStart={(houseId) => onStartHouse?.(houseId)}
                   />
                 </motion.div>
               )}
@@ -634,6 +635,14 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
               <span className="fresco-label block mb-4">Workspace Clarity</span>
               <WorkspaceClarityScore sessions={workspaceSessions} />
             </div>
+
+            {/* Verdict Patterns */}
+            {workspaceSessions.some(s => s.houseType) && (
+              <div>
+                <span className="fresco-label block mb-4">Verdict Patterns</span>
+                <VerdictPatterns sessions={workspaceSessions} />
+              </div>
+            )}
             
             {/* Toolkit Journey Progress */}
             <div>
