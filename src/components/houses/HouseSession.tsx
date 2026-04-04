@@ -53,11 +53,11 @@ interface ConversationStep {
 }
 
 const VERDICT_STYLES: Record<string, { bg: string; text: string; border: string; dot: string; label: string }> = {
-  'GO':                  { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-600', dot: 'bg-white', label: 'text-white/70' },
-  'PIVOT':               { bg: 'bg-amber-500',   text: 'text-white', border: 'border-amber-500',   dot: 'bg-white', label: 'text-white/70' },
-  'INVESTIGATE FURTHER': { bg: 'bg-blue-600',    text: 'text-white', border: 'border-blue-600',    dot: 'bg-white', label: 'text-white/70' },
-  'Needs more signal':    { bg: 'bg-blue-600',    text: 'text-white', border: 'border-blue-600',    dot: 'bg-white', label: 'text-white/70' },
-  'STOP':                { bg: 'bg-red-600',     text: 'text-white', border: 'border-red-600',     dot: 'bg-white', label: 'text-white/70' },
+  'GO':                  { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-200', dot: 'bg-emerald-500', label: 'text-emerald-600' },
+  'PIVOT':               { bg: 'bg-amber-50',   text: 'text-amber-800',   border: 'border-amber-200',   dot: 'bg-amber-500',   label: 'text-amber-600' },
+  'INVESTIGATE FURTHER': { bg: 'bg-blue-50',    text: 'text-blue-800',    border: 'border-blue-200',    dot: 'bg-blue-500',    label: 'text-blue-600' },
+  'Needs more signal':   { bg: 'bg-blue-50',    text: 'text-blue-800',    border: 'border-blue-200',    dot: 'bg-blue-500',    label: 'text-blue-600' },
+  'STOP':                { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
 };
 
 // ─── Chip / tag input ────────────────────────────────────────────────────────
@@ -2526,20 +2526,20 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 )}
 
                 <div>
-                  <div className={cn('px-5 py-4 border', vs?.bg, vs?.text, vs?.border)}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className={cn('w-2.5 h-2.5 rounded-full', vs?.dot)} />
-                        <span className="text-fresco-xs font-medium tracking-widest uppercase opacity-70">Verdict</span>
+                  <span className="fresco-label block mb-3">Verdict</span>
+                  <div className={cn('px-4 py-3 border', vs?.bg, vs?.text, vs?.border)}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <div className={cn('w-2 h-2 rounded-full', vs?.dot)} />
+                        <span className="text-fresco-lg font-bold">{result.verdict === 'INVESTIGATE FURTHER' ? 'Needs more signal' : result.verdict}</span>
                       </div>
                       {(result as any).fitStrength && (
-                        <span className={cn('text-fresco-xs', vs?.label)}>
+                        <span className="text-fresco-xs opacity-70">
                           {(result as any).fitLabel}: {(result as any).fitStrength === 'Undecided' ? 'Mixed' : (result as any).fitStrength}
                         </span>
                       )}
                     </div>
-                    <p className="text-4xl font-medium tracking-tight mb-2">{result.verdict}</p>
-                    <p className="text-fresco-sm opacity-80 leading-relaxed">{result.verdictRationale}</p>
+                    <p className="text-fresco-sm opacity-80">{result.verdictRationale}</p>
                   </div>
                 </div>
 
