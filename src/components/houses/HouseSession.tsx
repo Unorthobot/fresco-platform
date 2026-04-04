@@ -1814,6 +1814,7 @@ function EvaluateFlow({
   onUrlChange: (v: string) => void;
 }) {
   const [mode, setMode] = useState<'single' | 'journey' | 'comparison'>('single');
+  const [goalAnswered, setGoalAnswered] = useState(false);
 
   const steps = {
     single: EVALUATE_STEPS_SINGLE,
@@ -1873,10 +1874,11 @@ function EvaluateFlow({
         }}
         value={values.goal || ''}
         onChange={v => onChange('goal', v)}
-        isActive={!values.goal || values.goal.trim().length === 0}
-        isAnswered={(values.goal || '').trim().length > 0}
+        onBlur={() => { if ((values.goal || '').trim().length > 0) setGoalAnswered(true); }}
+        isActive={!goalAnswered}
+        isAnswered={goalAnswered && (values.goal || '').trim().length > 0}
         isLocked={false}
-        onActivate={() => {}}
+        onActivate={() => setGoalAnswered(false)}
       />
 
       {/* URL input */}
@@ -2144,9 +2146,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
       {/* ── LEFT / MIDDLE: Conversation input ─────────────────────────────── */}
       <motion.div
-        animate={{ flexBasis: result ? '320px' : '100%', maxWidth: result ? '320px' : '100%' }}
+        animate={{ flexBasis: result ? '320px' : undefined, maxWidth: result ? '320px' : undefined }}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
-        className="flex flex-col overflow-hidden flex-shrink-0 border-r border-fresco-border-light"
+        className={cn("flex-1 flex flex-col overflow-hidden", result && "border-r border-fresco-border-light flex-shrink-0")}
         style={{ minWidth: result ? 260 : undefined }}
       >
         {/* Scrollable content */}
@@ -2260,7 +2262,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
       {/* ── RIGHT: Output ──────────────────────────────────────────────────── */}
       <motion.div
-        animate={{ flex: result ? '1 1 0%' : '0 0 360px', minWidth: result ? 360 : 320 }}
+        animate={{ flex: result ? '1 1 0%' : '0 0 360px', minWidth: 320 }}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
         className="flex flex-col border-t md:border-t-0 md:border-l border-fresco-border-light bg-fresco-off-white overflow-hidden"
       >
