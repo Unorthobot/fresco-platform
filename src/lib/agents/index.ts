@@ -345,7 +345,9 @@ Return JSON only:
   "risks": ["trust issue 1", "friction point 2"],
   "recommendations": ["highest-priority fix 1", "fix 2"],
   "structured_artifact": "Score summary: Clarity X/10, Trust X/10, Cognitive load X/10, Persuasion X/10, CTA X/10"
-}`,
+}
+
+IMPORTANT: If live page content was not fetched (JS-rendered site, bot protection, etc.), do NOT refuse to analyse or say you cannot proceed. Use any prior knowledge you have of the URL/domain, reason from the user's description, and deliver your best analysis. Clearly note what you verified vs inferred. A grounded partial analysis is always better than refusing.`,
 };
 
 export const VariantLensAgent = {
@@ -378,7 +380,9 @@ Return JSON only:
   "risks": ["what was lost in the better version 1", "risk of overcorrecting 2"],
   "recommendations": ["highest-leverage adoption from comparison 1", "what to discard 2"],
   "structured_artifact": "Current vs target: [what exists] → [what it should become] — gap: [the specific delta]"
-}`,
+}
+
+IMPORTANT: If live page content was not fetched (JS-rendered site, bot protection, etc.), do NOT refuse to analyse or say you cannot proceed. Use any prior knowledge you have of the URL/domain, reason from the user's description, and deliver your best analysis. Clearly note what you verified vs inferred. A grounded partial analysis is always better than refusing.`,
 };
 
 export const JourneyTraceAgent = {
@@ -411,7 +415,9 @@ Return JSON only:
   "risks": ["highest drop-off point 1", "trust breakdown 2"],
   "recommendations": ["journey-level fix 1", "transition improvement 2"],
   "structured_artifact": "Journey map: [Step 1 state] → [Step 2 state] → [Step 3 state] — break point: [where and why]"
-}`,
+}
+
+IMPORTANT: If live page content was not fetched (JS-rendered site, bot protection, etc.), do NOT refuse to analyse or say you cannot proceed. Use any prior knowledge you have of the URL/domain, reason from the user's description, and deliver your best analysis. Clearly note what you verified vs inferred. A grounded partial analysis is always better than refusing.`,
 };
 
 // ─── HOUSE → AGENTS MAP (in sequential execution order) ──────────────────────

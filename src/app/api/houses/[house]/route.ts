@@ -108,6 +108,7 @@ async function runAgent(
   context?: string,
   pageContent?: string,
   pageFetchStatus?: 'fetched' | 'failed' | 'none',
+  originalUrl?: string,
 ): Promise<AgentOutput> {
   const contextSection = context
     ? `\n\nWORKSPACE CONTEXT (from prior sessions):\n${context}`
@@ -115,7 +116,7 @@ async function runAgent(
   const pageSection = pageContent
     ? `\n\n━━━ LIVE PAGE CONTENT (fetched directly from the URL) ━━━\n${pageContent}\n━━━ END PAGE CONTENT ━━━\n\nIMPORTANT: The content above is the actual live page. Base your entire analysis on what is written there — the real headlines, copy, CTAs, structure, and messaging. Do not substitute generic assumptions. Quote specific text from the page in your findings where relevant.`
     : pageFetchStatus === 'failed'
-    ? `\n\nNOTE: A URL was provided but the page could not be fetched (likely a JavaScript-rendered site, auth wall, or bot protection). Analyse based on the user's description only — do not assume the page is broken or non-functional.`
+    ? `\n\nNOTE: The URL was provided but the page could not be fetched server-side (this is common for JavaScript-rendered apps, sites behind Cloudflare, or SPAs). URL: ${originalUrl || '(provided)'}\n\nDo NOT refuse to analyse or say you cannot proceed. Instead: use your knowledge of this URL/domain if you recognise it, reason from the user's description, and make your best assessment. State clearly what you could and couldn't verify. A partial analysis grounded in what you know is far more useful than refusing.`
     : '';
 
   // Sequential context: each agent sees what prior agents found
@@ -279,9 +280,9 @@ export async function POST(
             type: 'pageFetch',
             status: pageFetchStatus,
             message: pageFetchStatus === 'fetched'
-              ? 'Page content retrieved — agents are analysing the actual content.'
+              ? 'Page fetched — agents are analysing the live content.'
               : pageFetchStatus === 'failed'
-              ? 'Page couldn\'t be fetched (likely JS-rendered or bot-protected) — agents will work from your description.'
+              ? 'Page couldn\'t be fetched directly (JS-rendered or bot-protected). Agents will use your description and any prior knowledge of this URL — add more detail in your answers if results feel generic.'
               : null,
           });
         }
@@ -302,7 +303,8 @@ export async function POST(
               agentOutputs,
               context,
               pageContent,
-              pageFetchStatus
+              pageFetchStatus,
+              url
             );
             agentOutputs.push(output);
 
