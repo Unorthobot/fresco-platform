@@ -1825,6 +1825,114 @@ function ConversationFlow({
   );
 }
 
+// ─── URL tag input ────────────────────────────────────────────────────────────
+
+function UrlTagInput({ urls, onChange, maxUrls, label }: {
+  urls: string[];
+  onChange: (urls: string[]) => void;
+  maxUrls: number;
+  label: string;
+}) {
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const validate = (raw: string): { url: string; warning: string | null } => {
+    const u = raw.trim();
+    if (!u.startsWith('http')) return { url: u, warning: 'Must start with https://' };
+    if (u.includes('/#/')) return { url: u, warning: 'Hash-based URL — JS-rendered, can\'t be fetched. Describe the page instead.' };
+    return { url: u, warning: null };
+  };
+
+  const add = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    // Handle paste of multiple URLs
+    const lines = trimmed.split(/[\n,\s]+/).map(l => l.trim()).filter(Boolean);
+    const toAdd = lines.filter(l => !urls.includes(l)).slice(0, maxUrls - urls.length);
+    if (toAdd.length > 0) onChange([...urls, ...toAdd]);
+    setDraft('');
+  };
+
+  const remove = (i: number) => onChange(urls.filter((_, idx) => idx !== i));
+
+  const canAdd = urls.length < maxUrls;
+
+  return (
+    <div>
+      <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide font-medium mb-2">{label}</p>
+
+      {/* Existing URL chips */}
+      {urls.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {urls.map((u, i) => {
+            const { warning } = validate(u);
+            return (
+              <div key={i} className={cn(
+                'flex items-center gap-1.5 px-2.5 py-1.5 text-fresco-xs border max-w-full',
+                warning ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-fresco-border bg-fresco-light-gray text-fresco-black'
+              )}>
+                <span className="truncate max-w-[220px] font-mono" title={u}>{u.replace(/^https?:\/\//, '')}</span>
+                {warning && <span className="text-amber-500 flex-shrink-0" title={warning}>⚠</span>}
+                <button type="button" onClick={() => remove(i)} className="flex-shrink-0 hover:text-red-500 transition-colors ml-0.5">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Inline warning for any flagged URLs */}
+      {urls.some(u => validate(u).warning) && (
+        <p className="mb-2 text-fresco-xs text-amber-600">
+          {urls.find(u => validate(u).warning) && validate(urls.find(u => validate(u).warning)!).warning}
+        </p>
+      )}
+
+      {/* Add input */}
+      {canAdd ? (
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+            onPaste={e => {
+              // Handle paste immediately
+              const pasted = e.clipboardData.getData('text');
+              if (pasted.includes('\n') || pasted.includes(',')) {
+                e.preventDefault();
+                const lines = pasted.split(/[\n,]+/).map(l => l.trim()).filter(Boolean);
+                const toAdd = lines.filter(l => !urls.includes(l)).slice(0, maxUrls - urls.length);
+                if (toAdd.length > 0) onChange([...urls, ...toAdd]);
+              }
+            }}
+            placeholder={urls.length === 0 ? 'https://yoursite.com/page' : 'Add another URL…'}
+            className="flex-1 h-9 px-3 text-fresco-xs text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black font-mono"
+          />
+          <button
+            type="button"
+            onClick={add}
+            disabled={!draft.trim()}
+            className="h-9 px-3 text-fresco-xs border border-fresco-border text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-all disabled:opacity-30"
+          >
+            Add
+          </button>
+        </div>
+      ) : (
+        <p className="text-fresco-xs text-fresco-graphite-light">Max {maxUrls} URL{maxUrls !== 1 ? 's' : ''} for this mode</p>
+      )}
+
+      {/* Confirmation when valid URLs present */}
+      {urls.length > 0 && urls.every(u => !validate(u).warning) && (
+        <p className="mt-1.5 text-fresco-xs text-fresco-graphite-light">
+          Fresco will fetch {urls.length === 1 ? 'this page' : `these ${urls.length} pages`} and pass the content to the agents.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Evaluate mode selector ───────────────────────────────────────────────────
 
 function EvaluateFlow({
@@ -1903,50 +2011,13 @@ function EvaluateFlow({
         onActivate={() => setGoalAnswered(false)}
       />
 
-      {/* URL input */}
-      <div>
-        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide font-medium mb-2">
-          {mode === 'journey' ? 'URLs (one per line, optional)' : 'URL (optional)'}
-        </p>
-        {mode === 'journey' ? (
-          <textarea
-            value={url}
-            onChange={e => onUrlChange(e.target.value)}
-            placeholder={"https://yoursite.com/step-1\nhttps://yoursite.com/step-2\nhttps://yoursite.com/step-3"}
-            className="w-full px-4 py-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black font-mono"
-            style={{ minHeight: 72 }}
-          />
-        ) : (
-          <input
-            type="url"
-            value={url}
-            onChange={e => onUrlChange(e.target.value)}
-            placeholder="https://yoursite.com/page"
-            className="w-full h-10 px-4 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black font-mono"
-          />
-        )}
-        {/* URL validation warnings */}
-        {url.trim() && (() => {
-          const lines = url.split('\n').map(l => l.trim()).filter(Boolean);
-          const nonUrls = lines.filter(l => !l.startsWith('http'));
-          const hashUrls = lines.filter(l => l.startsWith('http') && l.includes('/#/'));
-          if (nonUrls.length > 0) return (
-            <p className="mt-2 text-fresco-xs text-amber-600">
-              ⚠ {nonUrls.length === 1 ? `"${nonUrls[0]}" isn't` : `${nonUrls.length} lines aren't`} a valid URL — must start with https://
-            </p>
-          );
-          if (hashUrls.length > 0) return (
-            <p className="mt-2 text-fresco-xs text-amber-600">
-              ⚠ Hash-based URLs (/#/) can't be fetched server-side — content is rendered by JavaScript. Describe the page content in the fields below instead.
-            </p>
-          );
-          return (
-            <p className="mt-2 text-fresco-xs text-fresco-graphite-light">
-              Fresco will fetch the page content and pass it to the agents.
-            </p>
-          );
-        })()}
-      </div>
+      {/* URL input — tag-based for all modes */}
+      <UrlTagInput
+        urls={url ? url.split('\n').map(u => u.trim()).filter(Boolean) : []}
+        onChange={urls => onUrlChange(urls.join('\n'))}
+        maxUrls={mode === 'journey' ? 5 : 1}
+        label={mode === 'journey' ? 'Page URLs (optional)' : 'URL (optional)'}
+      />
 
       {/* Mode-specific questions */}
       <ConversationFlow steps={steps} values={values} onChange={onChange} />
