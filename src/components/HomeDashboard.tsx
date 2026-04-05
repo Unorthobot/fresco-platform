@@ -258,16 +258,7 @@ export function HomeDashboard({
           })}
         </div>
 
-        {/* ── New workspace CTA for new users ── */}
-        {!hasActivity && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-            className="flex items-center gap-4 mb-12">
-            <button onClick={onCreateWorkspace} className="fresco-btn">
-              <Plus className="w-4 h-4" /><span>Create a workspace first</span>
-            </button>
-            <p className="text-fresco-xs text-fresco-graphite-light">Workspaces keep your sessions organised by project or decision.</p>
-          </motion.div>
-        )}
+
 
         {/* ── Activity — returning users ── */}
         {hasActivity && (
@@ -278,10 +269,7 @@ export function HomeDashboard({
               <div className="mb-10">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-fresco-sm font-medium text-fresco-black">Recent sessions</h2>
-                  <button onClick={onCreateWorkspace}
-                    className="flex items-center gap-1 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
-                    <Plus className="w-3 h-3" /> New workspace
-                  </button>
+  
                 </div>
                 <div className="space-y-1.5">
                   {recentSessions.map(s => {
@@ -338,10 +326,7 @@ export function HomeDashboard({
                       </button>
                     );
                   })}
-                  <button onClick={onCreateWorkspace}
-                    className="flex items-center gap-2 px-3 py-2 border border-dashed border-fresco-border text-fresco-sm text-fresco-graphite-light hover:text-fresco-black hover:border-fresco-black transition-colors">
-                    <Plus className="w-3.5 h-3.5" /> New
-                  </button>
+
                 </div>
               </div>
             )}
