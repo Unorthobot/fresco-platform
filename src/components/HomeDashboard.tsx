@@ -220,59 +220,7 @@ export function HomeDashboard({
                         </button>
                       </div>
 
-                      {/* Last session — returning users only */}
-                      {hasActivity && (() => {
-                        const lastSession = sessions
-                          .slice()
-                          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
-                        if (!lastSession) return null;
-                        const ws = workspaces.find(w => w.id === lastSession.workspaceId);
-                        if (!ws) return null;
-                        const hId = (lastSession as any).houseType as HouseId | undefined;
-                        const hName = hId ? HOUSE_META[hId]?.name : null;
-                        const verdict = (lastSession as any).aiOutputs?.houseResult?.verdict
-                          || (lastSession as any).aiOutputs?.verdict;
-                        const vColor = verdict === 'GO' ? 'text-emerald-600'
-                          : verdict === 'PIVOT' ? 'text-amber-600'
-                          : verdict === 'STOP' ? 'text-fresco-graphite-mid'
-                          : verdict === 'INVESTIGATE FURTHER' ? 'text-blue-600'
-                          : 'text-fresco-graphite-mid';
-                        return (
-                          <div className="w-full border-t border-fresco-border-light pt-3">
-                            <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-2 text-right">
-                              Last session
-                            </p>
-                            <button
-                              onClick={() => onNavigateToWorkspace?.(ws.id)}
-                              className="w-full text-right group"
-                            >
-                              <p className="text-fresco-sm font-medium text-fresco-black group-hover:underline underline-offset-2 truncate">
-                                {ws.title}
-                              </p>
-                              {hName && (
-                                <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
-                                  {hName}
-                                  {verdict && verdict !== 'INVESTIGATE FURTHER' && (
-                                    <span className={`ml-1.5 font-medium ${vColor}`}>
-                                      · {verdict}
-                                    </span>
-                                  )}
-                                </p>
-                              )}
-                              {!verdict && lastSession.sentenceOfTruth?.content && (
-                                <p className="text-fresco-xs text-fresco-graphite-light mt-1 italic line-clamp-2">
-                                  &quot;{lastSession.sentenceOfTruth.content}&quot;
-                                </p>
-                              )}
-                              {!hName && !verdict && (
-                                <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
-                                  {formatRelativeTime(lastSession.updatedAt)}
-                                </p>
-                              )}
-                            </button>
-                          </div>
-                        );
-                      })()}
+
                     </>
                   );
                 })()}
