@@ -22,6 +22,7 @@ import { HOUSE_META, type HouseId } from '@/lib/agents';
 import type { HouseResult } from '@/lib/orchestrator';
 import { PricingModal } from '@/components/ui/PricingModal';
 import { useAIGeneration } from '@/lib/useAIGeneration';
+import { VerdictVisual } from '@/components/ui/VerdictVisual';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2588,21 +2589,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </button>
                     )}
                   </div>
-                  {/* System verdict */}
-                  <div className={cn('px-4 py-3 border', vs?.bg, vs?.text, vs?.border)}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <div className={cn('w-2 h-2 rounded-full', vs?.dot)} />
-                        <span className="text-fresco-lg font-bold">{result.verdict === 'INVESTIGATE FURTHER' ? 'Needs more signal' : result.verdict}</span>
-                        <span className="text-fresco-xs opacity-50 font-normal">system</span>
-                      </div>
-                      {(result as any).fitStrength && (
-                        <span className="text-fresco-xs opacity-70">
-                          {(result as any).fitLabel}: {(result as any).fitStrength === 'Undecided' ? 'Mixed' : (result as any).fitStrength}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-fresco-sm opacity-80">{result.verdictRationale}</p>
+                  {/* System verdict — visual + rationale */}
+                  <div className="border border-fresco-border p-4">
+                    <VerdictVisual
+                      verdict={result.verdict}
+                      fitStrength={(result as any).fitStrength}
+                      fitLabel={(result as any).fitLabel}
+                    />
+                    <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed mt-4 pt-4 border-t border-fresco-border-light">
+                      {result.verdictRationale}
+                    </p>
                   </div>
                   {/* User override */}
                   {showVerdictOverride && !userVerdict && (
