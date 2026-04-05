@@ -232,7 +232,14 @@ export default function FrescoAppContent() {
         setShowUpgradeModal(true);
         return;
       }
-      const workspace = await db.createWorkspace('New Workspace', 'Created for a new thinking session.');
+      // Auto-create a workspace silently — user can rename later
+      const houseNames: Record<string, string> = {
+        investigate: 'Investigate', innovate: 'Innovate',
+        validate: 'Validate', evaluate: 'Evaluate',
+      };
+      const month = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      const title = `${houseNames[houseId] || 'New'} · ${month}`;
+      const workspace = await db.createWorkspace(title, '');
       workspaceId = workspace.id;
     }
     const session = await db.createHouseSession(workspaceId, houseId);
@@ -301,8 +308,7 @@ export default function FrescoAppContent() {
               <HomeDashboard
                 onNavigateToWorkspace={handleNavigateToWorkspace}
                 onNavigateToSession={handleNavigateToSession}
-                onCreateWorkspace={handleCreateWorkspace}
-                onStartToolkit={handleStartToolkit}
+onStartToolkit={handleStartToolkit}
                 onStartHouse={handleStartHouse}
               />
             </motion.div>

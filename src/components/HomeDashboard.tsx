@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Plus, Clock, Folder } from 'lucide-react';
+import { ArrowRight, Clock, Folder } from 'lucide-react';
 import { useFrescoStore, useWorkspaces } from '@/lib/store';
 import { formatRelativeTime } from '@/lib/utils';
 import type { ToolkitType } from '@/types';
@@ -14,7 +14,6 @@ import { PricingModal } from '@/components/ui/PricingModal';
 interface HomeDashboardProps {
   onNavigateToWorkspace?: (workspaceId: string) => void;
   onNavigateToSession?: (sessionId: string, workspaceId: string) => void;
-  onCreateWorkspace?: () => void;
   onStartToolkit?: (toolkitType: ToolkitType) => void | Promise<void>;
   onStartHouse?: (houseId: HouseId) => void | Promise<void>;
 }
@@ -24,7 +23,6 @@ const HOUSES: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
 export function HomeDashboard({
   onNavigateToWorkspace,
   onNavigateToSession,
-  onCreateWorkspace,
   onStartHouse,
 }: HomeDashboardProps) {
   const { user, sessions, getRecentSessions } = useFrescoStore();
