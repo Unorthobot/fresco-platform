@@ -91,11 +91,11 @@ export function HomeDashboard({
               </p>
             </div>
 
-            {/* Context widget — top right, functional value */}
+            {/* Context widget — where you left off */}
             {now && (
-              <div className="hidden lg:flex flex-col items-end gap-3 flex-shrink-0 pt-1">
-                {/* Date and time */}
-                <div className="text-right">
+              <div className="hidden lg:flex flex-col items-end gap-0 flex-shrink-0 pt-1 min-w-[180px]">
+                {/* Time + date */}
+                <div className="text-right mb-3">
                   <div className="text-2xl font-medium text-fresco-black tabular-nums leading-none">
                     {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </div>
@@ -103,43 +103,73 @@ export function HomeDashboard({
                     {now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </div>
                 </div>
-                {/* Usage context */}
-                {!isGuest && user?.subscription === 'free' && (() => {
-                  const limit = 3;
-                  const currentUsage = user?.aiGenerationsThisMonth || 0;
-                  const remaining = Math.max(0, limit - currentUsage);
-                  return (
-                    <div className="text-right">
-                      <div className="text-fresco-xs text-fresco-graphite-light">
-                        <span className={remaining === 0 ? 'text-red-500 font-medium' : remaining <= 1 ? 'text-amber-600 font-medium' : 'text-fresco-black font-medium'}>
-                          {remaining}
-                        </span>
-                        {' '}of {limit} runs left this month
-                      </div>
-                      <div className="flex gap-0.5 mt-1 justify-end">
-                        {Array.from({ length: limit }).map((_, i) => (
-                          <div key={i} className={`w-4 h-1 rounded-full ${i < currentUsage ? 'bg-fresco-graphite-light' : 'bg-fresco-border'}`} />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-                {/* Last verdict */}
+
+                {/* Where you left off */}
                 {hasActivity && (() => {
-                  const lastWithVerdict = sessions
-                    .filter(s => (s as any).aiOutputs?.verdict || (s as any).aiOutputs?.houseResult?.verdict)
+                  // Find most recently updated workspace with sessions
+                  const lastSession = sessions
+                    .slice()
                     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
-                  if (!lastWithVerdict) return null;
-                  const v = (lastWithVerdict as any).aiOutputs?.verdict || (lastWithVerdict as any).aiOutputs?.houseResult?.verdict;
-                  const houseId = (lastWithVerdict as any).houseType as HouseId | undefined;
-                  const vstyle = v === 'GO' ? 'text-emerald-600' : v === 'PIVOT' ? 'text-amber-600' : v === 'STOP' ? 'text-fresco-graphite-mid' : 'text-blue-600';
+                  if (!lastSession) return null;
+
+                  const ws = workspaces.find(w => w.id === lastSession.workspaceId);
+                  if (!ws) return null;
+
+                  const houseId = (lastSession as any).houseType as HouseId | undefined;
+                  const houseName = houseId ? HOUSE_META[houseId]?.name : null;
+                  const verdict = (lastSession as any).aiOutputs?.houseResult?.verdict
+                    || (lastSession as any).aiOutputs?.verdict;
+                  const nextHouse = (lastSession as any).aiOutputs?.houseResult?.suggestedNextHouse
+                    || (lastSession as any).aiOutputs?.suggestedNextHouse;
+                  const nextHouseName = nextHouse ? HOUSE_META[nextHouse as HouseId]?.name : null;
+
+                  const verdictColor = verdict === 'GO' ? 'text-emerald-600'
+                    : verdict === 'PIVOT' ? 'text-amber-600'
+                    : verdict === 'STOP' ? 'text-fresco-graphite-mid'
+                    : verdict === 'INVESTIGATE FURTHER' ? 'text-blue-600'
+                    : 'text-fresco-graphite-mid';
+
                   return (
-                    <div className="text-right">
-                      <div className="text-fresco-xs text-fresco-graphite-light">Last verdict</div>
-                      <div className={`text-fresco-xs font-medium mt-0.5 ${vstyle}`}>
-                        {v === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : v}
-                        {houseId && <span className="text-fresco-graphite-light font-normal"> · {houseId}</span>}
-                      </div>
+                    <div className="w-full border-t border-fresco-border-light pt-3">
+                      <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-2 text-right">Where you left off</p>
+                      <button
+                        onClick={() => onNavigateToWorkspace?.(ws.id)}
+                        className="w-full text-right group"
+                      >
+                        {/* Workspace */}
+                        <p className="text-fresco-sm font-medium text-fresco-black group-hover:underline underline-offset-2 truncate">
+                          {ws.title}
+                        </p>
+                        {/* Last house + verdict */}
+                        {houseName && (
+                          <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
+                            {houseName}
+                            {verdict && (
+                              <span className={`ml-1.5 font-medium ${verdictColor}`}>
+                                · {verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}
+                              </span>
+                            )}
+                          </p>
+                        )}
+                        {/* Suggested next step */}
+                        {nextHouseName && (
+                          <p className="text-fresco-xs text-fresco-graphite-mid mt-1.5">
+                            → Run <span className="font-medium text-fresco-black">{nextHouseName}</span> next
+                          </p>
+                        )}
+                        {/* Sentence of truth if no verdict yet */}
+                        {!verdict && lastSession.sentenceOfTruth?.content && (
+                          <p className="text-fresco-xs text-fresco-graphite-light mt-1 italic line-clamp-2">
+                            "{lastSession.sentenceOfTruth.content}"
+                          </p>
+                        )}
+                        {/* Fallback: just show time */}
+                        {!verdict && !lastSession.sentenceOfTruth?.content && (
+                          <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
+                            {formatRelativeTime(lastSession.updatedAt)}
+                          </p>
+                        )}
+                      </button>
                     </div>
                   );
                 })()}
