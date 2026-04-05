@@ -297,7 +297,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
               </div>
             )}
             <div className="flex items-center gap-4 mt-2">
-              <p className="text-fresco-base text-fresco-graphite-mid">{workspaceSessions.length} sessions · Updated {formatRelativeTime(workspace.updatedAt)}</p>
+              <p className="text-fresco-sm text-fresco-graphite-light">{workspaceSessions.length} session{workspaceSessions.length !== 1 ? 's' : ''} <span className="opacity-50">·</span> {formatRelativeTime(workspace.updatedAt)}</p>
               {workspace.teamId && workspace.team && (
                 <span className="flex items-center gap-1.5 text-fresco-xs text-fresco-graphite-mid bg-fresco-light-gray px-2.5 py-1 rounded-none">
                   <Users className="w-3 h-3" />

@@ -937,16 +937,72 @@ function QuestionCard({
                     >
                       <Upload className="w-3.5 h-3.5" />
                     </button>
-                    <input ref={fileRef} type="file" multiple accept=".txt,.md,.csv,.json" className="hidden"
+                    <input ref={fileRef} type="file" multiple
+                      accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,.xls,.xlsx,image/*"
+                      className="hidden"
                       onChange={async e => {
-                        for (const file of Array.from(e.target.files || [])) {
-                          const text = await new Promise<string>(res => {
-                            const r = new FileReader();
-                            r.onload = ev => res(ev.target?.result as string);
-                            r.readAsText(file);
-                          });
-                          onChange(value ? `${value}\n\n--- From ${file.name} ---\n${text}` : text);
+                        const files = Array.from(e.target.files || []);
+                        for (const file of files) {
+                          const ext = file.name.split('.').pop()?.toLowerCase() || '';
+                          const isImage = file.type.startsWith('image/');
+
+                          if (isImage) {
+                            // Use Claude vision to extract text/description from image
+                            const base64 = await new Promise<string>(res => {
+                              const r = new FileReader();
+                              r.onload = ev => res((ev.target?.result as string).split(',')[1]);
+                              r.readAsDataURL(file);
+                            });
+                            try {
+                              const resp = await fetch('/api/extract-file', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ type: 'image', base64, mediaType: file.type, name: file.name }),
+                              });
+                              const { text } = await resp.json();
+                              onChange(value ? `${value}
+
+--- From ${file.name} ---
+${text}` : text);
+                            } catch {
+                              onChange(value ? `${value}
+
+[Image: ${file.name} — could not extract content]` : `[Image: ${file.name}]`);
+                            }
+                          } else if (['pdf', 'doc', 'docx', 'xls', 'xlsx'].includes(ext)) {
+                            // Send to extraction API
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            try {
+                              const resp = await fetch('/api/extract-file', {
+                                method: 'POST',
+                                body: formData,
+                              });
+                              const { text } = await resp.json();
+                              onChange(value ? `${value}
+
+--- From ${file.name} ---
+${text}` : text);
+                            } catch {
+                              onChange(value ? `${value}
+
+[File: ${file.name} — could not extract content]` : `[File: ${file.name}]`);
+                            }
+                          } else {
+                            // Plain text files
+                            const text = await new Promise<string>(res => {
+                              const r = new FileReader();
+                              r.onload = ev => res(ev.target?.result as string);
+                              r.readAsText(file);
+                            });
+                            onChange(value ? `${value}
+
+--- From ${file.name} ---
+${text}` : text);
+                          }
                         }
+                        // Reset input so same file can be re-selected
+                        if (fileRef.current) fileRef.current.value = '';
                       }}
                     />
                   </div>
@@ -2465,6 +2521,56 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   )}
                 </div>
 
+                {/* Lens reframe — immediately after verdict, before drilling into detail */}
+                {storedAgentOutputs.length > 0 && (
+                  <div>
+                    {!showLensPicker ? (
+                      <button
+                        onClick={() => setShowLensPicker(true)}
+                        disabled={isReframing}
+                        className="w-full flex items-center justify-between px-4 py-2.5 border border-fresco-border text-fresco-sm text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
+                      >
+                        <span>{isReframing ? 'Reframing…' : activeLens ? `Lens: ${activeLens.charAt(0).toUpperCase() + activeLens.slice(1)} — change` : 'See this from a different angle →'}</span>
+                        {isReframing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      </button>
+                    ) : (
+                      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="border border-fresco-black p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-fresco-xs font-medium text-fresco-black uppercase tracking-wide">Choose a thinking lens</p>
+                          <button onClick={() => setShowLensPicker(false)} className="text-fresco-graphite-light hover:text-fresco-black"><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                        <p className="text-fresco-xs text-fresco-graphite-light mb-3">Same agent findings, seen through a different analytical frame.</p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[
+                            { id: 'critical',   label: 'Critical',    desc: 'Assumptions & evidence' },
+                            { id: 'systems',    label: 'Systems',     desc: 'Loops & root causes' },
+                            { id: 'design',     label: 'Design',      desc: 'Human & experience' },
+                            { id: 'product',    label: 'Product',     desc: 'Build decisions' },
+                            { id: 'strategic',  label: 'Strategic',   desc: 'Competitive direction' },
+                            { id: 'analytical', label: 'Analytical',  desc: 'Data & measurement' },
+                            { id: 'futures',    label: 'Futures',     desc: 'Trajectory & signals' },
+                            { id: 'economic',   label: 'Economic',    desc: 'Incentives & value' },
+                          ].map(lens => (
+                            <button
+                              key={lens.id}
+                              onClick={() => handleReframe(lens.id)}
+                              className={cn(
+                                'flex flex-col items-start p-2.5 border text-left transition-all',
+                                activeLens === lens.id
+                                  ? 'bg-fresco-black text-white border-fresco-black'
+                                  : 'border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray'
+                              )}
+                            >
+                              <span className={cn('text-fresco-xs font-medium', activeLens === lens.id ? 'text-white' : 'text-fresco-black')}>{lens.label}</span>
+                              <span className={cn('text-[10px] mt-0.5', activeLens === lens.id ? 'text-white/70' : 'text-fresco-graphite-light')}>{lens.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+
                 {/* POV Statement — Investigate only */}
                 {(result as any).povStatement && (
                   <div>
@@ -2615,59 +2721,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </div>
                   )}
 
-                  {/* Lens reframe */}
-                  {storedAgentOutputs.length > 0 && (
-                    <div>
-                      {!showLensPicker ? (
-                        <button
-                          onClick={() => setShowLensPicker(true)}
-                          disabled={isReframing}
-                          className="w-full flex items-center justify-between px-4 py-2.5 border border-fresco-border text-fresco-sm text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
-                        >
-                          <span>{isReframing ? 'Reframing…' : activeLens ? `Lens: ${activeLens.charAt(0).toUpperCase() + activeLens.slice(1)} — change` : 'See this from a different angle →'}</span>
-                          {isReframing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                        </button>
-                      ) : (
-                        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="border border-fresco-black p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <p className="text-fresco-xs font-medium text-fresco-black uppercase tracking-wide">Choose a thinking lens</p>
-                            <button onClick={() => setShowLensPicker(false)} className="text-fresco-graphite-light hover:text-fresco-black"><X className="w-3.5 h-3.5" /></button>
-                          </div>
-                          <p className="text-fresco-xs text-fresco-graphite-light mb-3">Re-runs the synthesis with a different analytical frame. Same agent findings, different perspective.</p>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {[
-                              { id: 'critical',   label: 'Critical',    desc: 'Assumptions & evidence' },
-                              { id: 'systems',    label: 'Systems',     desc: 'Loops & root causes' },
-                              { id: 'design',     label: 'Design',      desc: 'Human & experience' },
-                              { id: 'product',    label: 'Product',     desc: 'Build decisions' },
-                              { id: 'strategic',  label: 'Strategic',   desc: 'Competitive direction' },
-                              { id: 'analytical', label: 'Analytical',  desc: 'Data & measurement' },
-                              { id: 'futures',    label: 'Futures',     desc: 'Trajectory & signals' },
-                              { id: 'economic',   label: 'Economic',    desc: 'Incentives & value' },
-                            ].map(lens => (
-                              <button
-                                key={lens.id}
-                                onClick={() => handleReframe(lens.id)}
-                                className={cn(
-                                  'flex flex-col items-start p-2.5 border text-left transition-all',
-                                  activeLens === lens.id
-                                    ? 'bg-fresco-black text-white border-fresco-black'
-                                    : 'border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray'
-                                )}
-                              >
-                                <span className={cn('text-fresco-xs font-medium', activeLens === lens.id ? 'text-white' : 'text-fresco-black')}>{lens.label}</span>
-                                <span className={cn('text-[10px] mt-0.5', activeLens === lens.id ? 'text-white/70' : 'text-fresco-graphite-light')}>{lens.desc}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Export */}
+                  {/* Share / Export */}
                   <button onClick={() => setShowExportModal(true)} className="fresco-btn w-full">
-                    <Download className="w-4 h-4" /><span>Save results</span>
+                    <Download className="w-4 h-4" /><span>Export results</span>
                   </button>
                 </div>
               </motion.div>
@@ -2676,34 +2732,79 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         </div>
       </div>
 
-      {/* Export modal — inside right panel motion.div but outside scroll */}
+      {/* Export modal */}
       <AnimatePresence>
         {showExportModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
             onClick={() => setShowExportModal(false)}>
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+            <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white rounded-fresco-lg p-6 max-w-md w-full mx-4 shadow-fresco-lg">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-fresco-lg font-medium text-fresco-black">Save your results</h3>
-                <button onClick={() => setShowExportModal(false)}><X className="w-5 h-5 text-fresco-graphite-light" /></button>
+              className="bg-white p-6 max-w-md w-full mx-4 shadow-xl">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-fresco-base font-medium text-fresco-black">Export results</h3>
+                <button onClick={() => setShowExportModal(false)}><X className="w-4 h-4 text-fresco-graphite-light" /></button>
               </div>
-              <div className="space-y-3">
+
+              {/* Session title */}
+              {result && (
+                <div className="mb-5 p-3 bg-fresco-light-gray border-l-2 border-fresco-black">
+                  <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">{meta.name} · {(meta as any).formalLabel}</p>
+                  <p className="text-fresco-sm font-medium text-fresco-black">{result.sentenceOfTruth?.slice(0, 80)}{result.sentenceOfTruth?.length > 80 ? '…' : ''}</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {/* Copy formatted text */}
                 <button onClick={handleCopy}
-                  className="w-full flex items-center gap-3 p-4 border border-fresco-border rounded-fresco hover:bg-fresco-light-gray transition-colors">
-                  {hasCopied ? <Check className="w-5 h-5 text-emerald-600" /> : <Copy className="w-5 h-5 text-fresco-graphite-mid" />}
-                  <div className="text-left">
-                    <p className="text-fresco-base text-fresco-black">Copy to clipboard</p>
-                    <p className="text-fresco-sm text-fresco-graphite-light">Formatted text</p>
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
+                  {hasCopied ? <Check className="w-4 h-4 text-fresco-black flex-shrink-0" /> : <Copy className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" />}
+                  <div>
+                    <p className="text-fresco-sm font-medium text-fresco-black">{hasCopied ? 'Copied!' : 'Copy to clipboard'}</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">Plain text — paste into any doc or email</p>
                   </div>
                 </button>
+
+                {/* Download markdown */}
                 <button onClick={handleDownload}
-                  className="w-full flex items-center gap-3 p-4 border border-fresco-border rounded-fresco hover:bg-fresco-light-gray transition-colors">
-                  <Download className="w-5 h-5 text-fresco-graphite-mid" />
-                  <div className="text-left">
-                    <p className="text-fresco-base text-fresco-black">Download Markdown</p>
-                    <p className="text-fresco-sm text-fresco-graphite-light">Save as .md file</p>
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
+                  <Download className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" />
+                  <div>
+                    <p className="text-fresco-sm font-medium text-fresco-black">Download as Markdown</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">Structured .md file — works in Notion, Obsidian, Linear</p>
+                  </div>
+                </button>
+
+                {/* Copy shareable link — generates URL with session ID */}
+                <button onClick={() => {
+                  const url = `${window.location.origin}?session=${sessionId}`;
+                  navigator.clipboard.writeText(url);
+                  setHasCopied(true);
+                  setTimeout(() => setHasCopied(false), 2000);
+                }}
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
+                  <svg className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                  </svg>
+                  <div>
+                    <p className="text-fresco-sm font-medium text-fresco-black">Copy link</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">Share with your team — anyone with access can view</p>
+                  </div>
+                </button>
+
+                {/* Email — opens mailto with results */}
+                <button onClick={() => {
+                  const subject = encodeURIComponent(`Fresco ${meta.name}: ${result?.sentenceOfTruth?.slice(0, 60) || 'Analysis results'}`);
+                  const body = encodeURIComponent(generateExportText());
+                  window.open(`mailto:?subject=${subject}&body=${body}`);
+                }}
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
+                  <svg className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                  </svg>
+                  <div>
+                    <p className="text-fresco-sm font-medium text-fresco-black">Send by email</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">Opens your email client with results in the body</p>
                   </div>
                 </button>
               </div>
