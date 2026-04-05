@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Folder, Archive, Settings, User, Users, Plus, ChevronDown, Trash2, X } from 'lucide-react';
+import { Home, Folder, Archive, Settings, User, Users, Plus, ChevronDown, Trash2, X, Edit3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFrescoStore, useWorkspaces, useActiveWorkspace } from '@/lib/store';
 import { useDBWrite } from '@/lib/useDBSync';
@@ -32,6 +32,8 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   const [hoveredWorkspace, setHoveredWorkspace] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape' && deleteConfirm) setDeleteConfirm(null);
@@ -53,6 +55,18 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
     setActiveSession(null);
     setActiveSection('workspaces');
     onNavigate?.('workspaces');
+  };
+
+  const handleRename = (workspaceId: string, currentTitle: string) => {
+    setRenamingId(workspaceId);
+    setRenameValue(currentTitle);
+  };
+
+  const handleConfirmRename = async (workspaceId: string) => {
+    if (renameValue.trim()) {
+      await db.updateWorkspace(workspaceId, { title: renameValue.trim() });
+    }
+    setRenamingId(null);
   };
 
   const handleDeleteWorkspace = (workspaceId: string) => {
@@ -120,26 +134,52 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
                         <div key={workspace.id} className="relative"
                           onMouseEnter={() => setHoveredWorkspace(workspace.id)}
                           onMouseLeave={() => setHoveredWorkspace(null)}>
-                          <button
-                            onClick={() => { setActiveWorkspace(workspace.id); setActiveSession(null); setActiveSection('workspaces'); onNavigate?.('workspaces'); }}
-                            className={cn(
-                              'flex items-center gap-2 w-full px-2 py-1.5 text-fresco-sm transition-all text-left rounded-none',
-                              hoveredWorkspace === workspace.id ? 'pr-7' : '',
-                              activeWorkspace?.id === workspace.id
-                                ? 'text-fresco-black bg-fresco-light-gray font-medium'
-                                : 'text-fresco-graphite-mid hover:text-fresco-black hover:bg-fresco-light-gray'
-                            )}>
-                            <Folder className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="truncate flex-1 min-w-0">{workspace.title}</span>
-                            {workspace.teamId && hoveredWorkspace !== workspace.id && (
-                              <Users className="w-3 h-3 text-fresco-graphite-light flex-shrink-0" />
-                            )}
-                          </button>
-                          {hoveredWorkspace === workspace.id && (
-                            <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(workspace.id); }}
-                              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-fresco-graphite-light hover:text-red-500 transition-colors">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                          {renamingId === workspace.id ? (
+                            <div className="flex items-center gap-1 px-2 py-1">
+                              <input
+                                autoFocus
+                                value={renameValue}
+                                onChange={e => setRenameValue(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleConfirmRename(workspace.id);
+                                  if (e.key === 'Escape') setRenamingId(null);
+                                }}
+                                onBlur={() => handleConfirmRename(workspace.id)}
+                                className="flex-1 min-w-0 text-fresco-sm bg-white border border-fresco-black px-2 py-0.5 focus:outline-none"
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => { setActiveWorkspace(workspace.id); setActiveSession(null); setActiveSection('workspaces'); onNavigate?.('workspaces'); }}
+                                className={cn(
+                                  'flex items-center gap-2 w-full px-2 py-1.5 text-fresco-sm transition-all text-left rounded-none',
+                                  hoveredWorkspace === workspace.id ? 'pr-14' : '',
+                                  activeWorkspace?.id === workspace.id
+                                    ? 'text-fresco-black bg-fresco-light-gray font-medium'
+                                    : 'text-fresco-graphite-mid hover:text-fresco-black hover:bg-fresco-light-gray'
+                                )}>
+                                <Folder className="w-3.5 h-3.5 flex-shrink-0" />
+                                <span className="truncate flex-1 min-w-0">{workspace.title}</span>
+                                {workspace.teamId && hoveredWorkspace !== workspace.id && (
+                                  <Users className="w-3 h-3 text-fresco-graphite-light flex-shrink-0" />
+                                )}
+                              </button>
+                              {hoveredWorkspace === workspace.id && (
+                                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                                  <button onClick={(e) => { e.stopPropagation(); handleRename(workspace.id, workspace.title); }}
+                                    className="p-1 text-fresco-graphite-light hover:text-fresco-black transition-colors"
+                                    title="Rename">
+                                    <Edit3 className="w-3 h-3" />
+                                  </button>
+                                  <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(workspace.id); }}
+                                    className="p-1 text-fresco-graphite-light hover:text-red-500 transition-colors"
+                                    title="Delete">
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       ))

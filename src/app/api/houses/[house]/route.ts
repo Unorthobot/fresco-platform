@@ -110,6 +110,11 @@ async function runAgent(
   pageFetchStatus?: 'fetched' | 'failed' | 'none',
   originalUrl?: string,
 ): Promise<AgentOutput> {
+  // Flag uploaded files in the user input so agents know to use them as reference
+  const uploadedFilesNote = userInput.includes('[Uploaded file:') || userInput.includes('[Uploaded image:')
+    ? `\n\nNOTE: The user has uploaded reference files. Their content appears inline prefixed with [Uploaded file:] or [Uploaded image:]. Use this material as evidence to inform your analysis — it is context the user provided, not their direct answer.`
+    : '';
+
   const contextSection = context
     ? `\n\nWORKSPACE CONTEXT (from prior sessions):\n${context}`
     : '';

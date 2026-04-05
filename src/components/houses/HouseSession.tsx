@@ -2197,14 +2197,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
       {/* ── LEFT / MIDDLE: Conversation input ─────────────────────────────── */}
       <motion.div
-        animate={{ flexBasis: result ? '320px' : undefined, maxWidth: result ? '320px' : undefined }}
+        animate={{ flexBasis: result ? '360px' : undefined, maxWidth: result ? '360px' : undefined }}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
         className={cn("flex-1 flex flex-col overflow-hidden", result && "border-r border-fresco-border-light flex-shrink-0")}
-        style={{ minWidth: result ? 260 : undefined }}
+        style={{ minWidth: result ? 300 : undefined }}
       >
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-[640px] mx-auto px-4 md:px-8 py-6 md:py-10">
+          <div className={cn("mx-auto py-6 md:py-10", result ? "px-4" : "max-w-[640px] px-4 md:px-8")}>
 
           {/* Back + header */}
           <div className="mb-10">
