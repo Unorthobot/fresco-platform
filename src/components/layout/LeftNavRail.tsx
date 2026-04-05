@@ -2,27 +2,12 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-
-// FRESCO Left Navigation Rail - Matching frescolab.io design
-
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Home,
-  Folder,
-  Archive,
-  Settings,
-  User,
-  Users,
-  Plus,
-  ChevronDown,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { Home, Folder, Archive, Settings, User, Users, Plus, ChevronDown, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFrescoStore, useWorkspaces, useActiveWorkspace } from '@/lib/store';
 import { useDBWrite } from '@/lib/useDBSync';
-import type { Workspace } from '@/types';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { UsageIndicator } from '@/components/ui/UsageIndicator';
 import { NewWorkspaceModal } from '@/components/ui/NewWorkspaceModal';
@@ -33,61 +18,44 @@ interface LeftNavRailProps {
   onStartHouse?: (houseId: HouseId) => void;
 }
 
-export function LeftNavRail({ onNavigate, onStartHouse }: LeftNavRailProps) {
+export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const isAuthenticated = status === "authenticated";
+  const isAuthenticated = status === 'authenticated';
   const workspaces = useWorkspaces();
   const activeWorkspace = useActiveWorkspace();
-  const {
-    activeSection,
-    setActiveSection,
-    setActiveWorkspace,
-    setActiveSession,
-    createWorkspace,
-    canCreateWorkspace,
-    getUsageLimits,
-    deleteWorkspace,
-    user,
-  } = useFrescoStore();
-  
+  const { activeSection, setActiveSection, setActiveWorkspace, setActiveSession, createWorkspace,
+    canCreateWorkspace, getUsageLimits, deleteWorkspace, user } = useFrescoStore();
   const db = useDBWrite();
   const [showWorkspaces, setShowWorkspaces] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [hoveredWorkspace, setHoveredWorkspace] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
-  
-  // Escape key to close modal
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && deleteConfirm) {
-      setDeleteConfirm(null);
-    }
+    if (e.key === 'Escape' && deleteConfirm) setDeleteConfirm(null);
   }, [deleteConfirm]);
-  
+
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
-  
+
   const handleCreateWorkspace = async () => {
-    if (!canCreateWorkspace()) {
-      setShowUpgradeModal(true);
-      return;
-    }
+    if (!canCreateWorkspace()) { setShowUpgradeModal(true); return; }
     setShowNewWorkspaceModal(true);
   };
 
   const handleConfirmCreateWorkspace = async (title: string, teamId?: string) => {
-    const workspace = await db.createWorkspace(title, 'A new thinking space', teamId);
+    const workspace = await db.createWorkspace(title, '', teamId);
     setActiveWorkspace(workspace.id);
     setActiveSession(null);
     setActiveSection('workspaces');
     onNavigate?.('workspaces');
   };
-  
+
   const handleDeleteWorkspace = (workspaceId: string) => {
-    // Navigate first, then delete — no blank screen gap
     setActiveWorkspace(null);
     setActiveSession(null);
     setActiveSection('home');
@@ -95,138 +63,91 @@ export function LeftNavRail({ onNavigate, onStartHouse }: LeftNavRailProps) {
     db.deleteWorkspace(workspaceId);
     setDeleteConfirm(null);
   };
-  
+
   const handleNavClick = (section: string) => {
     if (section === 'home') {
-      setActiveWorkspace(null);
-      setActiveSession(null);
-      setActiveSection('home');
-      onNavigate?.('home');
+      setActiveWorkspace(null); setActiveSession(null); setActiveSection('home'); onNavigate?.('home');
     } else {
-      setActiveSection(section as 'home' | 'workspaces' | 'archive' | 'toolkit' | 'settings' | 'account' | 'team');
-      onNavigate?.(section);
+      setActiveSection(section as any); onNavigate?.(section);
     }
   };
-  
+
   const isActive = (section: string) => activeSection === section;
-  
+
   return (
     <>
       <nav className="fixed left-0 top-0 w-[220px] h-screen bg-fresco-white border-r border-fresco-border-light flex flex-col z-50">
         {/* Logo */}
-        <div className="h-16 px-5 flex items-center border-b border-fresco-border-light">
-          <div className="flex items-center gap-2">
-            <img src="/fresco-logo.png" alt="Fresco" className="w-6 h-6 icon-theme" />
-            <span className="text-fresco-lg font-bold text-fresco-black tracking-tight" style={{ fontFamily: 'Inter, sans-serif' }}>Fresco</span>
+        <div className="h-14 px-5 flex items-center border-b border-fresco-border-light">
+          <div className="flex items-center gap-2.5">
+            <img src="/fresco-logo.png" alt="Fresco" className="w-5 h-5 icon-theme" />
+            <span className="text-fresco-base font-semibold text-fresco-black tracking-tight">Fresco</span>
           </div>
         </div>
-        
-        {/* Main Navigation */}
-        <div className="flex-1 py-4 overflow-y-auto">
-          <div className="px-3 mb-2">
-            <button
-              onClick={() => handleNavClick('home')}
-              className={cn('fresco-nav-item', isActive('home') && 'active')}
-            >
-              <Home className="w-[18px] h-[18px]" />
-              <span>Home</span>
+
+        {/* Main nav */}
+        <div className="flex-1 py-3 overflow-y-auto">
+          <div className="px-3 space-y-0.5 mb-3">
+            <button onClick={() => handleNavClick('home')} className={cn('fresco-nav-item', isActive('home') && 'active')}>
+              <Home className="w-4 h-4" /><span>Home</span>
             </button>
-            
-            <button
-              onClick={() => handleNavClick('archive')}
-              className={cn('fresco-nav-item', isActive('archive') && 'active')}
-            >
-              <Archive className="w-[18px] h-[18px]" />
-              <span>Archive</span>
+            <button onClick={() => handleNavClick('archive')} className={cn('fresco-nav-item', isActive('archive') && 'active')}>
+              <Archive className="w-4 h-4" /><span>Archive</span>
             </button>
           </div>
 
           {/* Workspaces */}
-          <div className="mt-4 px-3">
+          <div className="px-3 mt-2">
             <button
               onClick={() => setShowWorkspaces(!showWorkspaces)}
-              className="flex items-center justify-between w-full px-3 py-2 text-fresco-xs font-medium uppercase tracking-wider text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors"
+              className="flex items-center justify-between w-full px-2 py-1.5 text-fresco-xs font-medium uppercase tracking-wider text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors mb-1"
             >
               <span>Workspaces</span>
-              <ChevronDown
-                className={cn(
-                  'w-4 h-4 transition-transform duration-200',
-                  !showWorkspaces && '-rotate-90'
-                )}
-              />
+              <ChevronDown className={cn('w-3.5 h-3.5 transition-transform duration-200', !showWorkspaces && '-rotate-90')} />
             </button>
-            
+
             <AnimatePresence>
               {showWorkspaces && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="py-1">
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.18 }} className="overflow-hidden">
+                  <div className="space-y-0.5">
                     {workspaces.length === 0 ? (
-                      <p className="px-3 py-2 text-fresco-sm text-fresco-graphite-light">
-                        No workspaces
-                      </p>
+                      <p className="px-2 py-2 text-fresco-xs text-fresco-graphite-light">No workspaces yet</p>
                     ) : (
                       workspaces.slice(0, 8).map((workspace) => (
-                        <div
-                          key={workspace.id}
-                          className="relative"
+                        <div key={workspace.id} className="relative"
                           onMouseEnter={() => setHoveredWorkspace(workspace.id)}
-                          onMouseLeave={() => setHoveredWorkspace(null)}
-                        >
+                          onMouseLeave={() => setHoveredWorkspace(null)}>
                           <button
-                            onClick={() => {
-                              setActiveWorkspace(workspace.id);
-                              setActiveSession(null);
-                              setActiveSection('workspaces');
-                              onNavigate?.('workspaces');
-                            }}
+                            onClick={() => { setActiveWorkspace(workspace.id); setActiveSession(null); setActiveSection('workspaces'); onNavigate?.('workspaces'); }}
                             className={cn(
-                              'flex items-center gap-2.5 w-full px-3 py-2 text-fresco-sm rounded-none transition-all text-left',
-                              hoveredWorkspace === workspace.id ? 'pr-8' : '',
+                              'flex items-center gap-2 w-full px-2 py-1.5 text-fresco-sm transition-all text-left rounded-none',
+                              hoveredWorkspace === workspace.id ? 'pr-7' : '',
                               activeWorkspace?.id === workspace.id
                                 ? 'text-fresco-black bg-fresco-light-gray font-medium'
                                 : 'text-fresco-graphite-mid hover:text-fresco-black hover:bg-fresco-light-gray'
-                            )}
-                          >
-                            <Folder className="w-4 h-4 flex-shrink-0" />
-                            <span className="truncate flex-1 min-w-0 text-left">{workspace.title}</span>
+                            )}>
+                            <Folder className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate flex-1 min-w-0">{workspace.title}</span>
                             {workspace.teamId && hoveredWorkspace !== workspace.id && (
                               <Users className="w-3 h-3 text-fresco-graphite-light flex-shrink-0" />
                             )}
                           </button>
-                          
                           {hoveredWorkspace === workspace.id && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteConfirm(workspace.id);
-                              }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-fresco-graphite-light hover:text-red-500 rounded-none transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
+                            <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(workspace.id); }}
+                              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-fresco-graphite-light hover:text-red-500 transition-colors">
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           )}
                         </div>
                       ))
                     )}
-                    
                     {workspaces.length > 8 && (
-                      <button className="px-3 py-2 text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors">
-                        View all ({workspaces.length})
-                      </button>
+                      <p className="px-2 py-1 text-fresco-xs text-fresco-graphite-light">+{workspaces.length - 8} more</p>
                     )}
-                    
-                    <button
-                      onClick={handleCreateWorkspace}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 mt-1 text-fresco-sm text-fresco-graphite-light hover:text-fresco-black rounded-none transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>New Workspace</span>
+                    <button onClick={handleCreateWorkspace}
+                      className="flex items-center gap-2 w-full px-2 py-1.5 text-fresco-sm text-fresco-graphite-light hover:text-fresco-black transition-colors">
+                      <Plus className="w-3.5 h-3.5" /><span>New workspace</span>
                     </button>
                   </div>
                 </motion.div>
@@ -234,103 +155,64 @@ export function LeftNavRail({ onNavigate, onStartHouse }: LeftNavRailProps) {
             </AnimatePresence>
           </div>
         </div>
-        
-        {/* Bottom Navigation */}
-        <div className="py-4 px-3 border-t border-fresco-border-light">
+
+        {/* Bottom nav */}
+        <div className="py-3 px-3 border-t border-fresco-border-light space-y-0.5">
           {user?.subscription === 'studio' && (
-            <button
-              onClick={() => handleNavClick('team')}
-              className={cn('fresco-nav-item', isActive('team') && 'active')}
-            >
-              <Users className="w-[18px] h-[18px]" />
-              <span>Team</span>
+            <button onClick={() => handleNavClick('team')} className={cn('fresco-nav-item', isActive('team') && 'active')}>
+              <Users className="w-4 h-4" /><span>Team</span>
             </button>
           )}
-          <button
-            onClick={() => handleNavClick('settings')}
-            className={cn('fresco-nav-item', isActive('settings') && 'active')}
-          >
-            <Settings className="w-[18px] h-[18px]" />
-            <span>Settings</span>
+          <button onClick={() => handleNavClick('settings')} className={cn('fresco-nav-item', isActive('settings') && 'active')}>
+            <Settings className="w-4 h-4" /><span>Settings</span>
           </button>
-          
           {isAuthenticated ? (
-            <button
-              onClick={() => handleNavClick('account')}
-              className={cn('fresco-nav-item', isActive('account') && 'active')}
-            >
-              {session?.user?.image || user?.profileImage ? (
-                <img src={session?.user?.image || user?.profileImage} alt="Profile" className="w-[18px] h-[18px] rounded-full object-cover" />
+            <button onClick={() => handleNavClick('account')} className={cn('fresco-nav-item', isActive('account') && 'active')}>
+              {session?.user?.image ? (
+                <img src={session.user.image} alt="Profile" className="w-4 h-4 rounded-full object-cover" />
               ) : (
-                <User className="w-[18px] h-[18px]" />
+                <User className="w-4 h-4" />
               )}
-              <span>{session?.user?.name?.split(' ')[0] || 'Account'}</span>
+              <span className="truncate">{session?.user?.name?.split(' ')[0] || 'Account'}</span>
             </button>
           ) : (
-            <button
-              onClick={() => router.push('/login')}
-              className="fresco-nav-item text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-            >
-              <User className="w-[18px] h-[18px]" />
-              <span>Sign In</span>
+            <button onClick={() => router.push('/login')} className="fresco-nav-item text-amber-600 hover:bg-amber-50">
+              <User className="w-4 h-4" /><span>Sign in</span>
             </button>
           )}
         </div>
-      
-        {/* Usage Indicator */}
+
         <UsageIndicator />
 
-        {/* Legal links */}
         <div className="px-4 pb-3 flex gap-3">
           <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors">Privacy</a>
           <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors">Terms</a>
         </div>
       </nav>
-      
-      {/* Delete Confirmation Modal */}
+
+      {/* Delete confirm modal */}
       <AnimatePresence>
         {deleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]"
-            onClick={() => setDeleteConfirm(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-900 rounded-fresco-lg p-6 max-w-sm w-full mx-4 shadow-fresco-lg"
-            >
+            onClick={() => setDeleteConfirm(null)}>
+            <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.96, opacity: 0 }} onClick={e => e.stopPropagation()}
+              className="bg-white p-6 max-w-sm w-full mx-4 shadow-lg">
               <div className="flex items-start justify-between mb-4">
-                <h3 className="text-fresco-lg font-medium text-fresco-black">
-                  Delete Workspace?
-                </h3>
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className="p-1 text-fresco-graphite-light hover:text-fresco-black rounded"
-                >
-                  <X className="w-5 h-5" />
+                <h3 className="text-fresco-base font-medium text-fresco-black">Delete workspace?</h3>
+                <button onClick={() => setDeleteConfirm(null)} className="p-1 text-fresco-graphite-light hover:text-fresco-black">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-              
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">
-                This will permanently delete the workspace and all its sessions. This action cannot be undone.
-              </p>
-              
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">This will permanently delete all sessions inside. Can't be undone.</p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className="flex-1 h-10 text-fresco-sm text-fresco-graphite-mid border border-fresco-border rounded-fresco hover:bg-fresco-light-gray transition-colors"
-                >
+                <button onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 h-9 text-fresco-sm text-fresco-graphite-mid border border-fresco-border hover:bg-fresco-light-gray transition-colors">
                   Cancel
                 </button>
-                <button
-                  onClick={() => handleDeleteWorkspace(deleteConfirm)}
-                  className="flex-1 h-10 text-fresco-sm text-white bg-red-500 rounded-fresco hover:bg-red-600 transition-colors"
-                >
+                <button onClick={() => handleDeleteWorkspace(deleteConfirm!)}
+                  className="flex-1 h-9 text-fresco-sm text-white bg-fresco-black hover:bg-fresco-graphite transition-colors">
                   Delete
                 </button>
               </div>
@@ -339,22 +221,10 @@ export function LeftNavRail({ onNavigate, onStartHouse }: LeftNavRailProps) {
         )}
       </AnimatePresence>
 
-      {/* Upgrade Modal */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        reason="workspaces"
-        currentUsage={workspaces.length}
-        limit={getUsageLimits().workspaces}
-      />
-
-      {/* New Workspace Modal */}
-      <NewWorkspaceModal
-        isOpen={showNewWorkspaceModal}
-        onClose={() => setShowNewWorkspaceModal(false)}
-        onConfirm={handleConfirmCreateWorkspace}
-        userSubscription={user?.subscription}
-      />
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)}
+        reason="workspaces" currentUsage={workspaces.length} limit={getUsageLimits().workspaces} />
+      <NewWorkspaceModal isOpen={showNewWorkspaceModal} onClose={() => setShowNewWorkspaceModal(false)}
+        onConfirm={handleConfirmCreateWorkspace} userSubscription={user?.subscription} />
     </>
   );
 }

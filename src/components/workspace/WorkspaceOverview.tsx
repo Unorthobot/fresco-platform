@@ -273,7 +273,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
   return (
     <div className="min-h-screen fresco-grid-bg-subtle">
       {/* Header */}
-      <div className="px-6 md:px-12 py-12 border-b border-fresco-border-light">
+      <div className="px-4 md:px-12 py-8 md:py-12 border-b border-fresco-border-light">
         <button type="button" onClick={() => onBack?.()} className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black mb-6 transition-colors">
           <ChevronLeft className="w-4 h-4" /><span>Back to Home</span>
         </button>
@@ -364,7 +364,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
         </div>
       </div>
 
-      <div className="px-6 md:px-12 py-12 relative">
+      <div className="px-4 md:px-12 py-8 md:py-12 relative">
         {/* Ambient Background */}
         <AmbientBackground variant="subtle" />
         
@@ -373,13 +373,11 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
           <div className="lg:col-span-8">
             {/* View Tabs */}
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-1 p-1 bg-fresco-light-gray rounded-none">
+              <div className="flex items-center gap-1 p-1 bg-fresco-light-gray rounded-none overflow-x-auto scrollbar-hide">
                 {[
-                  { id: 'sessions', label: 'Sessions', icon: <Layout className="w-4 h-4" /> },
+                  { id: 'sessions',  label: 'Sessions',  icon: <Layout className="w-4 h-4" /> },
                   { id: 'synthesis', label: 'Synthesis', icon: <Sparkles className="w-4 h-4" /> },
-                  { id: 'journey', label: 'Journey', icon: <ArrowRight className="w-4 h-4" /> },
-                  { id: 'timeline', label: 'Timeline', icon: <Clock className="w-4 h-4" /> },
-                  { id: 'insights', label: 'Insights', icon: <Link2 className="w-4 h-4" /> },
+                  { id: 'journey',   label: 'Journey',   icon: <ArrowRight className="w-4 h-4" /> },
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -513,6 +511,20 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                     {session.sentenceOfTruth?.content && (
                                       <Sparkles className="w-4 h-4 text-fresco-graphite" />
                                     )}
+                                    {/* House verdict badge */}
+                                    {(() => {
+                                      const v = (session as any).aiOutputs?.verdict || (session as any).aiOutputs?.houseResult?.verdict;
+                                      if (!v) return null;
+                                      const vstyle = v === 'GO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                        v === 'PIVOT' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        v === 'STOP' ? 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border' :
+                                        'bg-blue-50 text-blue-700 border-blue-200';
+                                      return (
+                                        <span className={`text-fresco-xs font-medium px-2 py-0.5 border ${vstyle}`}>
+                                          {v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : v}
+                                        </span>
+                                      );
+                                    })()}
                                     {(session as any).decision && (
                                       <span className={[
                                         'text-fresco-xs font-medium px-2 py-0.5 rounded-full border',
@@ -621,7 +633,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
           <div className="lg:col-span-4 space-y-8">
             {/* Orchestration — what to do next */}
             <div>
-              <span className="fresco-label block mb-4">Orchestration</span>
+              <span className="fresco-label block mb-3">What to run next</span>
               <OrchestrationPanel
                 workspaceTitle={workspace?.title}
                 sessions={workspaceSessions}
@@ -629,43 +641,38 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
               />
             </div>
 
-            {/* Workspace Clarity Score */}
-            <div>
-              <span className="fresco-label block mb-4">Workspace Clarity</span>
-              <WorkspaceClarityScore sessions={workspaceSessions} />
-            </div>
-
-            
-            {/* Toolkit Journey Progress */}
-            <div>
-              <span className="fresco-label block mb-4">Journey Progress</span>
-              <div className="space-y-3">
-                {(['investigate', 'innovate', 'validate', 'evaluate'] as ToolkitCategory[]).map((category) => {
-                  const categoryToolkits = ALL_TOOLKITS.filter(t => t.category === category);
-                  const completedCount = categoryToolkits.filter(t => 
-                    workspaceSessions.some(s => s.toolkitType === t.type)
-                  ).length;
-                  
-                  return (
-                    <div key={category} className="p-3 bg-fresco-light-gray rounded-none">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <img src={CATEGORY_ICONS[category]} alt="" className="w-4 h-4 icon-themed" />
-                          <span className="text-fresco-sm font-medium text-fresco-black">{CATEGORY_LABELS[category]}</span>
+            {/* House runs summary */}
+            {workspaceSessions.some(s => (s as any).houseType) && (() => {
+              const houseRuns = (['investigate','innovate','validate','evaluate'] as any[]).map(h => ({
+                house: h,
+                count: workspaceSessions.filter(s => (s as any).houseType === h).length,
+                verdict: (() => {
+                  const last = workspaceSessions
+                    .filter(s => (s as any).houseType === h)
+                    .sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+                  return (last as any)?.aiOutputs?.houseResult?.verdict || null;
+                })(),
+              })).filter(h => h.count > 0);
+              return (
+                <div>
+                  <span className="fresco-label block mb-3">Houses run</span>
+                  <div className="space-y-1.5">
+                    {houseRuns.map(({ house, count, verdict }) => {
+                      const vstyle = verdict === 'GO' ? 'text-emerald-600' : verdict === 'PIVOT' ? 'text-amber-600' : verdict === 'STOP' ? 'text-fresco-graphite-mid' : verdict === 'INVESTIGATE FURTHER' ? 'text-blue-600' : 'text-fresco-graphite-light';
+                      return (
+                        <div key={house} className="flex items-center justify-between py-1.5 border-b border-fresco-border-light last:border-0">
+                          <span className="text-fresco-sm text-fresco-graphite-soft capitalize">{house}</span>
+                          <div className="flex items-center gap-2">
+                            {verdict && <span className={`text-fresco-xs font-medium ${vstyle}`}>{verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : verdict}</span>}
+                            {count > 1 && <span className="text-fresco-xs text-fresco-graphite-light">×{count}</span>}
+                          </div>
                         </div>
-                        <span className="text-fresco-xs text-fresco-graphite-light">{completedCount}/{categoryToolkits.length}</span>
-                      </div>
-                      <div className="h-1.5 bg-fresco-border rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-fresco-black rounded-full transition-all"
-                          style={{ width: `${(completedCount / categoryToolkits.length) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Sentences of Truth */}
             {sentencesOfTruth.length > 0 && (

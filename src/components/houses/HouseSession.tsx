@@ -2394,6 +2394,30 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             <p className="text-fresco-base text-fresco-graphite-mid max-w-lg">{meta.description}</p>
           </div>
 
+          {/* Top progress strip — visible before first answer */}
+          {houseId !== 'evaluate' && (() => {
+            const allSteps = houseId === 'investigate' ? INVESTIGATE_STEPS : houseId === 'innovate' ? INNOVATE_STEPS : VALIDATE_STEPS;
+            const answered = allSteps.filter(s => (values[s.id] || '').trim().length > 0).length;
+            const pct = Math.round((answered / allSteps.length) * 100);
+            if (answered === 0) return null;
+            return (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-fresco-xs text-fresco-graphite-light">{answered} of {allSteps.length} answered</span>
+                  <span className="text-fresco-xs text-fresco-graphite-light">{pct}%</span>
+                </div>
+                <div className="flex gap-0.5">
+                  {allSteps.map((step, idx) => (
+                    <div key={idx} className={cn(
+                      'h-0.5 flex-1 transition-all duration-300',
+                      (values[step.id] || '').trim().length > 0 ? 'bg-fresco-black' : 'bg-fresco-border'
+                    )} />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* House-specific conversation */}
           <div className="mb-8">
             {houseId === 'investigate' && (
@@ -2443,12 +2467,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Reviewing your inputs…</span></>
                 : challengeQuestions.length > 0 && !challengeDismissed
                 ? <><span>Answer or skip the question above to run</span></>
-                : <><Sparkles className="w-4 h-4" /><span>Run the analysis</span></>
+                : <><Sparkles className="w-4 h-4" /><span>Get a verdict</span></>
               }
             </button>
             {!canRun && !isRunning && (
               <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
-                Answer the first question to get started
+                Start answering to unlock the run button
               </p>
             )}
           </div>
@@ -2459,18 +2483,28 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       <motion.div
         animate={{ flex: result ? '1 1 0%' : '0 0 360px', minWidth: 320 }}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
-        className="flex flex-col border-t md:border-t-0 md:border-l border-fresco-border-light bg-fresco-off-white overflow-hidden"
+        className="flex flex-col border-t border-fresco-border-light bg-fresco-off-white overflow-hidden md:border-t-0 md:border-l"
       >
         <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-fresco-lg font-medium text-fresco-black">Results</h2>
+            <div>
+              <h2 className="text-fresco-lg font-medium text-fresco-black">Results</h2>
+              {result && <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">{meta.name} · {meta.output}</p>}
+            </div>
             {isRunning && (
-              <div className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-light">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Analysing…</span>
+              <div className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light">
+                <Loader2 className="w-3 h-3 animate-spin" /><span>Working…</span>
               </div>
             )}
           </div>
+
+          {(result as any)?._error && (
+            <div className="py-6 px-4 border border-red-200 bg-red-50 mb-4">
+              <p className="text-fresco-sm font-medium text-red-700 mb-1">Analysis didn't complete</p>
+              <p className="text-fresco-xs text-red-600">Something went wrong during the run. Check your connection and try again.</p>
+            </div>
+          )}
 
           {!result && agentEvents.length === 0 && !isRunning && (
             <div className="py-8 text-center">
@@ -2508,26 +2542,33 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     {pageFetchMessage}
                   </div>
                 )}
-                {agentEvents.map((ev, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
-                    className="p-3 bg-fresco-light-gray border-l-2 border-fresco-black/20">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-fresco-black" />
+                {/* Completed agents — compact check marks */}
+                {agentEvents.slice(0, -1).map((ev, i) => (
+                  <div key={i} className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light py-1">
+                    <div className="w-3 h-3 rounded-full bg-fresco-black flex items-center justify-center flex-shrink-0">
+                      <svg width="7" height="5" viewBox="0 0 7 5" fill="none"><path d="M1 2.5L2.8 4L6 1" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                    <span>{ev.displayName}</span>
+                  </div>
+                ))}
+                {/* Current agent — expanded */}
+                {agentEvents.length > 0 && (() => {
+                  const ev = agentEvents[agentEvents.length - 1];
+                  return (
+                    <motion.div key={agentEvents.length} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                      className="p-3 bg-fresco-light-gray border-l-2 border-fresco-black">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-fresco-black animate-pulse" />
                         <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">{ev.displayName}</span>
                       </div>
-                      <span className={cn('text-fresco-xs px-1.5 py-0.5 rounded-full',
-                        ev.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
-                        ev.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
-                        'bg-fresco-border text-fresco-graphite-light'
-                      )}>{ev.confidence}</span>
-                    </div>
-                    <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">{ev.signal}</p>
-                  </motion.div>
-                ))}
+                      <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">{ev.signal}</p>
+                    </motion.div>
+                  );
+                })()}
                 {isRunning && agentEvents.length < 3 && (
-                  <div className="p-3 bg-fresco-light-gray border-l-2 border-fresco-border animate-pulse">
-                    <div className="h-3 w-24 bg-fresco-border rounded mb-2" /><div className="h-3 w-full bg-fresco-border rounded" />
+                  <div className="p-3 bg-fresco-light-gray border-l-2 border-fresco-border">
+                    <div className="h-2 w-20 bg-fresco-border rounded mb-2 animate-pulse" />
+                    <div className="h-2 w-full bg-fresco-border rounded animate-pulse" />
                   </div>
                 )}
               </motion.div>
@@ -2539,18 +2580,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             {result && (
               <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
 
-                {/* POV Statement — Investigate only, shown first */}
-                {(result as any).povStatement && (
-                  <div>
-                    <span className="fresco-label block mb-3">Your position</span>
-                    <div className="p-4 border-l-4 border-fresco-black bg-fresco-light-gray">
-                      <p className="text-fresco-base font-medium text-fresco-black leading-relaxed">
-                        {(result as any).povStatement}
-                      </p>
-                    </div>
-                  </div>
-                )}
+                {/* SENTENCE OF TRUTH — first, most emotionally valuable */}
+                <EditableSentenceOfTruth
+                  value={result.sentenceOfTruth}
+                  onSave={edited => db.setSentenceOfTruth(sessionId, edited)}
+                />
 
+                {/* VERDICT — decision second */}
                 <div>
                   <span className="fresco-label block mb-3">Verdict</span>
                   <div className={cn('px-4 py-3 border', vs?.bg, vs?.text, vs?.border)}>
@@ -2569,11 +2605,23 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 </div>
 
-                {/* #11 — Suggested next step immediately after verdict */}
+                {/* POV Statement — Investigate only */}
+                {(result as any).povStatement && (
+                  <div>
+                    <span className="fresco-label block mb-3">Your position</span>
+                    <div className="p-4 border-l-4 border-fresco-black bg-fresco-light-gray">
+                      <p className="text-fresco-base font-medium text-fresco-black leading-relaxed">
+                        {(result as any).povStatement}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Suggested next step */}
                 {result.suggestedNextHouse && (
                   <div className="p-4 border border-fresco-black/10 bg-fresco-light-gray flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">Suggested next step</p>
+                      <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">Run this next</p>
                       <p className="text-fresco-sm font-medium text-fresco-black capitalize">{HOUSE_META[result.suggestedNextHouse].name}</p>
                       <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5">{result.suggestedNextHouseReason}</p>
                     </div>
@@ -2583,11 +2631,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </button>
                   </div>
                 )}
-
-                <EditableSentenceOfTruth
-                  value={result.sentenceOfTruth}
-                  onSave={edited => db.setSentenceOfTruth(sessionId, edited)}
-                />
 
                 {/* Belief Mapper mental model callout — Investigate only */}
                 {houseId === 'investigate' && (() => {
@@ -2601,7 +2644,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                         <p className="text-fresco-sm text-fresco-black font-medium">{bmEvent.structured_artifact}</p>
                       </div>
                       <p className="text-fresco-xs text-fresco-graphite-light mt-2">
-                        This is the belief structure driving the situation — the mental model your analysis exposed.
+                        This is the assumption behind how the situation has been framed.
                       </p>
                     </div>
                   );
@@ -2677,7 +2720,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                           disabled={isReframing}
                           className="w-full flex items-center justify-between px-4 py-2.5 border border-fresco-border text-fresco-sm text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
                         >
-                          <span>{isReframing ? 'Reframing…' : activeLens ? `Lens: ${activeLens.charAt(0).toUpperCase() + activeLens.slice(1)} — change` : 'See this differently →'}</span>
+                          <span>{isReframing ? 'Reframing…' : activeLens ? `Lens: ${activeLens.charAt(0).toUpperCase() + activeLens.slice(1)} — change` : 'See this from a different angle →'}</span>
                           {isReframing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         </button>
                       ) : (
