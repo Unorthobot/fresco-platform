@@ -91,135 +91,191 @@ export function HomeDashboard({
               </p>
             </div>
 
-            {/* Context widget — always present, personalised below */}
+            {/* Context widget — time-aware, habit-informed */}
             {now && (
-              <div className="hidden lg:flex flex-col items-end gap-0 flex-shrink-0 pt-1 min-w-[200px]">
-
-                {/* Time + date — always shown */}
-                <div className="text-right mb-4">
-                  <div className="text-2xl font-medium text-fresco-black tabular-nums leading-none">
-                    {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                  </div>
-                  <div className="text-fresco-xs text-fresco-graphite-light mt-0.5">
-                    {now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
-                  </div>
-                </div>
-
-                {/* Orientation block — always shown, any user */}
+              <div className="hidden lg:flex flex-col items-end gap-0 flex-shrink-0 pt-1 min-w-[210px]">
                 {(() => {
-                  // Work out which house to recommend contextually
+                  const hour = now.getHours();
+
+                  // Time of day buckets
+                  const timeOfDay = hour < 6 ? 'latenight'
+                    : hour < 12 ? 'morning'
+                    : hour < 17 ? 'afternoon'
+                    : hour < 21 ? 'evening'
+                    : 'latenight';
+
+                  const greetings: Record<string, string> = {
+                    morning:   'Good morning',
+                    afternoon: 'Good afternoon',
+                    evening:   'Good evening',
+                    latenight: 'Still at it',
+                  };
+
+                  // House recommendation by time of day
+                  // Morning → Investigate (planning, defining)
+                  // Afternoon → Innovate or Validate (building, testing)
+                  // Evening → Evaluate or Investigate (reflecting, diagnosing)
+                  // Late night → whatever is most urgent
+                  const timeRecommendations: Record<string, { house: HouseId; reason: string }> = {
+                    morning:   { house: 'investigate', reason: 'Mornings are good for defining problems clearly.' },
+                    afternoon: { house: 'innovate',    reason: 'Afternoons are good for shaping solutions.' },
+                    evening:   { house: 'evaluate',    reason: 'Evenings are good for honest reflection.' },
+                    latenight: { house: 'investigate', reason: 'Late nights are good for questioning assumptions.' },
+                  };
+
+                  // Override time recommendation with session-based logic if applicable
                   const houseSessions = sessions.filter(s => (s as any).houseType);
                   const hasRun = (h: HouseId) => houseSessions.some(s => (s as any).houseType === h);
                   const lastHouseSession = houseSessions
                     .slice()
                     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
-                  const lastVerdict = (lastHouseSession as any)?.aiOutputs?.houseResult?.verdict
-                    || (lastHouseSession as any)?.aiOutputs?.verdict;
                   const suggestedNext = (lastHouseSession as any)?.aiOutputs?.houseResult?.suggestedNextHouse
                     || (lastHouseSession as any)?.aiOutputs?.suggestedNextHouse;
 
-                  let recommendedHouse: HouseId = 'investigate';
-                  let recommendReason = 'Start here. Define the real problem before committing to a direction.';
+                  let finalHouse: HouseId = timeRecommendations[timeOfDay].house;
+                  let finalReason = timeRecommendations[timeOfDay].reason;
 
+                  // System suggestion beats time-of-day
                   if (suggestedNext) {
-                    recommendedHouse = suggestedNext as HouseId;
-                    recommendReason = `Your last analysis pointed here.`;
+                    finalHouse = suggestedNext as HouseId;
+                    finalReason = 'Your last analysis pointed here.';
                   } else if (hasRun('investigate') && !hasRun('innovate')) {
-                    recommendedHouse = 'innovate';
-                    recommendReason = "You've investigated. Now shape the right solution.";
+                    finalHouse = 'innovate';
+                    finalReason = "You have a defined problem. Now shape the solution.";
                   } else if (hasRun('innovate') && !hasRun('validate')) {
-                    recommendedHouse = 'validate';
-                    recommendReason = 'You have a direction. Now test if it will actually sell.';
+                    finalHouse = 'validate';
+                    finalReason = 'You have a direction. Test if it will sell.';
                   } else if (hasRun('validate') && !hasRun('evaluate')) {
-                    recommendedHouse = 'evaluate';
-                    recommendReason = "You've validated. Now see how it's performing live.";
-                  } else if (hasRun('evaluate')) {
-                    recommendedHouse = 'investigate';
-                    recommendReason = 'Close the loop. Start a new investigation.';
+                    finalHouse = 'evaluate';
+                    finalReason = "You've validated. See how it performs live.";
                   }
 
-                  const house = HOUSE_META[recommendedHouse];
+                  // Habit insight — only after 3+ sessions
+                  let habitLine: string | null = null;
+                  if (houseSessions.length >= 3) {
+                    const sessionHours = houseSessions
+                      .map(s => new Date(s.updatedAt).getHours());
+                    const eveningRuns = sessionHours.filter(h => h >= 18).length;
+                    const morningRuns = sessionHours.filter(h => h < 12).length;
+                    const total = sessionHours.length;
+                    if (eveningRuns / total >= 0.6) {
+                      habitLine = 'You tend to think in the evenings.';
+                    } else if (morningRuns / total >= 0.6) {
+                      habitLine = 'You tend to think in the mornings.';
+                    } else if (total >= 5) {
+                      const investigateCount = houseSessions.filter(s => (s as any).houseType === 'investigate').length;
+                      if (investigateCount / total >= 0.6) {
+                        habitLine = "You investigate a lot. Trust your instincts enough to ship.";
+                      }
+                      const neverEvaluated = !hasRun('evaluate') && total >= 5;
+                      if (neverEvaluated) {
+                        habitLine = "You haven't evaluated anything live yet.";
+                      }
+                    }
+                  }
+
+                  const house = HOUSE_META[finalHouse];
 
                   return (
-                    <div className="w-full border-t border-fresco-border-light pt-3 mb-3">
-                      <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-2 text-right">
-                        Run next
-                      </p>
-                      <button
-                        onClick={() => onStartHouse?.(recommendedHouse)}
-                        className="w-full text-right group"
-                      >
-                        <p className="text-fresco-sm font-medium text-fresco-black group-hover:underline underline-offset-2">
-                          {house.name}
+                    <>
+                      {/* Greeting + time */}
+                      <div className="text-right mb-4">
+                        <div className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wider mb-1">
+                          {greetings[timeOfDay]}
+                        </div>
+                        <div className="text-2xl font-medium text-fresco-black tabular-nums leading-none">
+                          {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        </div>
+                        <div className="text-fresco-xs text-fresco-graphite-light mt-0.5">
+                          {now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </div>
+                      </div>
+
+                      {/* Habit insight — only when meaningful */}
+                      {habitLine && (
+                        <div className="w-full text-right mb-3">
+                          <p className="text-fresco-xs text-fresco-graphite-light italic leading-relaxed">
+                            {habitLine}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* House recommendation */}
+                      <div className="w-full border-t border-fresco-border-light pt-3 mb-3">
+                        <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-2 text-right">
+                          {timeOfDay === 'morning' ? 'Start the day with' :
+                           timeOfDay === 'afternoon' ? 'This afternoon' :
+                           timeOfDay === 'evening' ? 'Tonight' : 'Right now'}
                         </p>
-                        <p className="text-fresco-xs text-fresco-graphite-light mt-0.5 leading-relaxed">
-                          {recommendReason}
-                        </p>
-                        <p className="text-fresco-xs text-fresco-graphite-light/60 mt-1 italic">
-                          {house.output}
-                        </p>
-                      </button>
-                    </div>
+                        <button
+                          onClick={() => onStartHouse?.(finalHouse)}
+                          className="w-full text-right group"
+                        >
+                          <p className="text-fresco-sm font-medium text-fresco-black group-hover:underline underline-offset-2">
+                            {house.name}
+                          </p>
+                          <p className="text-fresco-xs text-fresco-graphite-light mt-0.5 leading-relaxed">
+                            {finalReason}
+                          </p>
+                        </button>
+                      </div>
+
+                      {/* Last session — returning users only */}
+                      {hasActivity && (() => {
+                        const lastSession = sessions
+                          .slice()
+                          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+                        if (!lastSession) return null;
+                        const ws = workspaces.find(w => w.id === lastSession.workspaceId);
+                        if (!ws) return null;
+                        const hId = (lastSession as any).houseType as HouseId | undefined;
+                        const hName = hId ? HOUSE_META[hId]?.name : null;
+                        const verdict = (lastSession as any).aiOutputs?.houseResult?.verdict
+                          || (lastSession as any).aiOutputs?.verdict;
+                        const vColor = verdict === 'GO' ? 'text-emerald-600'
+                          : verdict === 'PIVOT' ? 'text-amber-600'
+                          : verdict === 'STOP' ? 'text-fresco-graphite-mid'
+                          : verdict === 'INVESTIGATE FURTHER' ? 'text-blue-600'
+                          : 'text-fresco-graphite-mid';
+                        return (
+                          <div className="w-full border-t border-fresco-border-light pt-3">
+                            <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-2 text-right">
+                              Last session
+                            </p>
+                            <button
+                              onClick={() => onNavigateToWorkspace?.(ws.id)}
+                              className="w-full text-right group"
+                            >
+                              <p className="text-fresco-sm font-medium text-fresco-black group-hover:underline underline-offset-2 truncate">
+                                {ws.title}
+                              </p>
+                              {hName && (
+                                <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
+                                  {hName}
+                                  {verdict && (
+                                    <span className={`ml-1.5 font-medium ${vColor}`}>
+                                      · {verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}
+                                    </span>
+                                  )}
+                                </p>
+                              )}
+                              {!verdict && lastSession.sentenceOfTruth?.content && (
+                                <p className="text-fresco-xs text-fresco-graphite-light mt-1 italic line-clamp-2">
+                                  &quot;{lastSession.sentenceOfTruth.content}&quot;
+                                </p>
+                              )}
+                              {!hName && !verdict && (
+                                <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
+                                  {formatRelativeTime(lastSession.updatedAt)}
+                                </p>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </>
                   );
                 })()}
-
-                {/* Where you left off — only for returning users */}
-                {hasActivity && (() => {
-                  const lastSession = sessions
-                    .slice()
-                    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
-                  if (!lastSession) return null;
-                  const ws = workspaces.find(w => w.id === lastSession.workspaceId);
-                  if (!ws) return null;
-
-                  const houseId = (lastSession as any).houseType as HouseId | undefined;
-                  const houseName = houseId ? HOUSE_META[houseId]?.name : null;
-                  const verdict = (lastSession as any).aiOutputs?.houseResult?.verdict
-                    || (lastSession as any).aiOutputs?.verdict;
-
-                  const verdictColor = verdict === 'GO' ? 'text-emerald-600'
-                    : verdict === 'PIVOT' ? 'text-amber-600'
-                    : verdict === 'STOP' ? 'text-fresco-graphite-mid'
-                    : verdict === 'INVESTIGATE FURTHER' ? 'text-blue-600'
-                    : 'text-fresco-graphite-mid';
-
-                  return (
-                    <div className="w-full border-t border-fresco-border-light pt-3">
-                      <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-2 text-right">
-                        Last session
-                      </p>
-                      <button
-                        onClick={() => onNavigateToWorkspace?.(ws.id)}
-                        className="w-full text-right group"
-                      >
-                        <p className="text-fresco-sm font-medium text-fresco-black group-hover:underline underline-offset-2 truncate">
-                          {ws.title}
-                        </p>
-                        {houseName && (
-                          <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
-                            {houseName}
-                            {verdict && (
-                              <span className={`ml-1.5 font-medium ${verdictColor}`}>
-                                · {verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}
-                              </span>
-                            )}
-                          </p>
-                        )}
-                        {!verdict && lastSession.sentenceOfTruth?.content && (
-                          <p className="text-fresco-xs text-fresco-graphite-light mt-1 italic line-clamp-2">
-                            "{lastSession.sentenceOfTruth.content}"
-                          </p>
-                        )}
-                        {!houseName && !verdict && (
-                          <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
-                            {formatRelativeTime(lastSession.updatedAt)}
-                          </p>
-                        )}
-                      </button>
-                    </div>
-                  );
-                })()}
-
               </div>
             )}
           </div>
