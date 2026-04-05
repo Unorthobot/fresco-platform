@@ -2069,6 +2069,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [isReframing, setIsReframing] = useState(false);
   const [showLensPicker, setShowLensPicker] = useState(false);
   const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
+  const [runError, setRunError] = useState<string | null>(null);
   const [userVerdict, setUserVerdict] = useState<string | null>(null);
   const [showVerdictOverride, setShowVerdictOverride] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
@@ -2148,17 +2149,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   useEffect(() => { challengeQuestionsRef.current = challengeQuestions; }, [challengeQuestions]);
   useEffect(() => { challengeDismissedRef.current = challengeDismissed; }, [challengeDismissed]);
 
-  const handleRunWithChallenge = useCallback(async () => {
+  const handleRunWithChallenge = useCallback(() => {
     if (!canRun || isRunning) return;
-    // Run immediately — no blocking challenge gate
-    handleRun();
+    handleRunRef.current();
   }, [canRun, isRunning]);
 
   const handleRun = useCallback(async () => {
     if (!canRun) return;
     // Check generation limit
     if (!canGenerate) { setShowPricingModal(true); return; }
-    setIsRunning(true); setResult(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null);
+    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null);
     const userInput = buildUserInput();
 
     try {
@@ -2228,9 +2228,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         const data = await response.json();
         if (data.verdict) { setResult(data); await persistResult(data); }
       }
-    } catch (err) { console.error('House run failed:', err); }
+    } catch (err) {
+      console.error('House run failed:', err);
+      setRunError('Something went wrong. Check your connection and try again.');
+    }
     setIsRunning(false);
   }, [canRun, values, url, houseId, sessions, workspaceId, sessionId]);
+
+  // Stable ref so handleRunWithChallenge always calls the latest handleRun
+  const handleRunRef = useRef<() => Promise<void>>(async () => {});
+  useEffect(() => { handleRunRef.current = handleRun; }, [handleRun]);
 
   const persistResult = async (data: HouseResult) => {
     if (!session) return;
@@ -2436,16 +2443,22 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             <button
               onClick={handleRunWithChallenge}
               disabled={!canRun || isRunning}
-              className={cn('fresco-btn w-full', (!canRun || isRunning) && 'opacity-40 cursor-not-allowed pointer-events-none')}>
+              className={cn('fresco-btn w-full', (!canRun || isRunning) && 'opacity-40 cursor-not-allowed')}>
               {isRunning
                 ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Working through it…</span></>
                 : <><Sparkles className="w-4 h-4" /><span>Get a verdict</span></>
               }
             </button>
-            {!canRun && !isRunning && (
+            {!canRun && !isRunning && !runError && (
               <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
                 Start answering to unlock the run button
               </p>
+            )}
+            {runError && !isRunning && (
+              <div className="mt-2 p-2.5 bg-red-50 border border-red-200 flex items-start gap-2">
+                <span className="text-red-500 text-fresco-xs flex-shrink-0 mt-0.5">!</span>
+                <p className="text-fresco-xs text-red-700">{runError}</p>
+              </div>
             )}
           </div>
         </div>
