@@ -252,9 +252,9 @@ export function HomeDashboard({
                               {hName && (
                                 <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
                                   {hName}
-                                  {verdict && (
+                                  {verdict && verdict !== 'INVESTIGATE FURTHER' && (
                                     <span className={`ml-1.5 font-medium ${vColor}`}>
-                                      · {verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}
+                                      · {verdict}
                                     </span>
                                   )}
                                 </p>
@@ -398,19 +398,7 @@ export function HomeDashboard({
               </div>
             )}
 
-            {/* Verdict tally — only if there are verdicts */}
-            {Object.keys(verdicts).length > 0 && (
-              <div className="border-t border-fresco-border-light pt-6">
-                <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-3">Your verdicts this month</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(verdicts).map(([v, count]) => (
-                    <span key={v} className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${VERDICT_STYLE[v] || 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border'}`}>
-                      {count} {v === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : v}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+
           </motion.div>
         )}
       </div>
