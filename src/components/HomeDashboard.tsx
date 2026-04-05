@@ -91,11 +91,12 @@ export function HomeDashboard({
               </p>
             </div>
 
-            {/* Context widget — where you left off */}
+            {/* Context widget — always present, personalised below */}
             {now && (
-              <div className="hidden lg:flex flex-col items-end gap-0 flex-shrink-0 pt-1 min-w-[180px]">
-                {/* Time + date */}
-                <div className="text-right mb-3">
+              <div className="hidden lg:flex flex-col items-end gap-0 flex-shrink-0 pt-1 min-w-[200px]">
+
+                {/* Time + date — always shown */}
+                <div className="text-right mb-4">
                   <div className="text-2xl font-medium text-fresco-black tabular-nums leading-none">
                     {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </div>
@@ -104,14 +105,70 @@ export function HomeDashboard({
                   </div>
                 </div>
 
-                {/* Where you left off */}
+                {/* Orientation block — always shown, any user */}
+                {(() => {
+                  // Work out which house to recommend contextually
+                  const houseSessions = sessions.filter(s => (s as any).houseType);
+                  const hasRun = (h: HouseId) => houseSessions.some(s => (s as any).houseType === h);
+                  const lastHouseSession = houseSessions
+                    .slice()
+                    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+                  const lastVerdict = (lastHouseSession as any)?.aiOutputs?.houseResult?.verdict
+                    || (lastHouseSession as any)?.aiOutputs?.verdict;
+                  const suggestedNext = (lastHouseSession as any)?.aiOutputs?.houseResult?.suggestedNextHouse
+                    || (lastHouseSession as any)?.aiOutputs?.suggestedNextHouse;
+
+                  let recommendedHouse: HouseId = 'investigate';
+                  let recommendReason = 'Start here. Define the real problem before committing to a direction.';
+
+                  if (suggestedNext) {
+                    recommendedHouse = suggestedNext as HouseId;
+                    recommendReason = `Your last analysis pointed here.`;
+                  } else if (hasRun('investigate') && !hasRun('innovate')) {
+                    recommendedHouse = 'innovate';
+                    recommendReason = "You've investigated. Now shape the right solution.";
+                  } else if (hasRun('innovate') && !hasRun('validate')) {
+                    recommendedHouse = 'validate';
+                    recommendReason = 'You have a direction. Now test if it will actually sell.';
+                  } else if (hasRun('validate') && !hasRun('evaluate')) {
+                    recommendedHouse = 'evaluate';
+                    recommendReason = "You've validated. Now see how it's performing live.";
+                  } else if (hasRun('evaluate')) {
+                    recommendedHouse = 'investigate';
+                    recommendReason = 'Close the loop. Start a new investigation.';
+                  }
+
+                  const house = HOUSE_META[recommendedHouse];
+
+                  return (
+                    <div className="w-full border-t border-fresco-border-light pt-3 mb-3">
+                      <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-2 text-right">
+                        Run next
+                      </p>
+                      <button
+                        onClick={() => onStartHouse?.(recommendedHouse)}
+                        className="w-full text-right group"
+                      >
+                        <p className="text-fresco-sm font-medium text-fresco-black group-hover:underline underline-offset-2">
+                          {house.name}
+                        </p>
+                        <p className="text-fresco-xs text-fresco-graphite-light mt-0.5 leading-relaxed">
+                          {recommendReason}
+                        </p>
+                        <p className="text-fresco-xs text-fresco-graphite-light/60 mt-1 italic">
+                          {house.output}
+                        </p>
+                      </button>
+                    </div>
+                  );
+                })()}
+
+                {/* Where you left off — only for returning users */}
                 {hasActivity && (() => {
-                  // Find most recently updated workspace with sessions
                   const lastSession = sessions
                     .slice()
                     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
                   if (!lastSession) return null;
-
                   const ws = workspaces.find(w => w.id === lastSession.workspaceId);
                   if (!ws) return null;
 
@@ -119,9 +176,6 @@ export function HomeDashboard({
                   const houseName = houseId ? HOUSE_META[houseId]?.name : null;
                   const verdict = (lastSession as any).aiOutputs?.houseResult?.verdict
                     || (lastSession as any).aiOutputs?.verdict;
-                  const nextHouse = (lastSession as any).aiOutputs?.houseResult?.suggestedNextHouse
-                    || (lastSession as any).aiOutputs?.suggestedNextHouse;
-                  const nextHouseName = nextHouse ? HOUSE_META[nextHouse as HouseId]?.name : null;
 
                   const verdictColor = verdict === 'GO' ? 'text-emerald-600'
                     : verdict === 'PIVOT' ? 'text-amber-600'
@@ -131,16 +185,16 @@ export function HomeDashboard({
 
                   return (
                     <div className="w-full border-t border-fresco-border-light pt-3">
-                      <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-2 text-right">Where you left off</p>
+                      <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-2 text-right">
+                        Last session
+                      </p>
                       <button
                         onClick={() => onNavigateToWorkspace?.(ws.id)}
                         className="w-full text-right group"
                       >
-                        {/* Workspace */}
                         <p className="text-fresco-sm font-medium text-fresco-black group-hover:underline underline-offset-2 truncate">
                           {ws.title}
                         </p>
-                        {/* Last house + verdict */}
                         {houseName && (
                           <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
                             {houseName}
@@ -151,20 +205,12 @@ export function HomeDashboard({
                             )}
                           </p>
                         )}
-                        {/* Suggested next step */}
-                        {nextHouseName && (
-                          <p className="text-fresco-xs text-fresco-graphite-mid mt-1.5">
-                            → Run <span className="font-medium text-fresco-black">{nextHouseName}</span> next
-                          </p>
-                        )}
-                        {/* Sentence of truth if no verdict yet */}
                         {!verdict && lastSession.sentenceOfTruth?.content && (
                           <p className="text-fresco-xs text-fresco-graphite-light mt-1 italic line-clamp-2">
                             "{lastSession.sentenceOfTruth.content}"
                           </p>
                         )}
-                        {/* Fallback: just show time */}
-                        {!verdict && !lastSession.sentenceOfTruth?.content && (
+                        {!houseName && !verdict && (
                           <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
                             {formatRelativeTime(lastSession.updatedAt)}
                           </p>
@@ -173,6 +219,7 @@ export function HomeDashboard({
                     </div>
                   );
                 })()}
+
               </div>
             )}
           </div>
