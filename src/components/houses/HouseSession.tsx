@@ -53,10 +53,10 @@ interface ConversationStep {
 }
 
 const VERDICT_STYLES: Record<string, { bg: string; text: string; border: string; dot: string; label: string }> = {
-  'GO':                  { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-200', dot: 'bg-emerald-500', label: 'text-emerald-600' },
-  'PIVOT':               { bg: 'bg-amber-50',   text: 'text-amber-800',   border: 'border-amber-200',   dot: 'bg-amber-500',   label: 'text-amber-600' },
-  'INVESTIGATE FURTHER': { bg: 'bg-blue-50',    text: 'text-blue-800',    border: 'border-blue-200',    dot: 'bg-blue-500',    label: 'text-blue-600' },
-  'Needs more signal':   { bg: 'bg-blue-50',    text: 'text-blue-800',    border: 'border-blue-200',    dot: 'bg-blue-500',    label: 'text-blue-600' },
+  'GO':                  { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
+  'PIVOT':               { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
+  'INVESTIGATE FURTHER': { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
+  'Needs more signal':   { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
   'STOP':                { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
 };
 

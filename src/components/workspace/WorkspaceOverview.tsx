@@ -515,10 +515,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                     {(() => {
                                       const v = (session as any).aiOutputs?.verdict || (session as any).aiOutputs?.houseResult?.verdict;
                                       if (!v) return null;
-                                      const vstyle = v === 'GO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                        v === 'PIVOT' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                        v === 'STOP' ? 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border' :
-                                        'bg-blue-50 text-blue-700 border-blue-200';
+                                      const vstyle = 'bg-fresco-light-gray text-fresco-black border-fresco-border';
                                       return (
                                         <span className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${vstyle}`}>
                                           {v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : v}
@@ -528,10 +525,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                     {(session as any).decision && (
                                       <span className={[
                                         'text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border',
-                                        (session as any).decision === 'GO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                        (session as any).decision === 'PIVOT' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                        (session as any).decision === 'KILL' ? 'bg-red-50 text-red-600 border-red-200' :
-                                        'bg-gray-50 text-gray-500 border-gray-200'
+                                        'bg-fresco-light-gray text-fresco-black border-fresco-border'
                                       ].join(' ')}>
                                         {(session as any).decision === 'DEFERRED' ? 'Pending' : (session as any).decision}
                                       </span>
@@ -658,7 +652,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                   <span className="fresco-label block mb-3">Houses run</span>
                   <div className="space-y-1.5">
                     {houseRuns.map(({ house, count, verdict }) => {
-                      const vstyle = verdict === 'GO' ? 'text-emerald-600' : verdict === 'PIVOT' ? 'text-amber-600' : verdict === 'STOP' ? 'text-fresco-graphite-mid' : verdict === 'INVESTIGATE FURTHER' ? 'text-blue-600' : 'text-fresco-graphite-light';
+                      const vstyle = 'text-fresco-black';
                       return (
                         <div key={house} className="flex items-center justify-between py-1.5 border-b border-fresco-border-light last:border-0">
                           <span className="text-fresco-sm text-fresco-graphite-soft capitalize">{house}</span>

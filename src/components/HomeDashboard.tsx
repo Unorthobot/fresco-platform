@@ -52,10 +52,10 @@ export function HomeDashboard({
   }, {} as Record<string, number>);
 
   const VERDICT_STYLE: Record<string, string> = {
-    'GO': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    'PIVOT': 'bg-amber-50 text-amber-700 border-amber-200',
-    'STOP': 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border',
-    'INVESTIGATE FURTHER': 'bg-blue-50 text-blue-700 border-blue-200',
+    'GO': 'bg-fresco-light-gray text-fresco-black border-fresco-border',
+    'PIVOT': 'bg-fresco-light-gray text-fresco-black border-fresco-border',
+    'STOP': 'bg-fresco-light-gray text-fresco-black border-fresco-border',
+    'INVESTIGATE FURTHER': 'bg-fresco-light-gray text-fresco-black border-fresco-border',
   };
 
   return (
