@@ -2146,42 +2146,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   useEffect(() => { challengeDismissedRef.current = challengeDismissed; }, [challengeDismissed]);
 
   const handleRunWithChallenge = useCallback(async () => {
-    if (!canRun) return;
-
-    const currentQuestions = challengeQuestionsRef.current;
-    const currentDismissed = challengeDismissedRef.current;
-
-    // Panel is visible, waiting for user — do nothing
-    if (currentQuestions.length > 0 && !currentDismissed) return;
-
-    // Dismissed (answered or skipped) — run
-    if (currentDismissed) { handleRun(); return; }
-
-    // Already fetched, no questions found — run
-    if (challengeFetchedRef.current) { handleRun(); return; }
-
-    // First click — fetch
-    challengeFetchedRef.current = true;
-    const input = buildUserInput();
-    setIsFetchingChallenge(true);
-    try {
-      const res = await fetch('/api/challenge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ house: houseId, userInput: input }),
-      });
-      const data = res.ok ? await res.json() : { questions: [] };
-      if (data.questions?.length > 0) {
-        setChallengeQuestions(data.questions);
-      } else {
-        handleRun();
-      }
-    } catch {
-      handleRun();
-    } finally {
-      setIsFetchingChallenge(false);
-    }
-  }, [canRun, houseId]);
+    if (!canRun || isRunning) return;
+    // Run immediately — no blocking challenge gate
+    handleRun();
+  }, [canRun, isRunning]);
 
   const handleRun = useCallback(async () => {
     if (!canRun) return;
@@ -2388,10 +2356,15 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               <img src={meta.icon} alt={meta.name} className="w-4 h-4 opacity-60 icon-theme"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               <span className="fresco-label capitalize">{meta.name}</span>
-              <span className="fresco-label text-fresco-graphite-light">→ {meta.output}</span>
             </div>
-            <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight mb-2">{meta.name}</h1>
-            <p className="text-fresco-base text-fresco-graphite-mid max-w-lg">{meta.description}</p>
+            <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight mb-1">{meta.name}</h1>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-fresco-xs font-medium text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 tracking-wide">
+                {(meta as any).formalLabel}
+              </span>
+              <span className="text-fresco-xs text-fresco-graphite-light">{meta.output}</span>
+            </div>
+            <p className="text-fresco-sm text-fresco-graphite-mid max-w-lg">{meta.description}</p>
           </div>
 
           {/* Top progress strip — visible before first answer */}
@@ -2440,7 +2413,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         <div className="border-t border-fresco-border-light bg-fresco-white px-4 md:px-8 py-4">
           <div className="max-w-[640px] mx-auto">
             <AnimatePresence>
-              {canRun && !result && !isRunning && challengeQuestions.length > 0 && !challengeDismissed && (
+              {false && canRun && !result && !isRunning && challengeQuestions.length > 0 && !challengeDismissed && (
                 <ChallengePanel
                   key="challenge"
                   questions={challengeQuestions}
@@ -2459,14 +2432,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
             <button
               onClick={handleRunWithChallenge}
-              disabled={!canRun || isFetchingChallenge || (challengeQuestions.length > 0 && !challengeDismissed)}
-              className={cn('fresco-btn w-full', (!canRun || isFetchingChallenge || (challengeQuestions.length > 0 && !challengeDismissed)) && 'opacity-40 cursor-not-allowed pointer-events-none')}>
+              disabled={!canRun || isRunning}
+              className={cn('fresco-btn w-full', (!canRun || isRunning) && 'opacity-40 cursor-not-allowed pointer-events-none')}>
               {isRunning
-                ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Running analysis…</span></>
-                : isFetchingChallenge
-                ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Reviewing your inputs…</span></>
-                : challengeQuestions.length > 0 && !challengeDismissed
-                ? <><span>Answer or skip the question above to run</span></>
+                ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Working through it…</span></>
                 : <><Sparkles className="w-4 h-4" /><span>Get a verdict</span></>
               }
             </button>
@@ -2490,7 +2459,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-fresco-lg font-medium text-fresco-black">Results</h2>
-              {result && <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">{meta.name} · {meta.output}</p>}
+              {result && (
+                <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
+                  {meta.name} · <span className="text-fresco-graphite-light">{(meta as any).formalLabel}</span>
+                  <span className="text-fresco-graphite-light/60"> — {meta.output}</span>
+                </p>
+              )}
             </div>
             {isRunning && (
               <div className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light">

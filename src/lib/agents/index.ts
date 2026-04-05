@@ -582,30 +582,35 @@ export const HOUSE_FIELDS: Record<HouseId, HouseField[]> = {
 export const HOUSE_META: Record<HouseId, {
   name: string;
   output: string;
+  formalLabel: string;
   description: string;
   icon: string;
 }> = {
   investigate: {
     name: 'Investigate',
     output: 'Is the problem real?',
+    formalLabel: 'Problem–Solution Fit',
     description: 'Figure out what\'s actually going on before you commit to a direction.',
     icon: '/01-investigate.png',
   },
   innovate: {
     name: 'Innovate',
     output: 'Will people want this?',
+    formalLabel: 'Product–Market Fit',
     description: 'Turn the real problem into focused options worth building.',
     icon: '/02-innovate.png',
   },
   validate: {
     name: 'Validate',
     output: 'Will it sell?',
+    formalLabel: 'Commercial Viability',
     description: 'Find out if it will sell before you spend to build it.',
     icon: '/03-validate.png',
   },
   evaluate: {
     name: 'Evaluate',
     output: 'How is it actually doing?',
+    formalLabel: 'Performance Reality',
     description: 'Understand how what you built is actually performing.',
     icon: '/04-evaluate.png',
   },

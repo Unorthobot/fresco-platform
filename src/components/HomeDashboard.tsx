@@ -99,6 +99,11 @@ export function HomeDashboard({
                   <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">{house.name}</span>
                   <ArrowRight className="w-3.5 h-3.5 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
                 </div>
+                {/* Formal label pill */}
+                <span className="inline-block text-[10px] font-medium text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 mb-2 tracking-wide">
+                  {house.formalLabel}
+                </span>
+                {/* Plain English output */}
                 <p className="text-fresco-sm font-medium text-fresco-black leading-snug mb-2">{house.output}</p>
                 <p className="text-fresco-xs text-fresco-graphite-light leading-relaxed flex-1">{house.description}</p>
               </motion.button>

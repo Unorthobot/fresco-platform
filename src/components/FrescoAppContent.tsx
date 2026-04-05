@@ -247,14 +247,18 @@ export default function FrescoAppContent() {
   };
 
   const handleBackToWorkspace = () => {
-    setActiveSession(null);
-    setActiveSection('workspaces');
-    setCurrentView('workspace');
-    // If no active workspace, go home instead
     if (!activeWorkspaceId) {
+      setActiveSession(null);
+      setActiveWorkspace(null);
       setActiveSection('home');
       setCurrentView('home');
+      return;
     }
+    // Set view BEFORE clearing session to avoid effectiveView momentarily
+    // resolving to 'home' during the state transition
+    setCurrentView('workspace');
+    setActiveSection('workspaces');
+    setActiveSession(null);
   };
 
 
