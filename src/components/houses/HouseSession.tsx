@@ -23,6 +23,9 @@ import type { HouseResult } from '@/lib/orchestrator';
 import { PricingModal } from '@/components/ui/PricingModal';
 import { useAIGeneration } from '@/lib/useAIGeneration';
 import { VerdictVisual } from '@/components/ui/VerdictVisual';
+import { ScoreRadar } from '@/components/ui/ScoreRadar';
+import { MetricsBar } from '@/components/ui/MetricsBar';
+import { JourneyFunnel } from '@/components/ui/JourneyFunnel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2685,6 +2688,50 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </p>
                     </div>
                   );
+                })()}
+
+                {/* ── Data visualisations — house-specific ─────────────── */}
+                {houseId === 'validate' && values['scores'] && (() => {
+                  try {
+                    const scores = JSON.parse(values['scores']);
+                    if (Array.isArray(scores) && scores.length >= 3) {
+                      return (
+                        <div>
+                          <span className="fresco-label block mb-3">Score breakdown</span>
+                          <ScoreRadar scores={scores} />
+                        </div>
+                      );
+                    }
+                  } catch { /* skip */ }
+                  return null;
+                })()}
+
+                {houseId === 'validate' && values['actuals'] && values['targets'] && (() => {
+                  try {
+                    const metrics = JSON.parse(values['actuals'] || values['targets']);
+                    if (Array.isArray(metrics) && metrics.length > 0) {
+                      return (
+                        <div>
+                          <span className="fresco-label block mb-3">Metrics: target vs actual</span>
+                          <MetricsBar metrics={metrics} />
+                        </div>
+                      );
+                    }
+                  } catch { /* skip */ }
+                  return null;
+                })()}
+
+                {houseId === 'evaluate' && evaluateMode === 'journey' && values['subject'] && (() => {
+                  const text = values['subject'];
+                  if (text && text.length > 20) {
+                    return (
+                      <div>
+                        <span className="fresco-label block mb-3">Journey breakdown</span>
+                        <JourneyFunnel subjectText={text} />
+                      </div>
+                    );
+                  }
+                  return null;
                 })()}
 
                 <div>
