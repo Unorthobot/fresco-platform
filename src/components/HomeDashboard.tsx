@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Plus, Clock, Folder } from 'lucide-react';
 import { useFrescoStore, useWorkspaces } from '@/lib/store';
@@ -30,6 +30,13 @@ export function HomeDashboard({
   const { user, sessions, getRecentSessions } = useFrescoStore();
   const workspaces = useWorkspaces();
   const [showPricingModal, setShowPricingModal] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
 
   const recentSessions = getRecentSessions(5);
   const { data: session } = useSession();
@@ -67,19 +74,78 @@ export function HomeDashboard({
 
         {/* ── Header ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-          <span className="fresco-label block mb-3">
-            {isGuest ? 'GET STARTED' : `WELCOME BACK${firstName ? `, ${firstName.toUpperCase()}` : ''}`}
-          </span>
-          <h1 className="text-4xl md:text-5xl font-medium text-fresco-black tracking-tight mb-4 leading-tight">
-            {isGuest
-              ? 'What decision are you trying to make?'
-              : hasActivity
-              ? 'Pick up where you left off, or start something new.'
-              : 'What decision are you trying to make?'}
-          </h1>
-          <p className="text-fresco-base text-fresco-graphite-mid max-w-xl">
-            Choose a house. Answer a few questions. Get a verdict.
-          </p>
+          <div className="flex items-start justify-between gap-8">
+            <div className="flex-1">
+              <span className="fresco-label block mb-3">
+                {isGuest ? 'GET STARTED' : `WELCOME BACK${firstName ? `, ${firstName.toUpperCase()}` : ''}`}
+              </span>
+              <h1 className="text-4xl md:text-5xl font-medium text-fresco-black tracking-tight mb-4 leading-tight">
+                {isGuest
+                  ? 'What decision are you trying to make?'
+                  : hasActivity
+                  ? 'Pick up where you left off, or start something new.'
+                  : 'What decision are you trying to make?'}
+              </h1>
+              <p className="text-fresco-base text-fresco-graphite-mid max-w-xl">
+                Choose a house. Answer a few questions. Get a verdict.
+              </p>
+            </div>
+
+            {/* Context widget — top right, functional value */}
+            {now && (
+              <div className="hidden lg:flex flex-col items-end gap-3 flex-shrink-0 pt-1">
+                {/* Date and time */}
+                <div className="text-right">
+                  <div className="text-2xl font-medium text-fresco-black tabular-nums leading-none">
+                    {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </div>
+                  <div className="text-fresco-xs text-fresco-graphite-light mt-0.5">
+                    {now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </div>
+                </div>
+                {/* Usage context */}
+                {!isGuest && user?.subscription === 'free' && (() => {
+                  const limit = 3;
+                  const currentUsage = user?.aiGenerationsThisMonth || 0;
+                  const remaining = Math.max(0, limit - currentUsage);
+                  return (
+                    <div className="text-right">
+                      <div className="text-fresco-xs text-fresco-graphite-light">
+                        <span className={remaining === 0 ? 'text-red-500 font-medium' : remaining <= 1 ? 'text-amber-600 font-medium' : 'text-fresco-black font-medium'}>
+                          {remaining}
+                        </span>
+                        {' '}of {limit} runs left this month
+                      </div>
+                      <div className="flex gap-0.5 mt-1 justify-end">
+                        {Array.from({ length: limit }).map((_, i) => (
+                          <div key={i} className={`w-4 h-1 rounded-full ${i < currentUsage ? 'bg-fresco-graphite-light' : 'bg-fresco-border'}`} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Last verdict */}
+                {hasActivity && (() => {
+                  const lastWithVerdict = sessions
+                    .filter(s => (s as any).aiOutputs?.verdict || (s as any).aiOutputs?.houseResult?.verdict)
+                    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+                  if (!lastWithVerdict) return null;
+                  const v = (lastWithVerdict as any).aiOutputs?.verdict || (lastWithVerdict as any).aiOutputs?.houseResult?.verdict;
+                  const houseId = (lastWithVerdict as any).houseType as HouseId | undefined;
+                  const vstyle = v === 'GO' ? 'text-emerald-600' : v === 'PIVOT' ? 'text-amber-600' : v === 'STOP' ? 'text-fresco-graphite-mid' : 'text-blue-600';
+                  return (
+                    <div className="text-right">
+                      <div className="text-fresco-xs text-fresco-graphite-light">Last verdict</div>
+                      <div className={`text-fresco-xs font-medium mt-0.5 ${vstyle}`}>
+                        {v === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : v}
+                        {houseId && <span className="text-fresco-graphite-light font-normal"> · {houseId}</span>}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {/* ── Four Houses ── */}
@@ -100,7 +166,7 @@ export function HomeDashboard({
                   <ArrowRight className="w-3.5 h-3.5 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
                 </div>
                 {/* Formal label pill */}
-                <span className="inline-block text-[10px] font-medium text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 mb-2 tracking-wide">
+                <span className="inline-block text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2.5 py-0.5 rounded-full mb-2">
                   {house.formalLabel}
                 </span>
                 {/* Plain English output */}
@@ -160,8 +226,8 @@ export function HomeDashboard({
                           </p>
                         </div>
                         {verdict && (
-                          <span className={`flex-shrink-0 text-[10px] font-medium px-2 py-0.5 border ${VERDICT_STYLE[verdict] || 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border'}`}>
-                            {verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : verdict}
+                          <span className={`flex-shrink-0 text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${VERDICT_STYLE[verdict] || 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border'}`}>
+                            {verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}
                           </span>
                         )}
                       </button>
@@ -205,7 +271,7 @@ export function HomeDashboard({
                 <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-3">Your verdicts this month</p>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(verdicts).map(([v, count]) => (
-                    <span key={v} className={`text-fresco-xs font-medium px-2.5 py-1 border ${VERDICT_STYLE[v] || 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border'}`}>
+                    <span key={v} className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${VERDICT_STYLE[v] || 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border'}`}>
                       {count} {v === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : v}
                     </span>
                   ))}

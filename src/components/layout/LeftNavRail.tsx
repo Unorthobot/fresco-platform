@@ -56,12 +56,14 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   };
 
   const handleDeleteWorkspace = (workspaceId: string) => {
-    setActiveWorkspace(null);
+    // Navigate home first so the view never sees a workspace without its data
+    setDeleteConfirm(null);
     setActiveSession(null);
+    setActiveWorkspace(null);
     setActiveSection('home');
     onNavigate?.('home');
-    db.deleteWorkspace(workspaceId);
-    setDeleteConfirm(null);
+    // Delete after navigation state is set
+    setTimeout(() => db.deleteWorkspace(workspaceId), 50);
   };
 
   const handleNavClick = (section: string) => {
@@ -212,7 +214,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
                   Cancel
                 </button>
                 <button onClick={() => handleDeleteWorkspace(deleteConfirm!)}
-                  className="flex-1 h-9 text-fresco-sm text-white bg-fresco-black hover:bg-fresco-graphite transition-colors">
+                  className="flex-1 h-9 text-fresco-sm text-white bg-red-600 hover:bg-red-700 transition-colors">
                   Delete
                 </button>
               </div>

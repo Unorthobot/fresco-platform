@@ -520,14 +520,14 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                         v === 'STOP' ? 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border' :
                                         'bg-blue-50 text-blue-700 border-blue-200';
                                       return (
-                                        <span className={`text-fresco-xs font-medium px-2 py-0.5 border ${vstyle}`}>
+                                        <span className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${vstyle}`}>
                                           {v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : v}
                                         </span>
                                       );
                                     })()}
                                     {(session as any).decision && (
                                       <span className={[
-                                        'text-fresco-xs font-medium px-2 py-0.5 rounded-full border',
+                                        'text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border',
                                         (session as any).decision === 'GO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                         (session as any).decision === 'PIVOT' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                                         (session as any).decision === 'KILL' ? 'bg-red-50 text-red-600 border-red-200' :
@@ -663,7 +663,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                         <div key={house} className="flex items-center justify-between py-1.5 border-b border-fresco-border-light last:border-0">
                           <span className="text-fresco-sm text-fresco-graphite-soft capitalize">{house}</span>
                           <div className="flex items-center gap-2">
-                            {verdict && <span className={`text-fresco-xs font-medium ${vstyle}`}>{verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : verdict}</span>}
+                            {verdict && <span className={`text-fresco-xs font-medium ${vstyle}`}>{verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}</span>}
                             {count > 1 && <span className="text-fresco-xs text-fresco-graphite-light">×{count}</span>}
                           </div>
                         </div>

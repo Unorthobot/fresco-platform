@@ -295,7 +295,7 @@ export default function FrescoAppContent() {
       <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} onStartHouse={handleStartHouse} />
 
       <main id="main-content" className="md:ml-[220px] min-h-screen relative">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           {effectiveView === 'home' && (
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <HomeDashboard

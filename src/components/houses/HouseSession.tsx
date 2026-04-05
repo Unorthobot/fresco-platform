@@ -2069,6 +2069,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [isReframing, setIsReframing] = useState(false);
   const [showLensPicker, setShowLensPicker] = useState(false);
   const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
+  const [userVerdict, setUserVerdict] = useState<string | null>(null);
+  const [showVerdictOverride, setShowVerdictOverride] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
 
   // Challenge step state
   const [challengeQuestions, setChallengeQuestions] = useState<ChallengeQuestion[]>([]);
@@ -2359,7 +2362,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             </div>
             <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight mb-1">{meta.name}</h1>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-fresco-xs font-medium text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 tracking-wide">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2.5 py-0.5 rounded-full">
                 {(meta as any).formalLabel}
               </span>
               <span className="text-fresco-xs text-fresco-graphite-light">{meta.output}</span>
@@ -2562,12 +2565,23 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
                 {/* VERDICT — decision second */}
                 <div>
-                  <span className="fresco-label block mb-3">Verdict</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="fresco-label">Verdict</span>
+                    {!showVerdictOverride && (
+                      <button
+                        onClick={() => setShowVerdictOverride(true)}
+                        className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors underline underline-offset-2">
+                        Override
+                      </button>
+                    )}
+                  </div>
+                  {/* System verdict */}
                   <div className={cn('px-4 py-3 border', vs?.bg, vs?.text, vs?.border)}>
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <div className={cn('w-2 h-2 rounded-full', vs?.dot)} />
                         <span className="text-fresco-lg font-bold">{result.verdict === 'INVESTIGATE FURTHER' ? 'Needs more signal' : result.verdict}</span>
+                        <span className="text-fresco-xs opacity-50 font-normal">system</span>
                       </div>
                       {(result as any).fitStrength && (
                         <span className="text-fresco-xs opacity-70">
@@ -2577,6 +2591,46 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </div>
                     <p className="text-fresco-sm opacity-80">{result.verdictRationale}</p>
                   </div>
+                  {/* User override */}
+                  {showVerdictOverride && !userVerdict && (
+                    <div className="mt-2 p-3 border border-fresco-border bg-fresco-light-gray">
+                      <p className="text-fresco-xs text-fresco-graphite-mid mb-2">Your call — what do you think?</p>
+                      <div className="grid grid-cols-4 gap-1.5 mb-3">
+                        {(['GO', 'PIVOT', 'STOP', 'INVESTIGATE FURTHER'] as const).map(v => (
+                          <button key={v}
+                            onClick={() => setUserVerdict(v)}
+                            className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-wider border border-fresco-border bg-white hover:border-fresco-black hover:bg-fresco-black hover:text-white transition-all">
+                            {v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : v}
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={() => setShowVerdictOverride(false)}
+                        className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  {showVerdictOverride && userVerdict && (
+                    <div className="mt-2 p-3 border border-fresco-black bg-fresco-light-gray">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-fresco-xs font-medium uppercase tracking-wider">{userVerdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : userVerdict}</span>
+                          <span className="text-fresco-xs text-fresco-graphite-light">your call</span>
+                        </div>
+                        <button onClick={() => { setUserVerdict(null); setOverrideReason(''); }}
+                          className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
+                          Change
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={overrideReason}
+                        onChange={e => setOverrideReason(e.target.value)}
+                        placeholder="Why are you overriding? (optional)"
+                        className="w-full text-fresco-xs bg-white border border-fresco-border px-2 py-1.5 focus:outline-none focus:border-fresco-black transition-colors placeholder:text-fresco-graphite-light"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* POV Statement — Investigate only */}
