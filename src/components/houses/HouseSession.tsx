@@ -933,12 +933,12 @@ function QuestionCard({
                       type="button"
                       onClick={() => fileRef.current?.click()}
                       className="p-1.5 rounded-full bg-fresco-light-gray text-fresco-graphite-mid hover:bg-fresco-border hover:text-fresco-black transition-all"
-                      title="Upload file"
+                      title="Upload image or text file"
                     >
                       <Upload className="w-3.5 h-3.5" />
                     </button>
                     <input ref={fileRef} type="file" multiple
-                      accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,.xls,.xlsx,image/*"
+                      accept=".txt,.md,.csv,.json,image/*"
                       className="hidden"
                       onChange={async e => {
                         const files = Array.from(e.target.files || []);
