@@ -722,13 +722,14 @@ function useVoice(onText: (t: string) => void) {
 // When answered (blur or content present), collapses to show a preview.
 
 function QuestionCard({
-  step, value, onChange, onBlur, isActive, isAnswered, isLocked,
+  step, value, onChange, onBlur, onAttach, isActive, isAnswered, isLocked,
   onActivate, showAgent = false, criteriaValue = '', secondaryValue = '',
 }: {
   step: ConversationStep;
   value: string;
   onChange: (v: string) => void;
   onBlur?: () => void;
+  onAttach?: (stepId: string, content: string) => void;
   isActive: boolean;
   isAnswered: boolean;
   isLocked: boolean;
@@ -740,6 +741,7 @@ function QuestionCard({
   const fileRef = useRef<HTMLInputElement>(null);
   const voice = useVoice(t => onChange(value ? `${value}\n\n${t}` : t));
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const [attachments, setAttachments] = useState<{name: string; content: string; status: 'loading'|'ready'|'error'}[]>([]);
 
   useEffect(() => {
     if (isActive && textRef.current) {
@@ -1006,6 +1008,39 @@ ${text}` : text);
                       }}
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Attachment pills */}
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {attachments.map((att, i) => (
+                    <div key={i} className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 text-fresco-xs border max-w-[200px]',
+                      att.status === 'loading' ? 'border-fresco-border text-fresco-graphite-light bg-fresco-light-gray animate-pulse' :
+                      att.status === 'error' ? 'border-red-200 text-red-600 bg-red-50' :
+                      'border-fresco-border text-fresco-graphite-mid bg-fresco-light-gray'
+                    )}>
+                      <span className="truncate flex-1 min-w-0">
+                        {att.status === 'loading' ? 'Reading…' : att.name}
+                      </span>
+                      {att.status === 'ready' && (
+                        <button
+                          type="button"
+                          onClick={() => setAttachments(prev => {
+                              const next = prev.filter((_, idx) => idx !== i);
+                              const allContent = next.filter(a => a.status === 'ready' && a.content).map(a => a.content).join('\n\n');
+                              onAttach?.(step.id, allContent);
+                              return next;
+                            })}
+                          className="flex-shrink-0 text-fresco-graphite-light hover:text-fresco-black transition-colors ml-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                      {att.status === 'error' && <span className="flex-shrink-0 text-[10px]">✗</span>}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -1580,11 +1615,12 @@ const EVALUATE_STEPS_COMPARISON: ConversationStep[] = [
 // ─── Conversation flow component ─────────────────────────────────────────────
 
 function ConversationFlow({
-  steps, values, onChange,
+  steps, values, onChange, onAttach,
 }: {
   steps: ConversationStep[];
   values: Record<string, string>;
   onChange: (k: string, v: string) => void;
+  onAttach?: (stepId: string, content: string) => void;
 }) {
   // Track which step is active
   const [activeIdx, setActiveIdx] = useState(0);
@@ -1817,7 +1853,7 @@ function UrlTagInput({ urls, onChange, maxUrls, label }: {
 // ─── Evaluate mode selector ───────────────────────────────────────────────────
 
 function EvaluateFlow({
-  values, onChange, url, onUrlChange, mode, onModeChange,
+  values, onChange, url, onUrlChange, mode, onModeChange, onAttach,
 }: {
   values: Record<string, string>;
   onChange: (k: string, v: string) => void;
@@ -1825,6 +1861,7 @@ function EvaluateFlow({
   onUrlChange: (v: string) => void;
   mode: 'single' | 'journey' | 'comparison';
   onModeChange: (m: 'single' | 'journey' | 'comparison') => void;
+  onAttach?: (stepId: string, content: string) => void;
 }) {
   const setMode = onModeChange;
   const [goalAnswered, setGoalAnswered] = useState(false);
@@ -1903,7 +1940,7 @@ function EvaluateFlow({
       />
 
       {/* Mode-specific questions */}
-      <ConversationFlow steps={steps} values={values} onChange={onChange} />
+      <ConversationFlow steps={steps} values={values} onChange={onChange} onAttach={onAttach} />
     </div>
   );
 }
@@ -1938,6 +1975,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   };
 
   const [values, setValues] = useState<Record<string, string>>({});
+  const [attachmentContext, setAttachmentContext] = useState<Record<string, string>>({});
+
+  const handleAttach = (stepId: string, content: string) => {
+    setAttachmentContext(prev => content ? { ...prev, [stepId]: content } : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== stepId)));
+  };
   const [url, setUrl] = useState('');
   const [evaluateMode, setEvaluateMode] = useState<'single' | 'journey' | 'comparison'>('single');
   const [isRunning, setIsRunning] = useState(false);
@@ -2006,6 +2048,15 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         urlLines ? `URL(s): ${urlLines}` : null,
       ].filter(Boolean).join('\n');
       input = header + (fieldLines ? '\n\n' + fieldLines : '');
+    }
+
+    // Append attachment context — files attached by the user, kept separate from typed answers
+    const attachmentLines = Object.entries(attachmentContext)
+      .filter(([, content]) => content.trim())
+      .map(([stepId, content]) => `[Attached to "${stepId}"]\n${content}`)
+      .join('\n\n');
+    if (attachmentLines) {
+      input += `\n\n--- ATTACHED FILES (reference material) ---\n${attachmentLines}`;
     }
 
     // Append challenge responses if any were given
@@ -2284,16 +2335,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           {/* House-specific conversation */}
           <div className="mb-8">
             {houseId === 'investigate' && (
-              <ConversationFlow steps={INVESTIGATE_STEPS} values={values} onChange={setValue} />
+              <ConversationFlow steps={INVESTIGATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} />
             )}
             {houseId === 'innovate' && (
-              <ConversationFlow steps={INNOVATE_STEPS} values={values} onChange={setValue} />
+              <ConversationFlow steps={INNOVATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} />
             )}
             {houseId === 'validate' && (
-              <ConversationFlow steps={VALIDATE_STEPS} values={values} onChange={setValue} />
+              <ConversationFlow steps={VALIDATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} />
             )}
             {houseId === 'evaluate' && (
-              <EvaluateFlow values={values} onChange={setValue} url={url} onUrlChange={setUrl} mode={evaluateMode} onModeChange={setEvaluateMode} />
+              <EvaluateFlow values={values} onChange={setValue} url={url} onUrlChange={setUrl} mode={evaluateMode} onModeChange={setEvaluateMode} onAttach={handleAttach} />
             )}
           </div>
         </div>
