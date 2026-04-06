@@ -940,7 +940,7 @@ function QuestionCard({
                       <Upload className="w-3.5 h-3.5" />
                     </button>
                     <input ref={fileRef} type="file" multiple
-                      accept=".txt,.md,.csv,.json,image/*"
+                      accept="image/*,.txt,.md,.csv,.json,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                       className="hidden"
                       onChange={async e => {
                         const files = Array.from(e.target.files || []);
