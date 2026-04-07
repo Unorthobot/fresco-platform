@@ -27,14 +27,31 @@ export interface HouseResult {
   // Core judgement — house-specific fit label
   fitLabel: string;                 // e.g. "Problem–Solution Fit"
   fitStrength: 'Strong' | 'Shaky' | 'Mixed';
-  // Legacy verdict for UI colour coding
+  // Verdict
   verdict: 'GO' | 'PIVOT' | 'INVESTIGATE FURTHER' | 'STOP';
   verdictRationale: string;
-  // Outputs
-  povStatement?: string;        // Investigate only: User/Context/Need/Insight POV
+  // Core outputs
+  povStatement?: string;        // Investigate only
   sentenceOfTruth: string;
   keyIssues: string[];
   necessaryMoves: string[];
+  // Systems thinking outputs — house-specific
+  systemsOutput?: {
+    // Investigate: Iceberg + Current State Simulation
+    icebergLevels?: { event: string; pattern: string; structure: string; mentalModel: string };
+    currentStateSimulation?: string;   // "If nothing changes, this is what keeps happening"
+    systemTruth?: string;              // The uncomfortable truth from Position Builder
+    // Innovate: Leverage Map + Intervention Forecast
+    leverageMap?: { option: string; leverageLevel: string; impact: string }[];
+    interventionForecast?: { immediate: string; delayed: string; risk: string };
+    // Validate: Funnel Simulation + Confidence Range
+    funnelSimulation?: { expected: string; bestCase: string; worstCase: string };
+    influenceMap?: { barrier: string; lever: string; proofRequired: string };
+    // Evaluate: Evolution Projection + Learning
+    evolutionProjection?: string;      // Where is this heading in 3 months?
+    doublLoopLearning?: string;        // Are we solving the right problem?
+    kpiSystemMap?: string;             // What actually drives the metric
+  };
   // Routing
   suggestedNextHouse: HouseId | null;
   suggestedNextHouseReason: string;
@@ -146,6 +163,14 @@ ${a.structured_artifact ? `Structured artifact: ${a.structured_artifact}` : ''}`
   const investigateJsonField = house === 'investigate' ? `,
   "povStatement": "For [specific user]: they need [real need], because [non-obvious insight]"` : '';
 
+  const SYSTEMS_OUTPUT_SHAPES: Record<string, string> = {
+    investigate: '"icebergLevels": { "event": "...", "pattern": "...", "structure": "...", "mentalModel": "..." }, "currentStateSimulation": "If nothing changes — one sentence", "systemTruth": "The uncomfortable truth — one sentence"',
+    innovate: '"leverageMap": [{ "option": "Option name", "leverageLevel": "parameters|feedback|information|rules|goals|paradigms", "impact": "what shifts" }], "interventionForecast": { "immediate": "what changes within weeks", "delayed": "what changes over months", "risk": "unintended consequence to watch for" }',
+    validate: '"funnelSimulation": { "expected": "X% conversion", "bestCase": "Y% if top fix", "worstCase": "Z% if barriers stronger" }, "influenceMap": { "barrier": "the real barrier", "lever": "what overcomes it", "proofRequired": "what proof specifically" }',
+    evaluate: '"evolutionProjection": "If current trends continue, in 3 months: one sentence", "doublLoopLearning": "Are we solving the right problem? one sentence", "kpiSystemMap": "What actually drives the outcome metric"',
+  };
+  const systemsOutputShape = SYSTEMS_OUTPUT_SHAPES[house] || '"notes": ""';
+
   return `You are FRESCO's ${houseName} synthesis engine. Three specialist agents have run sequentially on the user's input. Each one built on the previous agent's findings.
 
 Your job: synthesise their combined outputs into a single integrated result.
@@ -216,6 +241,7 @@ export function buildHouseResult(
     sentenceOfTruth: mergeResponse.sentenceOfTruth,
     keyIssues: (mergeResponse.keyIssues || []).slice(0, 5),
     necessaryMoves: (mergeResponse.necessaryMoves || []).slice(0, 5),
+    systemsOutput: (mergeResponse as any).systemsOutput || undefined,
     suggestedNextHouse: routing.nextHouse,
     suggestedNextHouseReason: routing.reason,
     outputLabel: HOUSE_OUTPUT_LABELS[house],

@@ -26,6 +26,7 @@ import { VerdictVisual } from '@/components/ui/VerdictVisual';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { MetricsBar } from '@/components/ui/MetricsBar';
 import { JourneyFunnel } from '@/components/ui/JourneyFunnel';
+import { SystemsOutput } from '@/components/ui/SystemsOutput';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2666,6 +2667,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </div>
                   );
                 })()}
+
+                {/* ── Systems thinking outputs — house-specific ─────────── */}
+                {(result as any).systemsOutput && (
+                  <SystemsOutput
+                    house={houseId}
+                    systemsOutput={(result as any).systemsOutput}
+                  />
+                )}
 
                 {/* ── Data visualisations — house-specific ─────────────── */}
                 {houseId === 'validate' && values['scores'] && (() => {
