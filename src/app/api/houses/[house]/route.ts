@@ -143,7 +143,7 @@ async function runAgent(
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 700,
+      max_tokens: 1200,
       system: agent.systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
     }),
@@ -181,7 +181,7 @@ async function runMerge(house: HouseId, agentOutputs: AgentOutput[], userInput: 
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 900,
+      max_tokens: 2000,
       messages: [{ role: 'user', content: mergePrompt }],
     }),
   });

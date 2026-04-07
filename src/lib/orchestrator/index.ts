@@ -191,16 +191,22 @@ Produce the synthesis. Rules:
 - SENTENCE OF TRUTH: ONE sharp statement — the thing the user sensed but hadn't articulated. Not a summary. An insight.
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to their situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
-- VERDICT RATIONALE: 1–2 sentences. Reference their specific situation.${investigateExtra}
+- VERDICT RATIONALE: 1–2 sentences. Reference their specific situation.
+- SYSTEMS OUTPUT: Extract structured data from agent artifacts. Fill in the systemsOutput fields using what the agents actually found. Do not leave fields as "..." — put real content from the analysis.${investigateExtra}
+
+Also extract the SYSTEMS THINKING outputs from the agent structured_artifacts. The agents have embedded frameworks in their outputs — surface them as structured data.
 
 Respond ONLY with valid JSON:
 {
   "fitStrength": "Strong | Shaky | Mixed",
   "verdict": "GO | PIVOT | INVESTIGATE FURTHER | STOP",
-  "verdictRationale": "1-2 sentences",
-  "sentenceOfTruth": "Single sharp insight",
-  "keyIssues": ["issue 1", "issue 2", "issue 3"],
-  "necessaryMoves": ["move 1", "move 2", "move 3"]${investigateJsonField}
+  "verdictRationale": "1-2 sentences directly answering whether ${houseName} fit exists",
+  "sentenceOfTruth": "The thing they sensed but hadn't articulated — the uncomfortable truth",
+  "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
+  "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
+  "systemsOutput": {
+    ${systemsOutputShape}
+  }${investigateJsonField}
 }`;
 }
 
@@ -216,6 +222,7 @@ export function buildHouseResult(
     keyIssues: string[];
     necessaryMoves: string[];
     povStatement?: string;
+    systemsOutput?: Record<string, any>;
   }
 ): HouseResult {
   const fitStrength = mergeResponse.fitStrength || 'Mixed';
