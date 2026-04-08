@@ -269,7 +269,6 @@ export function HomeDashboard({
                       <ArrowRight className="w-3 h-3 text-fresco-graphite-light group-hover:text-fresco-black transition-all" />
                     </div>
                     <p className="text-fresco-xs font-medium text-fresco-black leading-snug mb-1">{house.output}</p>
-                    <p className="text-[10px] text-fresco-graphite-light leading-relaxed">{house.description}</p>
                   </motion.button>
                 );
               })}
