@@ -186,8 +186,9 @@ export function useOnboarding() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    const completed = localStorage.getItem('fresco-onboarding-complete');
-    if (!completed) setShowOnboarding(true);
+    // Force show for review — remove before finalising
+    localStorage.removeItem('fresco-onboarding-complete');
+    setShowOnboarding(true);
   }, []);
 
   return {
