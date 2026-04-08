@@ -231,47 +231,31 @@ export function HomeDashboard({
         {!hasActivity ? (
           // ── Empty state — first-time user ─────────────────────────────────
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-10">
-            {/* Primary CTA — start with Investigate */}
-            <div className="border border-fresco-black p-8 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light block mb-2">Start here</span>
-                <h2 className="text-2xl font-medium text-fresco-black leading-snug mb-2">
-                  Investigate
-                </h2>
-                <p className="text-fresco-sm text-fresco-graphite-mid max-w-sm leading-relaxed">
-                  Before committing to a direction, make sure you're solving the right problem. Most teams skip this step.
-                </p>
+            {/* Four equal houses — user self-selects based on where they are */}
+            <div className="mb-2">
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-5">Where are you in your decision?</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                {HOUSES.map((houseId, i) => {
+                  const house = HOUSE_META[houseId];
+                  return (
+                    <motion.button
+                      key={houseId}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.07 }}
+                      onClick={() => onStartHouse?.(houseId)}
+                      className="group fresco-card p-5 flex flex-col text-left hover:border-fresco-black transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">{house.name}</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                      <p className="text-fresco-sm font-medium text-fresco-black leading-snug mb-2">{house.output}</p>
+                      <p className="text-fresco-xs text-fresco-graphite-light leading-relaxed flex-1">{house.description}</p>
+                    </motion.button>
+                  );
+                })}
               </div>
-              <button
-                onClick={() => onStartHouse?.('investigate')}
-                className="fresco-btn flex-shrink-0 self-start md:self-center"
-              >
-                <span>Start with Investigate</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Other three houses — smaller, available but secondary */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {(['innovate', 'validate', 'evaluate'] as const).map((houseId, i) => {
-                const house = HOUSE_META[houseId];
-                return (
-                  <motion.button
-                    key={houseId}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 + i * 0.05 }}
-                    onClick={() => onStartHouse?.(houseId)}
-                    className="group fresco-card p-4 flex flex-col text-left hover:border-fresco-black transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">{house.name}</span>
-                      <ArrowRight className="w-3 h-3 text-fresco-graphite-light group-hover:text-fresco-black transition-all" />
-                    </div>
-                    <p className="text-fresco-xs font-medium text-fresco-black leading-snug mb-1">{house.output}</p>
-                  </motion.button>
-                );
-              })}
             </div>
 
             {/* What to expect — below the fold, no pressure */}
