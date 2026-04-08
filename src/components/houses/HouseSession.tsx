@@ -27,6 +27,7 @@ import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { MetricsBar } from '@/components/ui/MetricsBar';
 import { JourneyFunnel } from '@/components/ui/JourneyFunnel';
 import { SystemsOutput, CrossHouseSystems } from '@/components/ui/SystemsOutput';
+import { generatePDFReport, generateHTMLDeck } from '@/lib/reportGenerator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2897,6 +2898,48 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               </div>
 
               <div className="space-y-2">
+                {/* 0. PDF Report — comprehensive download */}
+                <button onClick={() => {
+                  generatePDFReport({
+                    houseName: meta.name,
+                    formalLabel: (meta as any).formalLabel || meta.name,
+                    result: result as any,
+                    agentEvents: agentEvents,
+                    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+                  });
+                }}
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-black bg-fresco-black hover:bg-fresco-graphite transition-colors text-left">
+                  <svg className="w-4 h-4 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                  </svg>
+                  <div>
+                    <p className="text-fresco-sm font-medium text-white">Download full report (PDF)</p>
+                    <p className="text-fresco-xs text-white/60">Complete analysis — Decision + Systems Intelligence — shareable anywhere</p>
+                  </div>
+                </button>
+
+                {/* 0b. Deck compiler */}
+                <button onClick={() => {
+                  generateHTMLDeck({
+                    houseName: meta.name,
+                    formalLabel: (meta as any).formalLabel || meta.name,
+                    result: result as any,
+                    agentEvents: agentEvents,
+                    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+                  });
+                }}
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
+                  <svg className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5" />
+                  </svg>
+                  <div>
+                    <p className="text-fresco-sm font-medium text-fresco-black">Open as presentation</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">Auto-compiled deck — opens in browser, navigate with arrow keys</p>
+                  </div>
+                </button>
+
+                <div className="border-t border-fresco-border-light pt-2">
+
                 {/* 1. Slack / Notion — primary, most common PM workflow */}
                 <button onClick={() => {
                   const slackText = [
@@ -2952,6 +2995,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     <p className="text-fresco-xs text-fresco-graphite-light">For Obsidian, Linear, or version-controlled docs</p>
                   </div>
                 </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
