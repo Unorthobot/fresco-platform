@@ -121,7 +121,7 @@ async function runAgent(
   const pageSection = pageContent
     ? `\n\n━━━ LIVE PAGE CONTENT (fetched directly from the URL) ━━━\n${pageContent}\n━━━ END PAGE CONTENT ━━━\n\nIMPORTANT: The content above is the actual live page. Base your entire analysis on what is written there — the real headlines, copy, CTAs, structure, and messaging. Do not substitute generic assumptions. Quote specific text from the page in your findings where relevant.`
     : pageFetchStatus === 'failed'
-    ? `\n\nNOTE: The URL was provided but the page could not be fetched server-side (this is common for JavaScript-rendered apps, sites behind Cloudflare, or SPAs). URL: ${originalUrl || '(provided)'}\n\nDo NOT refuse to analyse or say you cannot proceed. Instead: use your knowledge of this URL/domain if you recognise it, reason from the user's description, and make your best assessment. State clearly what you could and couldn't verify. A partial analysis grounded in what you know is far more useful than refusing.`
+    ? `\n\nNOTE: The URL ${originalUrl || '(provided)'} could not be fetched — the page is likely JavaScript-rendered, behind authentication, or bot-protected.\n\nDo NOT say you cannot analyse it. Instead:\n1. If you recognise this domain/product, use your knowledge of it directly\n2. Reason analytically from the user's description of the page\n3. State specifically what you verified vs what you're inferring\n4. Name what you would need to see to be more confident\nA specific partial analysis beats a generic refusal every time.`
     : '';
 
   // Sequential context: each agent sees what prior agents found

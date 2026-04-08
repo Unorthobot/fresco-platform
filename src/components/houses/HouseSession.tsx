@@ -1614,6 +1614,57 @@ const EVALUATE_STEPS_COMPARISON: ConversationStep[] = [
   },
 ];
 
+// ─── Universal URL input ──────────────────────────────────────────────────────
+
+function UniversalUrlInput({ url, onUrlChange }: { url: string; onUrlChange: (v: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!expanded && !url) {
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        className="w-full flex items-center gap-2 px-3 py-2 mt-3 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black border border-dashed border-fresco-border hover:border-fresco-graphite-light transition-colors"
+      >
+        <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+        </svg>
+        <span>Attach a URL — reference page, competitor, or doc link</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="border border-fresco-border p-3 mt-3">
+      <div className="flex items-center gap-2 mb-2">
+        <svg className="w-3 h-3 text-fresco-graphite-light flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+        </svg>
+        <span className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide">Reference URL</span>
+        {url && (
+          <button onClick={() => { onUrlChange(''); setExpanded(false); }}
+            className="ml-auto text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
+            Remove
+          </button>
+        )}
+      </div>
+      <input
+        type="url"
+        value={url}
+        onChange={e => onUrlChange(e.target.value)}
+        onBlur={() => { if (!url) setExpanded(false); }}
+        autoFocus={!url}
+        placeholder="https://…"
+        className="w-full text-fresco-xs bg-fresco-light-gray border border-fresco-border px-3 py-2 focus:outline-none focus:border-fresco-black transition-colors placeholder:text-fresco-graphite-light"
+      />
+      {url && (
+        <p className="text-[10px] text-fresco-graphite-light mt-1.5">
+          Fresco will fetch this page and include it as reference material in the analysis.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Conversation flow component ─────────────────────────────────────────────
 
 function ConversationFlow({
@@ -2379,13 +2430,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           {/* House-specific conversation */}
           <div className="mb-8">
             {houseId === 'investigate' && (
-              <ConversationFlow steps={INVESTIGATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} />
+              <><ConversationFlow steps={INVESTIGATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
             )}
             {houseId === 'innovate' && (
-              <ConversationFlow steps={INNOVATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} />
+              <><ConversationFlow steps={INNOVATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
             )}
             {houseId === 'validate' && (
-              <ConversationFlow steps={VALIDATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} />
+              <><ConversationFlow steps={VALIDATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
             )}
             {houseId === 'evaluate' && (
               <EvaluateFlow values={values} onChange={setValue} url={url} onUrlChange={setUrl} mode={evaluateMode} onModeChange={setEvaluateMode} onAttach={handleAttach} />
