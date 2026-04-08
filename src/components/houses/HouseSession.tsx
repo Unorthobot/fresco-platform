@@ -1678,7 +1678,7 @@ function ConversationFlow({
         const isActive = idx === activeIdx;
         // #5 — Show agent divider when agent changes from previous step
         const prevAgent = idx > 0 ? steps[idx - 1].agent : null;
-        const showAgentDivider = isVisible && step.agent && step.agent !== prevAgent && idx > 0;
+        const showAgentDivider = false; // Agent labels removed — framework hints in questions instead
         const isAnswered = hasValue(step.id) && !isActive;
         const isLocked = !isVisible;
 
@@ -1986,7 +1986,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [isRunning, setIsRunning] = useState(false);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
-  const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>([]);
+  const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem(`fresco-agent-outputs-${sessionId}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [pageFetchMessage, setPageFetchMessage] = useState<string | null>(null);
   const [activeLens, setActiveLens] = useState<string | null>(null);
   const [isReframing, setIsReframing] = useState(false);
@@ -1996,6 +2001,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [userVerdict, setUserVerdict] = useState<string | null>(null);
   const [showVerdictOverride, setShowVerdictOverride] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
+  const [outputTab, setOutputTab] = useState<'decision' | 'analysis'>('decision');
 
   // Challenge step state
   const [challengeQuestions, setChallengeQuestions] = useState<ChallengeQuestion[]>([]);
@@ -2090,7 +2096,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (!canRun) return;
     // Check generation limit
     if (!canGenerate) { setShowPricingModal(true); return; }
-    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null);
+    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
     const userInput = buildUserInput();
 
     try {
@@ -2131,22 +2137,29 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               if (ev.type === 'pageFetch') {
                 if (ev.message) setPageFetchMessage(ev.message);
               } else if (ev.type === 'agent') {
-                setAgentEvents(prev => [...prev, {
-                  displayName: ev.displayName, signal: ev.signal,
-                  summary: ev.summary || '', confidence: ev.confidence || 'medium',
-                  structured_artifact: ev.structured_artifact || undefined,
-                }]);
+                setAgentEvents(prev => {
+                  const next = [...prev, {
+                    displayName: ev.displayName, signal: ev.signal,
+                    summary: ev.summary || '', confidence: ev.confidence || 'medium',
+                    structured_artifact: ev.structured_artifact || undefined,
+                  }];
+                  try { localStorage.setItem(`fresco-agent-outputs-${sessionId}`, JSON.stringify(next)); } catch {}
+                  return next;
+                });
                 // Store full output for lens reframe
-                setStoredAgentOutputs(prev => [...prev, {
-                  agentId: ev.displayName,
-                  displayName: ev.displayName,
-                  summary: ev.summary || '',
-                  key_findings: ev.key_findings || [],
-                  signal: ev.signal || '',
-                  confidence: ev.confidence || 'medium',
-                  risks: ev.risks || [],
-                  recommendations: ev.recommendations || [],
-                }]);
+                setStoredAgentOutputs(prev => {
+                  const next = [...prev, {
+                    agentId: ev.displayName,
+                    displayName: ev.displayName,
+                    summary: ev.summary || '',
+                    key_findings: ev.key_findings || [],
+                    signal: ev.signal || '',
+                    confidence: ev.confidence || 'medium',
+                    risks: ev.risks || [],
+                    recommendations: ev.recommendations || [],
+                  }];
+                  return next;
+                });
               } else if (ev.type === 'verdict') {
                 const { type: _, ...vd } = ev;
                 setResult(vd as HouseResult);
@@ -2243,6 +2256,15 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
   const vs = result ? (VERDICT_STYLES[result.verdict] || VERDICT_STYLES['INVESTIGATE FURTHER']) : null;
 
+  // Plain English verdict labels — what the verdict actually means in context
+  const VERDICT_PLAIN: Record<string, { headline: string; subline: string; tag: string }> = {
+    'GO':                  { headline: 'Proceed with confidence',     subline: 'The evidence supports this direction. Commit and move forward.',           tag: 'GO' },
+    'PIVOT':               { headline: 'Change direction first',      subline: "There's something worth pursuing here, but the approach needs to change before you commit.", tag: 'PIVOT' },
+    'STOP':                { headline: "Don't proceed",              subline: "The evidence doesn't support this. Committing further would compound the problem.",         tag: 'STOP' },
+    'INVESTIGATE FURTHER': { headline: 'You need more signal first',  subline: "The input isn't specific enough for a reliable verdict. Add evidence and run again.",  tag: 'MORE SIGNAL' },
+  };
+  const verdictPlain = result ? (VERDICT_PLAIN[result.verdict] || VERDICT_PLAIN['INVESTIGATE FURTHER']) : null;
+
   return (
     <>
     <div className="flex flex-col md:flex-row h-full bg-fresco-white">
@@ -2283,6 +2305,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       Object.keys(values).forEach(k => setValue(k, ''));
                       setResult(null); setAgentEvents([]); setChallengeQuestions([]);
                       setChallengeResponses({}); setChallengeDismissed(false);
+                      setStoredAgentOutputs([]); setActiveLens(null);
+                      try { localStorage.removeItem(`fresco-agent-outputs-${sessionId}`); } catch {}
                       setShowStartOver(false);
                     }} className="text-fresco-sm font-medium text-red-500 hover:text-red-700 transition-colors">
                       Yes, clear everything
@@ -2307,6 +2331,18 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               <span className="text-fresco-xs text-fresco-graphite-light">{meta.output}</span>
             </div>
             <p className="text-fresco-sm text-fresco-graphite-mid max-w-lg">{meta.description}</p>
+            {/* Systems thinking mode indicator */}
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {(houseId === 'investigate' ? ['Iceberg model', 'Mental models', 'Root cause', 'Causal loops'] :
+                houseId === 'innovate'    ? ['Leverage points', 'Causal loops', 'Intervention mapping', 'Scenario simulation'] :
+                houseId === 'validate'   ? ['Funnel simulation', 'Influence mapping', 'Sensitivity analysis', 'Experiment design'] :
+                ['KPI system mapping', 'Feedback loops', 'Signal vs noise', 'Evolution projection']
+              ).map(tool => (
+                <span key={tool} className="text-[9px] font-medium uppercase tracking-wide text-fresco-graphite-light/60 bg-fresco-light-gray/60 border border-fresco-border/50 px-2 py-0.5 rounded-full">
+                  {tool}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Top progress strip — visible before first answer */}
@@ -2405,13 +2441,24 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-fresco-lg font-medium text-fresco-black">Results</h2>
-              {result && (
-                <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">
-                  {meta.name} · <span className="text-fresco-graphite-light">{(meta as any).formalLabel}</span>
-                  <span className="text-fresco-graphite-light/60"> — {meta.output}</span>
-                </p>
+            <div className="flex-1">
+              {result ? (
+                <div className="flex items-center gap-1 p-0.5 bg-fresco-light-gray w-fit">
+                  <button
+                    onClick={() => setOutputTab('decision')}
+                    className={cn('px-3 py-1.5 text-fresco-xs font-medium transition-colors', outputTab === 'decision' ? 'bg-white text-fresco-black shadow-sm' : 'text-fresco-graphite-mid hover:text-fresco-black')}
+                  >
+                    Decision
+                  </button>
+                  <button
+                    onClick={() => setOutputTab('analysis')}
+                    className={cn('px-3 py-1.5 text-fresco-xs font-medium transition-colors', outputTab === 'analysis' ? 'bg-white text-fresco-black shadow-sm' : 'text-fresco-graphite-mid hover:text-fresco-black')}
+                  >
+                    Analysis
+                  </button>
+                </div>
+              ) : (
+                <h2 className="text-fresco-lg font-medium text-fresco-black">Analysis</h2>
               )}
             </div>
             {isRunning && (
@@ -2500,15 +2547,18 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           {/* Final result */}
           <AnimatePresence mode="wait">
             {result && (
-              <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <motion.div key={`result-${outputTab}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }} className="space-y-6">
 
-                {/* SENTENCE OF TRUTH — first, most emotionally valuable */}
+                {/* ── DECISION TAB ─────────────────────────────────────── */}
+                {outputTab === 'decision' && (
+                  <>
+                {/* SENTENCE OF TRUTH */}
                 <EditableSentenceOfTruth
                   value={result.sentenceOfTruth}
                   onSave={edited => db.setSentenceOfTruth(sessionId, edited)}
                 />
 
-                {/* VERDICT — decision second */}
+                {/* VERDICT */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="fresco-label">Verdict</span>
@@ -2520,13 +2570,27 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </button>
                     )}
                   </div>
-                  {/* System verdict — visual + rationale */}
+                  {/* System verdict — plain English + spectrum + rationale */}
                   <div className="border border-fresco-border p-4">
+                    {/* Plain English verdict headline */}
+                    <div className="mb-4">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="text-fresco-lg font-medium text-fresco-black leading-snug">
+                          {verdictPlain?.headline}
+                        </p>
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5">
+                          {result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict}
+                        </span>
+                      </div>
+                      <p className="text-fresco-xs text-fresco-graphite-light">{verdictPlain?.subline}</p>
+                    </div>
+                    {/* Spectrum visualisation */}
                     <VerdictVisual
                       verdict={result.verdict}
                       fitStrength={(result as any).fitStrength}
                       fitLabel={(result as any).fitLabel}
                     />
+                    {/* Rationale */}
                     <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed mt-4 pt-4 border-t border-fresco-border-light">
                       {result.verdictRationale}
                     </p>
@@ -2536,11 +2600,17 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     <div className="mt-2 p-3 border border-fresco-border bg-fresco-light-gray">
                       <p className="text-fresco-xs text-fresco-graphite-mid mb-2">Your call — what do you think?</p>
                       <div className="grid grid-cols-4 gap-1.5 mb-3">
-                        {(['GO', 'PIVOT', 'STOP', 'INVESTIGATE FURTHER'] as const).map(v => (
+                        {[
+                          { v: 'GO' as const,                  label: 'Proceed',          sub: 'Strong signal' },
+                          { v: 'PIVOT' as const,               label: 'Rethink first',    sub: 'Needs work' },
+                          { v: 'STOP' as const,                label: 'Stop',             sub: 'Don\'t proceed' },
+                          { v: 'INVESTIGATE FURTHER' as const, label: 'Need more signal', sub: 'Unclear yet' },
+                        ].map(({ v, label, sub }) => (
                           <button key={v}
                             onClick={() => setUserVerdict(v)}
-                            className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-wider border border-fresco-border bg-white hover:border-fresco-black hover:bg-fresco-black hover:text-white transition-all">
-                            {v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : v}
+                            className="flex flex-col items-start p-2 border border-fresco-border bg-white hover:border-fresco-black hover:bg-fresco-black hover:text-white transition-all group text-left">
+                            <span className="text-fresco-xs font-medium text-fresco-black group-hover:text-white">{label}</span>
+                            <span className="text-[10px] text-fresco-graphite-light group-hover:text-white/70">{sub}</span>
                           </button>
                         ))}
                       </div>
@@ -2573,160 +2643,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   )}
                 </div>
 
-                {/* Lens reframe — immediately after verdict, before drilling into detail */}
-                {storedAgentOutputs.length > 0 && (
-                  <div>
-                    {!showLensPicker ? (
-                      <button
-                        onClick={() => setShowLensPicker(true)}
-                        disabled={isReframing}
-                        className="w-full flex items-center justify-between px-4 py-2.5 border border-fresco-border text-fresco-sm text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
-                      >
-                        <span>{isReframing ? 'Reframing…' : activeLens ? `Lens: ${activeLens.charAt(0).toUpperCase() + activeLens.slice(1)} — change` : 'See this from a different angle →'}</span>
-                        {isReframing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                      </button>
-                    ) : (
-                      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="border border-fresco-black p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="text-fresco-xs font-medium text-fresco-black uppercase tracking-wide">Choose a thinking lens</p>
-                          <button onClick={() => setShowLensPicker(false)} className="text-fresco-graphite-light hover:text-fresco-black"><X className="w-3.5 h-3.5" /></button>
-                        </div>
-                        <p className="text-fresco-xs text-fresco-graphite-light mb-3">Same agent findings, seen through a different analytical frame.</p>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {[
-                            { id: 'critical',   label: 'Critical',    desc: 'Assumptions & evidence' },
-                            { id: 'systems',    label: 'Systems',     desc: 'Loops & root causes' },
-                            { id: 'design',     label: 'Design',      desc: 'Human & experience' },
-                            { id: 'product',    label: 'Product',     desc: 'Build decisions' },
-                            { id: 'strategic',  label: 'Strategic',   desc: 'Competitive direction' },
-                            { id: 'analytical', label: 'Analytical',  desc: 'Data & measurement' },
-                            { id: 'futures',    label: 'Futures',     desc: 'Trajectory & signals' },
-                            { id: 'economic',   label: 'Economic',    desc: 'Incentives & value' },
-                          ].map(lens => (
-                            <button
-                              key={lens.id}
-                              onClick={() => handleReframe(lens.id)}
-                              className={cn(
-                                'flex flex-col items-start p-2.5 border text-left transition-all',
-                                activeLens === lens.id
-                                  ? 'bg-fresco-black text-white border-fresco-black'
-                                  : 'border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray'
-                              )}
-                            >
-                              <span className={cn('text-fresco-xs font-medium', activeLens === lens.id ? 'text-white' : 'text-fresco-black')}>{lens.label}</span>
-                              <span className={cn('text-[10px] mt-0.5', activeLens === lens.id ? 'text-white/70' : 'text-fresco-graphite-light')}>{lens.desc}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </div>
-                )}
-
-                {/* POV Statement — Investigate only */}
-                {(result as any).povStatement && (
-                  <div>
-                    <span className="fresco-label block mb-3">Your position</span>
-                    <div className="p-4 border-l-4 border-fresco-black bg-fresco-light-gray">
-                      <p className="text-fresco-base font-medium text-fresco-black leading-relaxed">
-                        {(result as any).povStatement}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Suggested next step */}
-                {result.suggestedNextHouse && (
-                  <div className="p-4 border border-fresco-black/10 bg-fresco-light-gray flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">Run this next</p>
-                      <p className="text-fresco-sm font-medium text-fresco-black capitalize">{HOUSE_META[result.suggestedNextHouse].name}</p>
-                      <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5">{result.suggestedNextHouseReason}</p>
-                    </div>
-                    <button onClick={() => onNavigateToHouse?.(result.suggestedNextHouse!)}
-                      className="flex-shrink-0 flex items-center gap-1.5 text-fresco-xs font-medium text-fresco-black border border-fresco-black px-3 py-1.5 hover:bg-fresco-black hover:text-white transition-colors">
-                      Open <ArrowRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-
-                {/* Belief Mapper mental model callout — Investigate only */}
-                {houseId === 'investigate' && (() => {
-                  const bmEvent = agentEvents.find(e => e.displayName === 'Belief Mapper');
-                  if (!bmEvent?.structured_artifact) return null;
-                  return (
-                    <div>
-                      <span className="fresco-label block mb-3">The belief driving this</span>
-                      <div className="p-4 border border-fresco-border bg-fresco-white flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 bg-fresco-black rounded-full flex-shrink-0 mt-1.5" />
-                        <p className="text-fresco-sm text-fresco-black font-medium">{bmEvent.structured_artifact}</p>
-                      </div>
-                      <p className="text-fresco-xs text-fresco-graphite-light mt-2">
-                        This is the assumption behind how the situation has been framed.
-                      </p>
-                    </div>
-                  );
-                })()}
-
-                {/* ── Systems thinking outputs — house-specific ─────────── */}
-                {(result as any).systemsOutput && (
-                  <SystemsOutput
-                    house={houseId}
-                    systemsOutput={(result as any).systemsOutput}
-                  />
-                )}
-
-                {/* ── Cross-house: Archetype + Behavior Over Time ─────── */}
-                {(result as any).systemsOutput && (
-                  <CrossHouseSystems systemsOutput={(result as any).systemsOutput} />
-                )}
-
-                {/* ── Data visualisations — house-specific ─────────────── */}
-                {houseId === 'validate' && values['scores'] && (() => {
-                  try {
-                    const scores = JSON.parse(values['scores']);
-                    if (Array.isArray(scores) && scores.length >= 3) {
-                      return (
-                        <div>
-                          <span className="fresco-label block mb-3">Score breakdown</span>
-                          <ScoreRadar scores={scores} />
-                        </div>
-                      );
-                    }
-                  } catch { /* skip */ }
-                  return null;
-                })()}
-
-                {houseId === 'validate' && values['actuals'] && values['targets'] && (() => {
-                  try {
-                    const metrics = JSON.parse(values['actuals'] || values['targets']);
-                    if (Array.isArray(metrics) && metrics.length > 0) {
-                      return (
-                        <div>
-                          <span className="fresco-label block mb-3">Metrics: target vs actual</span>
-                          <MetricsBar metrics={metrics} />
-                        </div>
-                      );
-                    }
-                  } catch { /* skip */ }
-                  return null;
-                })()}
-
-                {houseId === 'evaluate' && evaluateMode === 'journey' && values['subject'] && (() => {
-                  const text = values['subject'];
-                  if (text && text.length > 20) {
-                    return (
-                      <div>
-                        <span className="fresco-label block mb-3">Journey breakdown</span>
-                        <JourneyFunnel subjectText={text} />
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
                 <div>
-                  <span className="fresco-label block mb-3">What's going wrong</span>
+                  <span className="fresco-label block mb-3">Key issues</span>
                   <div className="space-y-2">
                     {result.keyIssues.map((issue, i) => (
                       <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
@@ -2740,7 +2658,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 </div>
 
                 <div>
-                  <span className="fresco-label block mb-3">What to do now</span>
+                  <span className="fresco-label block mb-3">Recommended moves</span>
                   <div className="space-y-2">
                     {result.necessaryMoves.map((move, i) => (
                       <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
@@ -2752,6 +2670,21 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     ))}
                   </div>
                 </div>
+
+                {/* Next house suggestion */}
+                {result.suggestedNextHouse && (
+                  <div className="p-4 bg-fresco-light-gray flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">Run this next</p>
+                      <p className="text-fresco-sm font-medium text-fresco-black">{HOUSE_META[result.suggestedNextHouse].name}</p>
+                      <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5">{result.suggestedNextHouseReason}</p>
+                    </div>
+                    <button onClick={() => onNavigateToHouse?.(result.suggestedNextHouse!)}
+                      className="flex-shrink-0 flex items-center gap-1.5 text-fresco-xs font-medium text-fresco-black border border-fresco-black px-3 py-1.5 hover:bg-fresco-black hover:text-white transition-colors">
+                      Open <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
 
                 <div className="pt-2 border-t border-fresco-border-light space-y-3">
 
@@ -2788,88 +2721,235 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
                   {/* Share / Export */}
                   <button onClick={() => setShowExportModal(true)} className="fresco-btn w-full">
-                    <Download className="w-4 h-4" /><span>Export results</span>
+                    <Copy className="w-4 h-4" /><span>Share analysis</span>
                   </button>
                 </div>
+                  </>
+                )} {/* end Decision tab */}
+
+                {/* ── ANALYSIS TAB ─────────────────────────────────────── */}
+                {outputTab === 'analysis' && (
+                  <>
+                  {/* See this from a different angle — prominent in Analysis tab */}
+                  {storedAgentOutputs.length > 0 && (
+                    <div>
+                      <span className="fresco-label block mb-3">See this from a different angle</span>
+                      {!showLensPicker ? (
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[
+                            { id: 'critical',   label: 'Critical',    desc: 'Assumptions & evidence' },
+                            { id: 'systems',    label: 'Systems',     desc: 'Loops & root causes' },
+                            { id: 'design',     label: 'Design',      desc: 'Human & experience' },
+                            { id: 'product',    label: 'Product',     desc: 'Build decisions' },
+                            { id: 'strategic',  label: 'Strategic',   desc: 'Competitive direction' },
+                            { id: 'analytical', label: 'Analytical',  desc: 'Data & measurement' },
+                            { id: 'futures',    label: 'Futures',     desc: 'Trajectory & signals' },
+                            { id: 'economic',   label: 'Economic',    desc: 'Incentives & value' },
+                          ].map(lens => (
+                            <button
+                              key={lens.id}
+                              onClick={() => { setShowLensPicker(false); handleReframe(lens.id); }}
+                              disabled={isReframing}
+                              className={cn(
+                                'flex flex-col items-start p-2.5 border text-left transition-all',
+                                activeLens === lens.id
+                                  ? 'bg-fresco-black text-white border-fresco-black'
+                                  : 'border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray'
+                              )}
+                            >
+                              <span className={cn('text-fresco-xs font-medium', activeLens === lens.id ? 'text-white' : 'text-fresco-black')}>
+                                {isReframing && activeLens === lens.id ? 'Reframing…' : lens.label}
+                              </span>
+                              <span className={cn('text-[10px] mt-0.5', activeLens === lens.id ? 'text-white/70' : 'text-fresco-graphite-light')}>{lens.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <button onClick={() => setShowLensPicker(false)} className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
+                          ← Back to lenses
+                        </button>
+                      )}
+                      {activeLens && (
+                        <p className="text-fresco-xs text-fresco-graphite-light mt-2">
+                          Currently viewing through the <span className="font-medium text-fresco-black capitalize">{activeLens}</span> lens
+                          <button onClick={() => { setActiveLens(null); }} className="ml-2 underline underline-offset-2 hover:text-fresco-black transition-colors">clear</button>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* POV Statement — Investigate only */}
+                  {(result as any).povStatement && (
+                    <div>
+                      <span className="fresco-label block mb-3">Your point of view</span>
+                      <div className="p-4 border-l-4 border-fresco-black bg-fresco-light-gray">
+                        <p className="text-fresco-base font-medium text-fresco-black leading-relaxed">
+                          {(result as any).povStatement}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Core assumption — Investigate only */}
+                  {houseId === 'investigate' && (() => {
+                    const bmEvent = agentEvents.find(e => e.displayName === 'Belief Mapper');
+                    if (!bmEvent?.structured_artifact) return null;
+                    return (
+                      <div>
+                        <span className="fresco-label block mb-3">Core assumption</span>
+                        <div className="p-4 border border-fresco-border bg-fresco-white flex items-start gap-3">
+                          <div className="w-1.5 h-1.5 bg-fresco-black rounded-full flex-shrink-0 mt-1.5" />
+                          <p className="text-fresco-sm text-fresco-black font-medium">{bmEvent.structured_artifact}</p>
+                        </div>
+                        <p className="text-fresco-xs text-fresco-graphite-light mt-2">
+                          This is the belief being treated as fact. Challenge it before committing to a direction.
+                        </p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Systems thinking outputs — house-specific */}
+                  {(result as any).systemsOutput && (
+                    <SystemsOutput house={houseId} systemsOutput={(result as any).systemsOutput} />
+                  )}
+
+                  {/* Cross-house: Archetype + Behavior Over Time + all others */}
+                  {(result as any).systemsOutput && (
+                    <CrossHouseSystems systemsOutput={(result as any).systemsOutput} />
+                  )}
+
+                  {/* Data visualisations — house-specific */}
+                  {houseId === 'validate' && values['scores'] && (() => {
+                    try {
+                      const scores = JSON.parse(values['scores']);
+                      if (Array.isArray(scores) && scores.length >= 3) {
+                        return (
+                          <div>
+                            <span className="fresco-label block mb-3">Score breakdown</span>
+                            <ScoreRadar scores={scores} />
+                          </div>
+                        );
+                      }
+                    } catch { }
+                    return null;
+                  })()}
+
+                  {houseId === 'validate' && values['actuals'] && values['targets'] && (() => {
+                    try {
+                      const metrics = JSON.parse(values['actuals'] || values['targets']);
+                      if (Array.isArray(metrics) && metrics.length > 0) {
+                        return (
+                          <div>
+                            <span className="fresco-label block mb-3">Metrics: target vs actual</span>
+                            <MetricsBar metrics={metrics} />
+                          </div>
+                        );
+                      }
+                    } catch { }
+                    return null;
+                  })()}
+
+                  {houseId === 'evaluate' && evaluateMode === 'journey' && values['subject'] && (() => {
+                    const text = values['subject'];
+                    if (text && text.length > 20) {
+                      return (
+                        <div>
+                          <span className="fresco-label block mb-3">Journey breakdown</span>
+                          <JourneyFunnel subjectText={text} />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  </>
+                )} {/* end Analysis tab */}
+
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Export modal */}
+      {/* Share modal — PM-relevant options */}
       <AnimatePresence>
-        {showExportModal && (
+        {showExportModal && result && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
             onClick={() => setShowExportModal(false)}>
             <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
               onClick={e => e.stopPropagation()}
               className="bg-white p-6 max-w-md w-full mx-4 shadow-xl">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-fresco-base font-medium text-fresco-black">Export results</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-fresco-base font-medium text-fresco-black">Share this analysis</h3>
                 <button onClick={() => setShowExportModal(false)}><X className="w-4 h-4 text-fresco-graphite-light" /></button>
               </div>
 
-              {/* Session title */}
-              {result && (
-                <div className="mb-5 p-3 bg-fresco-light-gray border-l-2 border-fresco-black">
-                  <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">{meta.name} · {(meta as any).formalLabel}</p>
-                  <p className="text-fresco-sm font-medium text-fresco-black">{result.sentenceOfTruth?.slice(0, 80)}{result.sentenceOfTruth?.length > 80 ? '…' : ''}</p>
+              {/* Verdict summary */}
+              <div className="mb-5 p-3 bg-fresco-light-gray border-l-2 border-fresco-black">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light">{meta.name}</span>
+                  <span className="text-[10px] text-fresco-graphite-light/60">·</span>
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light">
+                    {result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict}
+                  </span>
                 </div>
-              )}
+                <p className="text-fresco-sm font-medium text-fresco-black leading-snug">{result.sentenceOfTruth?.slice(0, 100)}{(result.sentenceOfTruth?.length || 0) > 100 ? '…' : ''}</p>
+              </div>
 
               <div className="space-y-2">
-                {/* Copy formatted text */}
+                {/* 1. Slack / Notion — primary, most common PM workflow */}
+                <button onClick={() => {
+                  const slackText = [
+                    `*${meta.name} — ${verdictPlain?.headline}*`,
+                    `*Insight:* ${result.sentenceOfTruth}`,
+                    `*Why:* ${result.verdictRationale}`,
+                    result.keyIssues.length ? `*Key issues:*\n${result.keyIssues.map((iss, n) => `${n + 1}. ${iss}`).join('\n')}` : '',
+                    result.necessaryMoves.length ? `*Recommended moves:*\n${result.necessaryMoves.map((m, n) => `${n + 1}. ${m}`).join('\n')}` : '',
+                  ].filter(Boolean).join('\n\n');
+                  navigator.clipboard.writeText(slackText);
+                  setHasCopied(true); setTimeout(() => setHasCopied(false), 2000);
+                }}
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-black bg-fresco-black hover:bg-fresco-graphite transition-colors text-left">
+                  {hasCopied ? <Check className="w-4 h-4 text-white flex-shrink-0" /> : <Copy className="w-4 h-4 text-white flex-shrink-0" />}
+                  <div>
+                    <p className="text-fresco-sm font-medium text-white">{hasCopied ? 'Copied!' : 'Copy for Slack or Notion'}</p>
+                    <p className="text-fresco-xs text-white/60">Bold formatting — paste straight into a channel, page, or ticket</p>
+                  </div>
+                </button>
+
+                {/* 2. One-liner for PRDs / standups */}
+                <button onClick={() => {
+                  const oneliner = `[${meta.name}] ${verdictPlain?.headline} — ${result.sentenceOfTruth}`;
+                  navigator.clipboard.writeText(oneliner);
+                  setHasCopied(true); setTimeout(() => setHasCopied(false), 2000);
+                }}
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
+                  <svg className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                  </svg>
+                  <div>
+                    <p className="text-fresco-sm font-medium text-fresco-black">Copy one-liner</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">Single sentence — for PRDs, roadmap comments, or standups</p>
+                  </div>
+                </button>
+
+                {/* 3. Plain text */}
                 <button onClick={handleCopy}
                   className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
-                  {hasCopied ? <Check className="w-4 h-4 text-fresco-black flex-shrink-0" /> : <Copy className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" />}
+                  <Copy className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" />
                   <div>
-                    <p className="text-fresco-sm font-medium text-fresco-black">{hasCopied ? 'Copied!' : 'Copy to clipboard'}</p>
-                    <p className="text-fresco-xs text-fresco-graphite-light">Plain text — paste into any doc or email</p>
+                    <p className="text-fresco-sm font-medium text-fresco-black">Copy plain text</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">Unformatted — for emails or tools that don't support markdown</p>
                   </div>
                 </button>
 
-                {/* Download markdown */}
+                {/* 4. Markdown — for technical users */}
                 <button onClick={handleDownload}
-                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
-                  <Download className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" />
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left text-fresco-graphite-mid">
+                  <Download className="w-4 h-4 flex-shrink-0" />
                   <div>
-                    <p className="text-fresco-sm font-medium text-fresco-black">Download as Markdown</p>
-                    <p className="text-fresco-xs text-fresco-graphite-light">Structured .md file — works in Notion, Obsidian, Linear</p>
-                  </div>
-                </button>
-
-                {/* Copy shareable link — generates URL with session ID */}
-                <button onClick={() => {
-                  const url = `${window.location.origin}?session=${sessionId}`;
-                  navigator.clipboard.writeText(url);
-                  setHasCopied(true);
-                  setTimeout(() => setHasCopied(false), 2000);
-                }}
-                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
-                  <svg className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                  </svg>
-                  <div>
-                    <p className="text-fresco-sm font-medium text-fresco-black">Copy link</p>
-                    <p className="text-fresco-xs text-fresco-graphite-light">Share with your team — anyone with access can view</p>
-                  </div>
-                </button>
-
-                {/* Email — opens mailto with results */}
-                <button onClick={() => {
-                  const subject = encodeURIComponent(`Fresco ${meta.name}: ${result?.sentenceOfTruth?.slice(0, 60) || 'Analysis results'}`);
-                  const body = encodeURIComponent(generateExportText());
-                  window.open(`mailto:?subject=${subject}&body=${body}`);
-                }}
-                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
-                  <svg className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                  </svg>
-                  <div>
-                    <p className="text-fresco-sm font-medium text-fresco-black">Send by email</p>
-                    <p className="text-fresco-xs text-fresco-graphite-light">Opens your email client with results in the body</p>
+                    <p className="text-fresco-sm">Download as Markdown</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">For Obsidian, Linear, or version-controlled docs</p>
                   </div>
                 </button>
               </div>
