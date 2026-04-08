@@ -183,11 +183,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 }
 
 export function useOnboarding() {
-  // REVIEW MODE: always show — restore localStorage check when finalised
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    localStorage.removeItem('fresco-onboarding-complete');
+    const completed = localStorage.getItem('fresco-onboarding-complete');
+    if (!completed) setShowOnboarding(true);
   }, []);
 
   return {

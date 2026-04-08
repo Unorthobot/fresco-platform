@@ -228,33 +228,106 @@ export function HomeDashboard({
         </motion.div>
 
         {/* ── Four Houses ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-10">
-          {HOUSES.map((houseId, i) => {
-            const house = HOUSE_META[houseId];
-            return (
-              <motion.button
-                key={houseId}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                onClick={() => onStartHouse?.(houseId)}
-                className="group fresco-card p-5 flex flex-col text-left hover:border-fresco-black transition-all"
+        {!hasActivity ? (
+          // ── Empty state — first-time user ─────────────────────────────────
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-10">
+            {/* Primary CTA — start with Investigate */}
+            <div className="border border-fresco-black p-8 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light block mb-2">Start here</span>
+                <h2 className="text-2xl font-medium text-fresco-black leading-snug mb-2">
+                  Investigate
+                </h2>
+                <p className="text-fresco-sm text-fresco-graphite-mid max-w-sm leading-relaxed">
+                  Before committing to a direction, make sure you're solving the right problem. Most teams skip this step.
+                </p>
+              </div>
+              <button
+                onClick={() => onStartHouse?.('investigate')}
+                className="fresco-btn flex-shrink-0 self-start md:self-center"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">{house.name}</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
-                </div>
-                {/* Formal label pill */}
-                <span className="inline-block text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2.5 py-0.5 rounded-full mb-2">
-                  {house.formalLabel}
-                </span>
-                {/* Plain English output */}
-                <p className="text-fresco-sm font-medium text-fresco-black leading-snug mb-2">{house.output}</p>
-                <p className="text-fresco-xs text-fresco-graphite-light leading-relaxed flex-1">{house.description}</p>
-              </motion.button>
-            );
-          })}
-        </div>
+                <span>Start with Investigate</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Other three houses — smaller, available but secondary */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {(['innovate', 'validate', 'evaluate'] as const).map((houseId, i) => {
+                const house = HOUSE_META[houseId];
+                return (
+                  <motion.button
+                    key={houseId}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 + i * 0.05 }}
+                    onClick={() => onStartHouse?.(houseId)}
+                    className="group fresco-card p-4 flex flex-col text-left hover:border-fresco-black transition-all"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">{house.name}</span>
+                      <ArrowRight className="w-3 h-3 text-fresco-graphite-light group-hover:text-fresco-black transition-all" />
+                    </div>
+                    <p className="text-fresco-xs font-medium text-fresco-black leading-snug mb-1">{house.output}</p>
+                    <p className="text-[10px] text-fresco-graphite-light leading-relaxed">{house.description}</p>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* What to expect — below the fold, no pressure */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mt-8 pt-8 border-t border-fresco-border-light"
+            >
+              <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-4">What happens when you run a house</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {[
+                  { step: '01', label: 'Answer 3–4 questions', desc: 'Specific to your situation. No generic prompts.' },
+                  { step: '02', label: '3 agents analyse sequentially', desc: 'Each one builds on the previous. Not one big prompt.' },
+                  { step: '03', label: 'Get a verdict + systems analysis', desc: 'GO, PIVOT, STOP, or NEEDS MORE SIGNAL — plus the structure beneath the problem.' },
+                ].map(item => (
+                  <div key={item.step} className="flex gap-4">
+                    <span className="text-[10px] font-medium text-fresco-graphite-light/40 tabular-nums mt-0.5 flex-shrink-0">{item.step}</span>
+                    <div>
+                      <p className="text-fresco-xs font-medium text-fresco-black mb-1">{item.label}</p>
+                      <p className="text-[10px] text-fresco-graphite-light leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : (
+          // ── Returning user — full four house grid ─────────────────────────
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-10">
+            {HOUSES.map((houseId, i) => {
+              const house = HOUSE_META[houseId];
+              return (
+                <motion.button
+                  key={houseId}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  onClick={() => onStartHouse?.(houseId)}
+                  className="group fresco-card p-5 flex flex-col text-left hover:border-fresco-black transition-all"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">{house.name}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <span className="inline-block text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2.5 py-0.5 rounded-full mb-2">
+                    {house.formalLabel}
+                  </span>
+                  <p className="text-fresco-sm font-medium text-fresco-black leading-snug mb-2">{house.output}</p>
+                  <p className="text-fresco-xs text-fresco-graphite-light leading-relaxed flex-1">{house.description}</p>
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
 
 
 

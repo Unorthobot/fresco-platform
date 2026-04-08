@@ -2054,6 +2054,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [showVerdictOverride, setShowVerdictOverride] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
   const [outputTab, setOutputTab] = useState<'decision' | 'analysis'>('decision');
+  const [showTabTooltip, setShowTabTooltip] = useState(false);
 
   // Challenge step state
   const [challengeQuestions, setChallengeQuestions] = useState<ChallengeQuestion[]>([]);
@@ -2217,6 +2218,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 setResult(vd as HouseResult);
                 await persistResult(vd as HouseResult);
                 incrementUsage();
+                // Show tab tooltip on first ever result
+                const hasSeenTooltip = localStorage.getItem('fresco-tab-tooltip-seen');
+                if (!hasSeenTooltip) {
+                  setTimeout(() => setShowTabTooltip(true), 800);
+                }
               }
             } catch { /* skip */ }
           }
@@ -2517,6 +2523,30 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 </div>
               ) : (
                 <h2 className="text-fresco-lg font-medium text-fresco-black">Analysis</h2>
+              )}
+              {/* First-run tab tooltip */}
+              {showTabTooltip && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-2 p-3 bg-fresco-black text-white relative"
+                >
+                  <button
+                    onClick={() => {
+                      setShowTabTooltip(false);
+                      localStorage.setItem('fresco-tab-tooltip-seen', 'true');
+                    }}
+                    className="absolute top-2 right-2 text-white/40 hover:text-white transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  <p className="text-fresco-xs font-medium text-white mb-1">Two views of your analysis</p>
+                  <p className="text-[10px] text-white/60 leading-relaxed pr-4">
+                    <span className="text-white/90">Decision</span> — verdict, issues, what to do next.{' '}
+                    <span className="text-white/90">Analysis</span> — the systems thinking layer: iceberg, archetypes, causal loops, scenario simulation.
+                  </p>
+                </motion.div>
               )}
             </div>
             {isRunning && (
