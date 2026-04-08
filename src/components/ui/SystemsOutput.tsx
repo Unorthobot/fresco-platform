@@ -4,6 +4,8 @@
 // Each house gets different sections based on its simulation type.
 
 import { cn } from '@/lib/utils';
+import { ArchetypeCard } from './ArchetypeCard';
+import { BehaviorOverTimeChart } from './BehaviorOverTimeChart';
 
 interface SystemsOutputProps {
   house: string;
@@ -261,4 +263,28 @@ export function SystemsOutput({ house, systemsOutput }: SystemsOutputProps) {
   }
 
   return null;
+}
+
+// Shared cross-house sections — archetype + BOTG
+// These are exported separately so HouseSession can render them after house-specific sections
+export function CrossHouseSystems({ systemsOutput }: { systemsOutput: any }) {
+  if (!systemsOutput) return null;
+  return (
+    <>
+      {systemsOutput.archetype?.name && systemsOutput.archetype.name !== 'null' && (
+        <ArchetypeCard
+          name={systemsOutput.archetype.name}
+          description={systemsOutput.archetype.description || ''}
+          loop={systemsOutput.archetype.loop || ''}
+          escape={systemsOutput.archetype.escape || ''}
+        />
+      )}
+      {systemsOutput.behaviorOverTime?.length > 0 && (
+        <div>
+          <span className="fresco-label block mb-3">Behavior over time</span>
+          <BehaviorOverTimeChart series={systemsOutput.behaviorOverTime} />
+        </div>
+      )}
+    </>
+  );
 }

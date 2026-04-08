@@ -26,7 +26,7 @@ import { VerdictVisual } from '@/components/ui/VerdictVisual';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { MetricsBar } from '@/components/ui/MetricsBar';
 import { JourneyFunnel } from '@/components/ui/JourneyFunnel';
-import { SystemsOutput } from '@/components/ui/SystemsOutput';
+import { SystemsOutput, CrossHouseSystems } from '@/components/ui/SystemsOutput';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2674,6 +2674,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     house={houseId}
                     systemsOutput={(result as any).systemsOutput}
                   />
+                )}
+
+                {/* ── Cross-house: Archetype + Behavior Over Time ─────── */}
+                {(result as any).systemsOutput && (
+                  <CrossHouseSystems systemsOutput={(result as any).systemsOutput} />
                 )}
 
                 {/* ── Data visualisations — house-specific ─────────────── */}

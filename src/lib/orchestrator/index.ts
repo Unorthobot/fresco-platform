@@ -39,8 +39,8 @@ export interface HouseResult {
   systemsOutput?: {
     // Investigate: Iceberg + Current State Simulation
     icebergLevels?: { event: string; pattern: string; structure: string; mentalModel: string };
-    currentStateSimulation?: string;   // "If nothing changes, this is what keeps happening"
-    systemTruth?: string;              // The uncomfortable truth from Position Builder
+    currentStateSimulation?: string;
+    systemTruth?: string;
     // Innovate: Leverage Map + Intervention Forecast
     leverageMap?: { option: string; leverageLevel: string; impact: string }[];
     interventionForecast?: { immediate: string; delayed: string; risk: string };
@@ -48,9 +48,24 @@ export interface HouseResult {
     funnelSimulation?: { expected: string; bestCase: string; worstCase: string };
     influenceMap?: { barrier: string; lever: string; proofRequired: string };
     // Evaluate: Evolution Projection + Learning
-    evolutionProjection?: string;      // Where is this heading in 3 months?
-    doublLoopLearning?: string;        // Are we solving the right problem?
-    kpiSystemMap?: string;             // What actually drives the metric
+    evolutionProjection?: string;
+    doublLoopLearning?: string;
+    kpiSystemMap?: string;
+    // Cross-house: System Archetype (all houses)
+    archetype?: {
+      name: string;        // e.g. "Fixes that Fail", "Shifting the Burden"
+      description: string; // Why this archetype applies to THIS situation
+      loop: string;        // The specific reinforcing/balancing loop in plain English
+      escape: string;      // How to break out of this archetype
+    };
+    // Cross-house: Behavior Over Time (all houses where trajectory data exists)
+    behaviorOverTime?: {
+      variable: string;    // What is being tracked, e.g. "Activation rate"
+      unit: string;        // e.g. "%", "days", "users"
+      dataPoints: { label: string; value: number }[]; // time labels + values
+      trend: 'rising' | 'falling' | 'oscillating' | 'plateauing' | 'accelerating';
+      projection?: { label: string; value: number }[]; // projected future points
+    }[];
   };
   // Routing
   suggestedNextHouse: HouseId | null;
@@ -163,11 +178,15 @@ ${a.structured_artifact ? `Structured artifact: ${a.structured_artifact}` : ''}`
   const investigateJsonField = house === 'investigate' ? `,
   "povStatement": "For [specific user]: they need [real need], because [non-obvious insight]"` : '';
 
+  const ARCHETYPE_SHAPE = '"archetype": { "name": "Name of the system archetype (Fixes that Fail | Shifting the Burden | Limits to Growth | Eroding Goals | Escalation | Success to the Successful | Tragedy of the Commons | Accidental Adversaries — pick the best fit or null if none clearly applies)", "description": "1-2 sentences: why this archetype applies to THIS specific situation", "loop": "The specific loop in plain English — e.g. the quick fix creates a side effect that makes the original problem worse", "escape": "How to break out of this archetype — one concrete action" }';
+
+  const BOTG_SHAPE = '"behaviorOverTime": [{ "variable": "Name of key variable", "unit": "unit of measurement", "dataPoints": [{ "label": "time label e.g. Month 1", "value": number }], "trend": "rising|falling|oscillating|plateauing|accelerating", "projection": [{ "label": "projected label", "value": number }] }]';
+
   const SYSTEMS_OUTPUT_SHAPES: Record<string, string> = {
-    investigate: '"icebergLevels": { "event": "...", "pattern": "...", "structure": "...", "mentalModel": "..." }, "currentStateSimulation": "If nothing changes — one sentence", "systemTruth": "The uncomfortable truth — one sentence"',
-    innovate: '"leverageMap": [{ "option": "Option name", "leverageLevel": "parameters|feedback|information|rules|goals|paradigms", "impact": "what shifts" }], "interventionForecast": { "immediate": "what changes within weeks", "delayed": "what changes over months", "risk": "unintended consequence to watch for" }',
-    validate: '"funnelSimulation": { "expected": "X% conversion", "bestCase": "Y% if top fix", "worstCase": "Z% if barriers stronger" }, "influenceMap": { "barrier": "the real barrier", "lever": "what overcomes it", "proofRequired": "what proof specifically" }',
-    evaluate: '"evolutionProjection": "If current trends continue, in 3 months: one sentence", "doublLoopLearning": "Are we solving the right problem? one sentence", "kpiSystemMap": "What actually drives the outcome metric"',
+    investigate: '"icebergLevels": { "event": "visible symptom in 1 sentence", "pattern": "recurring trend in 1 sentence", "structure": "system element producing the pattern", "mentalModel": "belief keeping the system this way" }, "currentStateSimulation": "If nothing changes — one sentence", "systemTruth": "The uncomfortable truth — one sentence", ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE,
+    innovate: '"leverageMap": [{ "option": "Option name", "leverageLevel": "parameters|feedback|information|rules|goals|paradigms", "impact": "what shifts" }], "interventionForecast": { "immediate": "what changes within weeks", "delayed": "what changes over months", "risk": "unintended consequence to watch for" }, ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE,
+    validate: '"funnelSimulation": { "expected": "X% conversion", "bestCase": "Y% if top fix", "worstCase": "Z% if barriers stronger" }, "influenceMap": { "barrier": "the real barrier", "lever": "what overcomes it", "proofRequired": "what proof specifically" }, ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE,
+    evaluate: '"evolutionProjection": "If current trends continue, in 3 months: one sentence", "doublLoopLearning": "Are we solving the right problem? one sentence", "kpiSystemMap": "What actually drives the outcome metric", ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE,
   };
   const systemsOutputShape = SYSTEMS_OUTPUT_SHAPES[house] || '"notes": ""';
 

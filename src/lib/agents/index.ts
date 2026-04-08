@@ -109,7 +109,7 @@ Return JSON only:
   "confidence": "high | medium | low",
   "risks": ["assumption that could undermine this problem definition 1", "trajectory risk if unchanged 2"],
   "recommendations": ["action that follows from this problem definition 1", "action 2"],
-  "structured_artifact": "System Truth: [the uncomfortable real problem]. If unchanged: [current state simulation — what keeps happening]."
+  "structured_artifact": "System Truth: [the uncomfortable real problem]. If unchanged: [what keeps happening]. Archetype: [name the system archetype if one clearly applies — Fixes that Fail / Shifting the Burden / Limits to Growth / Eroding Goals / Escalation / Success to the Successful / Tragedy of the Commons — or 'none clear']. BOTG: [key variable name]: [value at start] → [value midpoint] → [value now] (trend: rising/falling/oscillating/plateauing)"
 }`,
 };
 
@@ -185,7 +185,7 @@ Return JSON only:
   "confidence": "high | medium | low",
   "risks": ["option being over-favoured for wrong reasons 1", "high-leverage option being dismissed 2"],
   "recommendations": ["action to advance the highest-leverage option 1", "what to deprioritise 2"],
-  "structured_artifact": "Leverage map: Option A operates at [level] (impact: X) | Option B at [level] (impact: Y) — recommend [option] because it shifts [goal/rule/loop]"
+  "structured_artifact": "Leverage map: Option A at [level] (impact: X) | Option B at [level] (impact: Y) — recommend [option]. Archetype: [name if applies]. BOTG: [key metric]: [past value] → [current value] (trend: direction)"
 }`,
 };
 
@@ -332,7 +332,7 @@ Return JSON only:
   "confidence": "high | medium | low",
   "risks": ["viability assumption at risk 1", "metric being optimised that does not predict success 2"],
   "recommendations": ["action that closes the most important gap 1", "what to stop doing 2"],
-  "structured_artifact": "Funnel simulation: Expected conversion [X%] | Best case [Y%] | Worst case [Z%] | Gap type: [strategy/execution] | Verdict: [GO/PIVOT/STOP]"
+  "structured_artifact": "Funnel simulation: Expected [X%] | Best [Y%] | Worst [Z%] | Gap: [strategy/execution]. Archetype: [name if applies]. BOTG: [key metric]: [t1 value] → [t2 value] → [now value] (trend: direction)"
 }`,
 };
 
