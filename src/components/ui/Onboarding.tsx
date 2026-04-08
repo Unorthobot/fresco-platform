@@ -89,10 +89,8 @@ export function useOnboarding() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    const completed = localStorage.getItem('fresco-onboarding-complete');
-    if (!completed) {
-      setShowOnboarding(true);
-    }
+    // Always show onboarding for now (dev reset)
+    setShowOnboarding(true);
   }, []);
 
   return {
