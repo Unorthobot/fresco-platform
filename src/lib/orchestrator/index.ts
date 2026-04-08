@@ -58,14 +58,55 @@ export interface HouseResult {
       loop: string;        // The specific reinforcing/balancing loop in plain English
       escape: string;      // How to break out of this archetype
     };
-    // Cross-house: Behavior Over Time (all houses where trajectory data exists)
+    // Cross-house: Behavior Over Time
     behaviorOverTime?: {
-      variable: string;    // What is being tracked, e.g. "Activation rate"
-      unit: string;        // e.g. "%", "days", "users"
-      dataPoints: { label: string; value: number }[]; // time labels + values
+      variable: string;
+      unit: string;
+      dataPoints: { label: string; value: number }[];
       trend: 'rising' | 'falling' | 'oscillating' | 'plateauing' | 'accelerating';
-      projection?: { label: string; value: number }[]; // projected future points
+      projection?: { label: string; value: number }[];
     }[];
+    // Cross-house: Scenario Simulation model
+    scenarioModel?: {
+      outcomeVariable: string;   // What we're trying to improve, e.g. "Conversion rate"
+      outcomeUnit: string;       // e.g. "%"
+      baselineValue: number;     // Current value
+      variables: {
+        name: string;            // e.g. "Trust signals"
+        unit: string;
+        currentValue: number;
+        minValue: number;
+        maxValue: number;
+        sensitivityScore: number; // 0-10: how much this moves the outcome
+        direction: 'positive' | 'negative'; // does increasing this help or hurt?
+      }[];
+    };
+    // Cross-house: Stock & Flow
+    stockFlow?: {
+      stocks: { name: string; value: string; description: string }[];
+      inflows: { name: string; rate: string; from: string; to: string }[];
+      outflows: { name: string; rate: string; from: string; to: string }[];
+      keyConstraint: string; // The main bottleneck
+    };
+    // Cross-house: Causal Loop Diagram
+    causalLoop?: {
+      nodes: { id: string; label: string }[];
+      edges: { from: string; to: string; polarity: '+' | '-'; label?: string }[];
+      dominantLoop: string; // Description of the most important loop
+      loopType: 'reinforcing' | 'balancing' | 'both';
+    };
+    // Cross-house: Sensitivity Analysis
+    sensitivityAnalysis?: {
+      outcomeVariable: string;
+      variables: { name: string; impact: number; direction: 'positive' | 'negative'; note: string }[];
+    };
+    // Cross-house: Input → Process → Output map
+    ipoMap?: {
+      inputs: { label: string; note: string }[];
+      processes: { label: string; note: string }[];
+      outputs: { label: string; note: string }[];
+      bottleneck?: string; // Where the system loses most value
+    };
   };
   // Routing
   suggestedNextHouse: HouseId | null;
@@ -182,11 +223,21 @@ ${a.structured_artifact ? `Structured artifact: ${a.structured_artifact}` : ''}`
 
   const BOTG_SHAPE = '"behaviorOverTime": [{ "variable": "Name of key variable", "unit": "unit of measurement", "dataPoints": [{ "label": "time label e.g. Month 1", "value": number }], "trend": "rising|falling|oscillating|plateauing|accelerating", "projection": [{ "label": "projected label", "value": number }] }]';
 
+  const SCENARIO_SHAPE = '"scenarioModel": { "outcomeVariable": "What we are trying to improve", "outcomeUnit": "%", "baselineValue": number, "variables": [{ "name": "variable name", "unit": "unit", "currentValue": number, "minValue": number, "maxValue": number, "sensitivityScore": number_0_to_10, "direction": "positive|negative" }] }';
+
+  const STOCK_FLOW_SHAPE = '"stockFlow": { "stocks": [{ "name": "stock name", "value": "current value", "description": "what accumulates" }], "inflows": [{ "name": "inflow name", "rate": "rate description", "from": "source", "to": "stock name" }], "outflows": [{ "name": "outflow name", "rate": "rate description", "from": "stock name", "to": "destination" }], "keyConstraint": "The main bottleneck limiting the system" }';
+
+  const CAUSAL_LOOP_SHAPE = '"causalLoop": { "nodes": [{ "id": "n1", "label": "Node name" }], "edges": [{ "from": "n1", "to": "n2", "polarity": "+|-", "label": "optional label" }], "dominantLoop": "Description of the most important loop in plain English", "loopType": "reinforcing|balancing|both" }';
+
+  const SENSITIVITY_SHAPE = '"sensitivityAnalysis": { "outcomeVariable": "What changes", "variables": [{ "name": "variable", "impact": number_0_to_10, "direction": "positive|negative", "note": "why this matters" }] }';
+
+  const IPO_SHAPE = '"ipoMap": { "inputs": [{ "label": "input name", "note": "what it contributes" }], "processes": [{ "label": "process name", "note": "what it transforms" }], "outputs": [{ "label": "output name", "note": "what is produced" }], "bottleneck": "Where the system loses most value" }';
+
   const SYSTEMS_OUTPUT_SHAPES: Record<string, string> = {
-    investigate: '"icebergLevels": { "event": "visible symptom in 1 sentence", "pattern": "recurring trend in 1 sentence", "structure": "system element producing the pattern", "mentalModel": "belief keeping the system this way" }, "currentStateSimulation": "If nothing changes — one sentence", "systemTruth": "The uncomfortable truth — one sentence", ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE,
-    innovate: '"leverageMap": [{ "option": "Option name", "leverageLevel": "parameters|feedback|information|rules|goals|paradigms", "impact": "what shifts" }], "interventionForecast": { "immediate": "what changes within weeks", "delayed": "what changes over months", "risk": "unintended consequence to watch for" }, ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE,
-    validate: '"funnelSimulation": { "expected": "X% conversion", "bestCase": "Y% if top fix", "worstCase": "Z% if barriers stronger" }, "influenceMap": { "barrier": "the real barrier", "lever": "what overcomes it", "proofRequired": "what proof specifically" }, ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE,
-    evaluate: '"evolutionProjection": "If current trends continue, in 3 months: one sentence", "doublLoopLearning": "Are we solving the right problem? one sentence", "kpiSystemMap": "What actually drives the outcome metric", ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE,
+    investigate: '"icebergLevels": { "event": "visible symptom in 1 sentence", "pattern": "recurring trend in 1 sentence", "structure": "system element producing the pattern", "mentalModel": "belief keeping the system this way" }, "currentStateSimulation": "If nothing changes — one sentence", "systemTruth": "The uncomfortable truth — one sentence", ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE + ', ' + CAUSAL_LOOP_SHAPE + ', ' + IPO_SHAPE + ', ' + SENSITIVITY_SHAPE,
+    innovate: '"leverageMap": [{ "option": "Option name", "leverageLevel": "parameters|feedback|information|rules|goals|paradigms", "impact": "what shifts" }], "interventionForecast": { "immediate": "what changes within weeks", "delayed": "what changes over months", "risk": "unintended consequence to watch for" }, ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE + ', ' + STOCK_FLOW_SHAPE + ', ' + CAUSAL_LOOP_SHAPE + ', ' + SCENARIO_SHAPE + ', ' + IPO_SHAPE,
+    validate: '"funnelSimulation": { "expected": "X% conversion", "bestCase": "Y% if top fix", "worstCase": "Z% if barriers stronger" }, "influenceMap": { "barrier": "the real barrier", "lever": "what overcomes it", "proofRequired": "what proof specifically" }, ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE + ', ' + SCENARIO_SHAPE + ', ' + SENSITIVITY_SHAPE + ', ' + STOCK_FLOW_SHAPE + ', ' + IPO_SHAPE,
+    evaluate: '"evolutionProjection": "If current trends continue, in 3 months: one sentence", "doublLoopLearning": "Are we solving the right problem? one sentence", "kpiSystemMap": "What actually drives the outcome metric", ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE + ', ' + SCENARIO_SHAPE + ', ' + SENSITIVITY_SHAPE + ', ' + CAUSAL_LOOP_SHAPE + ', ' + STOCK_FLOW_SHAPE + ', ' + IPO_SHAPE,
   };
   const systemsOutputShape = SYSTEMS_OUTPUT_SHAPES[house] || '"notes": ""';
 

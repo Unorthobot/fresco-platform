@@ -5,6 +5,11 @@
 
 import { cn } from '@/lib/utils';
 import { ArchetypeCard } from './ArchetypeCard';
+import { ScenarioSimulation } from './ScenarioSimulation';
+import { StockFlowDiagram } from './StockFlowDiagram';
+import { CausalLoopDiagram } from './CausalLoopDiagram';
+import { SensitivityChart } from './SensitivityChart';
+import { IPOMap } from './IPOMap';
 import { BehaviorOverTimeChart } from './BehaviorOverTimeChart';
 
 interface SystemsOutputProps {
@@ -271,6 +276,7 @@ export function CrossHouseSystems({ systemsOutput }: { systemsOutput: any }) {
   if (!systemsOutput) return null;
   return (
     <>
+      {/* Archetype */}
       {systemsOutput.archetype?.name && systemsOutput.archetype.name !== 'null' && (
         <ArchetypeCard
           name={systemsOutput.archetype.name}
@@ -279,11 +285,71 @@ export function CrossHouseSystems({ systemsOutput }: { systemsOutput: any }) {
           escape={systemsOutput.archetype.escape || ''}
         />
       )}
+
+      {/* Behavior Over Time */}
       {systemsOutput.behaviorOverTime?.length > 0 && (
         <div>
           <span className="fresco-label block mb-3">Behavior over time</span>
           <BehaviorOverTimeChart series={systemsOutput.behaviorOverTime} />
         </div>
+      )}
+
+      {/* Causal Loop Diagram */}
+      {systemsOutput.causalLoop?.nodes?.length > 1 && (
+        <Section label="Causal loop diagram">
+          <CausalLoopDiagram
+            nodes={systemsOutput.causalLoop.nodes}
+            edges={systemsOutput.causalLoop.edges || []}
+            dominantLoop={systemsOutput.causalLoop.dominantLoop || ''}
+            loopType={systemsOutput.causalLoop.loopType || 'both'}
+          />
+        </Section>
+      )}
+
+      {/* Stock & Flow */}
+      {systemsOutput.stockFlow?.stocks?.length > 0 && (
+        <Section label="Stock & flow">
+          <StockFlowDiagram
+            stocks={systemsOutput.stockFlow.stocks}
+            inflows={systemsOutput.stockFlow.inflows || []}
+            outflows={systemsOutput.stockFlow.outflows || []}
+            keyConstraint={systemsOutput.stockFlow.keyConstraint || ''}
+          />
+        </Section>
+      )}
+
+      {/* Input → Process → Output */}
+      {(systemsOutput.ipoMap?.inputs?.length > 0 || systemsOutput.ipoMap?.processes?.length > 0) && (
+        <Section label="Input → Process → Output">
+          <IPOMap
+            inputs={systemsOutput.ipoMap.inputs || []}
+            processes={systemsOutput.ipoMap.processes || []}
+            outputs={systemsOutput.ipoMap.outputs || []}
+            bottleneck={systemsOutput.ipoMap.bottleneck}
+          />
+        </Section>
+      )}
+
+      {/* Sensitivity Analysis */}
+      {systemsOutput.sensitivityAnalysis?.variables?.length > 0 && (
+        <Section label="Sensitivity analysis">
+          <SensitivityChart
+            outcomeVariable={systemsOutput.sensitivityAnalysis.outcomeVariable || 'outcome'}
+            variables={systemsOutput.sensitivityAnalysis.variables}
+          />
+        </Section>
+      )}
+
+      {/* Scenario Simulation */}
+      {systemsOutput.scenarioModel?.variables?.length > 0 && (
+        <Section label="Scenario simulation">
+          <ScenarioSimulation
+            outcomeVariable={systemsOutput.scenarioModel.outcomeVariable || 'outcome'}
+            outcomeUnit={systemsOutput.scenarioModel.outcomeUnit || ''}
+            baselineValue={systemsOutput.scenarioModel.baselineValue || 0}
+            variables={systemsOutput.scenarioModel.variables}
+          />
+        </Section>
       )}
     </>
   );
