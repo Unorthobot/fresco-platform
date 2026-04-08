@@ -2223,8 +2223,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       });
       if (res.ok) {
         const data = await res.json();
-        setResult(data as HouseResult);
-        await persistResult(data as HouseResult);
+        // Preserve systemsOutput from original result — lens only changes
+        // verdict/issues/moves/sentenceOfTruth, not the systems intelligence
+        const merged = {
+          ...data,
+          systemsOutput: (result as any).systemsOutput,
+        };
+        setResult(merged as HouseResult);
+        await persistResult(merged as HouseResult);
       }
     } catch { /* silently fail — keep current result */ }
     setIsReframing(false);
