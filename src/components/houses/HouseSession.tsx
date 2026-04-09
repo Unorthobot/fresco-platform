@@ -2030,6 +2030,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [evaluateMode, setEvaluateMode] = useState<'single' | 'journey' | 'comparison'>('single');
   const [isRunning, setIsRunning] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const outputScrollRef = useRef<HTMLDivElement>(null);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
   const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>(() => {
@@ -2515,20 +2516,20 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         transition={{ duration: 0.35, ease: 'easeInOut' }}
         className="flex flex-col border-t border-fresco-border-light bg-fresco-off-white overflow-hidden md:border-t-0 md:border-l"
       >
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto" ref={outputScrollRef}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex-1">
               {result ? (
                 <div className="flex items-center gap-1 p-0.5 bg-fresco-light-gray w-fit">
                   <button
-                    onClick={() => setOutputTab('decision')}
+                    onClick={() => { setOutputTab('decision'); outputScrollRef.current?.scrollTo({ top: 0 }); }}
                     className={cn('px-3 py-1.5 text-fresco-xs font-medium transition-colors', outputTab === 'decision' ? 'bg-white text-fresco-black shadow-sm' : 'text-fresco-graphite-mid hover:text-fresco-black')}
                   >
                     Decision
                   </button>
                   <button
-                    onClick={() => setOutputTab('analysis')}
+                    onClick={() => { setOutputTab('analysis'); outputScrollRef.current?.scrollTo({ top: 0 }); }}
                     className={cn('px-3 py-1.5 text-fresco-xs font-medium transition-colors', outputTab === 'analysis' ? 'bg-white text-fresco-black shadow-sm' : 'text-fresco-graphite-mid hover:text-fresco-black')}
                   >
                     Analysis
