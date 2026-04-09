@@ -68,7 +68,7 @@ export function HomeDashboard({
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto px-6 md:px-12 py-10 md:py-14">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
 
         {/* ── Header ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
@@ -250,7 +250,7 @@ export function HomeDashboard({
                         <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">{house.name}</span>
                         <ArrowRight className="w-3.5 h-3.5 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
                       </div>
-                      <span className="inline-block text-[9px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full mb-2">
+                      <span className="inline-block text-[9px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full mb-2 whitespace-nowrap">
                         {house.formalLabel}
                       </span>
                       <p className="text-fresco-sm font-medium text-fresco-black leading-snug mb-2">{house.output}</p>
@@ -304,7 +304,7 @@ export function HomeDashboard({
                     <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">{house.name}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-fresco-graphite-light group-hover:text-fresco-black group-hover:translate-x-0.5 transition-all" />
                   </div>
-                  <span className="inline-block text-[9px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full mb-2">
+                  <span className="inline-block text-[9px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full mb-2 whitespace-nowrap">
                     {house.formalLabel}
                   </span>
                   <p className="text-fresco-sm font-medium text-fresco-black leading-snug mb-2">{house.output}</p>
