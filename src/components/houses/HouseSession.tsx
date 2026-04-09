@@ -2036,6 +2036,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [url, setUrl] = useState('');
   const [evaluateMode, setEvaluateMode] = useState<'single' | 'journey' | 'comparison'>('single');
   const [isRunning, setIsRunning] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
   const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>(() => {
@@ -2149,6 +2150,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (!canRun) return;
     // Check generation limit
     if (!canGenerate) { setShowPricingModal(true); return; }
+    const abort = new AbortController();
+    abortRef.current = abort;
     setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
     const userInput = buildUserInput();
 
@@ -2171,6 +2174,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       const response = await fetch(`/api/houses/${houseId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: abort.signal,
       });
       if (!response.ok) throw new Error('Request failed');
 
@@ -2179,6 +2183,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         const decoder = new TextDecoder();
         let buffer = '';
         while (true) {
+          if (abort.signal.aborted) { reader.cancel(); break; }
           const { done, value } = await reader.read();
           if (done) break;
           buffer += decoder.decode(value, { stream: true });
@@ -2237,6 +2242,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     }
     setIsRunning(false);
   }, [canRun, values, url, houseId, sessions, workspaceId, sessionId]);
+
+  const handleStop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsRunning(false);
+    setAgentEvents([]);
+    setPageFetchMessage(null);
+  }, []);
 
   // Stable ref so handleRunWithChallenge always calls the latest handleRun
   const handleRunRef = useRef<() => Promise<void>>(async () => {});
