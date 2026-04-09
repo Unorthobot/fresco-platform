@@ -2027,7 +2027,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     return null;
   };
 
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem(`fresco-inputs-${sessionId}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
   const [attachmentContext, setAttachmentContext] = useState<Record<string, string>>({});
 
   const handleAttach = (stepId: string, content: string) => {
@@ -2065,7 +2070,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [hasCopied, setHasCopied] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
 
-  const setValue = (k: string, v: string) => setValues(prev => ({ ...prev, [k]: v }));
+  const setValue = (k: string, v: string) => setValues(prev => {
+    const next = { ...prev, [k]: v };
+    try { localStorage.setItem(`fresco-inputs-${sessionId}`, JSON.stringify(next)); } catch {}
+    return next;
+  });
 
   // Gate on first meaningful answer
   const primaryField = houseId === 'investigate' ? 'situation'
@@ -2348,10 +2357,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
       {/* ── LEFT / MIDDLE: Conversation input ─────────────────────────────── */}
       <motion.div
-        animate={{ flexBasis: result ? '360px' : undefined, maxWidth: result ? '360px' : undefined }}
+        animate={{ flexBasis: result ? '440px' : undefined, maxWidth: result ? '440px' : undefined }}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
         className={cn("flex-1 flex flex-col overflow-hidden", result && "border-r border-fresco-border-light flex-shrink-0")}
-        style={{ minWidth: result ? 300 : undefined }}
+        style={{ minWidth: result ? 360 : undefined }}
       >
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
@@ -2380,6 +2389,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   <div className="flex gap-3">
                     <button onClick={() => {
                       Object.keys(values).forEach(k => setValue(k, ''));
+                      try { localStorage.removeItem(`fresco-inputs-${sessionId}`); } catch {}
                       setResult(null); setAgentEvents([]); setChallengeQuestions([]);
                       setChallengeResponses({}); setChallengeDismissed(false);
                       setStoredAgentOutputs([]); setActiveLens(null);
@@ -2822,7 +2832,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
                   {/* Share / Export */}
                   <button onClick={() => setShowExportModal(true)} className="fresco-btn w-full">
-                    <Copy className="w-4 h-4" /><span>Share analysis</span>
+                    <Copy className="w-4 h-4" /><span>Export</span>
                   </button>
                 </div>
                   </>
@@ -2981,7 +2991,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               onClick={e => e.stopPropagation()}
               className="bg-white p-6 max-w-md w-full mx-4 shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-fresco-base font-medium text-fresco-black">Share this analysis</h3>
+                <h3 className="text-fresco-base font-medium text-fresco-black">Export analysis</h3>
                 <button onClick={() => setShowExportModal(false)}><X className="w-4 h-4 text-fresco-graphite-light" /></button>
               </div>
 
