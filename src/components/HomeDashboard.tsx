@@ -84,7 +84,7 @@ export function HomeDashboard({
               </span>
               <h1 className="text-4xl md:text-5xl font-medium text-fresco-black tracking-tight mb-4 leading-tight">
                 {hasActivity
-                  ? 'Pick up where you left off, or start something new.'
+                  ? 'What are you thinking through today?'
                   : 'What decision are you trying to make?'}
               </h1>
               <p className="text-fresco-base text-fresco-graphite-mid max-w-xl">
