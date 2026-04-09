@@ -1703,11 +1703,11 @@ function ConversationFlow({
 
   const unlockedUpTo = getUnlockedUpTo();
 
-  // Only auto-advance when user explicitly leaves a field (onBlur)
+  // Advance to next step when user explicitly signals done (onBlur)
   const handleBlur = (stepId: string) => {
     const idx = steps.findIndex(s => s.id === stepId);
-    if (idx === activeIdx && hasValue(stepId) && activeIdx < steps.length - 1) {
-      setActiveIdx(activeIdx + 1);
+    if (idx >= 0 && hasValue(stepId) && idx < steps.length - 1) {
+      setActiveIdx(idx + 1);
     }
   };
 
