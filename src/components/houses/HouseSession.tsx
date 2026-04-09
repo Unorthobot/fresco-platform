@@ -2237,6 +2237,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 if (!hasSeenTooltip) {
                   setTimeout(() => setShowTabTooltip(true), 800);
                 }
+                // Flag that this browser has run at least one session (used for guest empty state)
+                try { localStorage.setItem('fresco-has-run', '1'); } catch {}
               }
             } catch { /* skip */ }
           }

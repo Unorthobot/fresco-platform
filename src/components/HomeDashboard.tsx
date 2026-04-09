@@ -40,7 +40,12 @@ export function HomeDashboard({
   const { data: session } = useSession();
   const isGuest = !session && (!user || user.id === 'guest');
   const firstName = isGuest ? '' : (session?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || '');
-  const hasActivity = sessions.length > 0;
+  const [guestHasRun, setGuestHasRun] = useState(false);
+  useEffect(() => {
+    // Guests don't sync from DB — check localStorage flag instead
+    try { setGuestHasRun(!!localStorage.getItem('fresco-has-run')); } catch {}
+  }, []);
+  const hasActivity = sessions.length > 0 || guestHasRun;
 
   // Verdicts across all sessions
   const verdicts = sessions.reduce((acc, s) => {
