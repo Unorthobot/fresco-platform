@@ -80,17 +80,17 @@ export function HomeDashboard({
           <div className="flex items-start justify-between gap-8">
             <div className="flex-1">
               <span className="fresco-label block mb-3">
-                {isGuest ? 'GET STARTED' : `WELCOME BACK${firstName ? `, ${firstName.toUpperCase()}` : ''}`}
+                {!hasActivity ? 'GET STARTED' : (isGuest ? 'KEEP GOING' : `WELCOME BACK${firstName ? `, ${firstName.toUpperCase()}` : ''}`)}
               </span>
               <h1 className="text-4xl md:text-5xl font-medium text-fresco-black tracking-tight mb-4 leading-tight">
-                {isGuest
-                  ? 'What decision are you trying to make?'
-                  : hasActivity
+                {hasActivity
                   ? 'Pick up where you left off, or start something new.'
                   : 'What decision are you trying to make?'}
               </h1>
               <p className="text-fresco-base text-fresco-graphite-mid max-w-xl">
-                Choose a house. Answer a few questions. Get a verdict.
+                {hasActivity
+                  ? 'Choose a house, answer a few questions, get a verdict.'
+                  : 'Choose a house. Answer a few questions. Get a verdict.'}
               </p>
             </div>
 
