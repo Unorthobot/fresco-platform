@@ -25,12 +25,12 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
     workspaces: {
       icon: Sparkles,
       title: "You've hit your workspace limit",
-      description: `You have ${currentUsage} of ${limit} workspaces on the free plan.`,
+      description: `You have ${currentUsage} of ${limit} workspaces on the free plan. Upgrade for unlimited workspaces.`,
     },
     ai_generations: {
       icon: Zap,
-      title: "You've used all your AI generations",
-      description: `You've used ${currentUsage} of ${limit} AI generations this month.`,
+      title: "You've used your free runs",
+      description: `You've used ${currentUsage} of ${limit} runs this month. Runs are shared between the app and the browser plugin. Upgrade to Pro for 30 runs/month plus unlimited plugin evaluations.`,
     },
   };
 

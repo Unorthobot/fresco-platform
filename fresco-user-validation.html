@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fresco — User Validation Plan</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0a0a0a;
+    --white: #ffffff;
+    --off: #fafafa;
+    --border: #e8e8e8;
+    --muted: #999;
+    --text: #1a1a1a;
+    --secondary: #555;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #f0f0f0;
+    color: var(--text);
+    padding: 48px 24px;
+    line-height: 1.6;
+  }
+
+  .page {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--white);
+    box-shadow: 0 4px 40px rgba(0,0,0,0.1);
+  }
+
+  .cover {
+    background: var(--black);
+    color: var(--white);
+    padding: 64px;
+  }
+  .cover-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
+    margin-bottom: 32px;
+  }
+  .cover h1 {
+    font-size: 40px; font-weight: 500; letter-spacing: -0.025em;
+    line-height: 1.1; margin-bottom: 24px;
+  }
+  .cover p {
+    font-size: 14px; color: rgba(255,255,255,0.45); max-width: 480px; line-height: 1.7;
+  }
+  .cover-meta {
+    margin-top: 48px; padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex; gap: 40px;
+  }
+  .cover-meta-item { }
+  .cover-meta-item .label {
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; color: rgba(255,255,255,0.3); display: block; margin-bottom: 4px;
+  }
+  .cover-meta-item .val {
+    font-size: 13px; color: rgba(255,255,255,0.7);
+  }
+
+  .body { padding: 0 64px 80px; }
+
+  /* Section */
+  .section {
+    padding: 40px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .section:last-child { border-bottom: none; }
+
+  .section-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .section-number {
+    font-size: 48px; font-weight: 300; color: var(--border);
+    line-height: 1; margin-bottom: 16px;
+  }
+  .section h2 {
+    font-size: 22px; font-weight: 500; margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  .section > p, .section > .intro {
+    font-size: 14px; color: var(--secondary); line-height: 1.7;
+    max-width: 600px; margin-bottom: 24px;
+  }
+
+  /* Phase blocks */
+  .phase {
+    margin-bottom: 32px;
+  }
+  .phase-header {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px;
+  }
+  .phase-tag {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--white);
+    background: var(--black); padding: 3px 10px;
+  }
+  .phase h3 {
+    font-size: 15px; font-weight: 500;
+  }
+  .phase .meta {
+    font-size: 11px; color: var(--muted); margin-bottom: 12px;
+  }
+  .phase p {
+    font-size: 13px; color: var(--secondary); line-height: 1.65; margin-bottom: 8px;
+  }
+
+  /* Session structure */
+  .session-block {
+    border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px;
+  }
+  .session-block-header {
+    background: var(--off); padding: 10px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .session-block-header span:first-child {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--muted);
+  }
+  .session-block-header span:last-child {
+    font-size: 11px; color: var(--muted);
+  }
+  .session-block-body { padding: 16px; }
+  .session-block-body p {
+    font-size: 13px; color: var(--secondary); line-height: 1.6; margin-bottom: 6px;
+  }
+  .session-block-body p:last-child { margin-bottom: 0; }
+
+  /* Question list */
+  .q-list { margin: 16px 0; }
+  .q-item {
+    display: flex; gap: 16px; padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .q-item:last-child { border-bottom: none; }
+  .q-num {
+    font-size: 10px; font-weight: 600; color: var(--muted);
+    width: 20px; flex-shrink: 0; padding-top: 2px;
+  }
+  .q-content { flex: 1; }
+  .q-content .q-text {
+    font-size: 14px; font-weight: 500; color: var(--text);
+    margin-bottom: 4px; line-height: 1.4;
+  }
+  .q-content .q-intent {
+    font-size: 11px; color: var(--muted); font-style: italic; line-height: 1.5;
+  }
+
+  /* Watch for */
+  .watch-list { margin: 16px 0; }
+  .watch-item {
+    display: flex; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .watch-item:last-child { border-bottom: none; }
+  .watch-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--black); flex-shrink: 0; margin-top: 6px;
+  }
+  .watch-item p { font-size: 13px; color: var(--secondary); line-height: 1.55; }
+
+  /* Survey */
+  .survey-q {
+    padding: 16px 0; border-bottom: 1px solid var(--border);
+  }
+  .survey-q:last-child { border-bottom: none; }
+  .survey-q .sq-text { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .survey-q .sq-why { font-size: 11px; color: var(--muted); font-style: italic; }
+  .survey-q .sq-type {
+    display: inline-block; font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); border: 1px solid var(--border);
+    padding: 2px 8px; margin-top: 6px;
+  }
+
+  /* Recruit message */
+  .message-box {
+    border: 1px solid var(--border); padding: 24px;
+    font-size: 13px; line-height: 1.75; color: var(--secondary);
+    white-space: pre-wrap; font-family: inherit;
+    background: var(--off);
+  }
+  .message-box strong { color: var(--text); font-weight: 600; }
+
+  /* Callout */
+  .callout {
+    border-left: 3px solid var(--black); padding: 14px 20px;
+    background: var(--off); margin: 20px 0;
+  }
+  .callout p { font-size: 13px; color: var(--secondary); line-height: 1.6; }
+  .callout strong { color: var(--text); }
+
+  /* Two col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+  .col-block { padding: 16px; border: 1px solid var(--border); }
+  .col-block .col-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--muted); margin-bottom: 10px;
+  }
+  .col-block li {
+    font-size: 12px; color: var(--secondary); line-height: 1.6;
+    margin-bottom: 4px; list-style: none; padding-left: 12px; position: relative;
+  }
+  .col-block li::before { content: '–'; position: absolute; left: 0; color: var(--muted); }
+
+  /* Priority matrix */
+  .priority-row {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .priority-row:last-child { border-bottom: none; }
+  .priority-tag {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; padding: 3px 8px; flex-shrink: 0;
+  }
+  .priority-tag.critical { background: var(--black); color: var(--white); }
+  .priority-tag.important { border: 1px solid var(--text); color: var(--text); }
+  .priority-tag.nice { border: 1px solid var(--border); color: var(--muted); }
+  .priority-content .q { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .priority-content .why { font-size: 11px; color: var(--muted); }
+
+  /* Footer */
+  .footer {
+    padding: 24px 64px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer span { font-size: 11px; color: var(--muted); }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .page { box-shadow: none; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cover -->
+  <div class="cover">
+    <div class="cover-label">Fresco · User Research</div>
+    <h1>Validation Plan</h1>
+    <p>A structured approach to testing the Fresco marketing site and app with real users — before investing further in either.</p>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <span class="label">Participants needed</span>
+        <span class="val">5 moderated + 20 survey</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="label">Timeline</span>
+        <span class="val">2 weeks</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="label">Documents inside</span>
+        <span class="val">Plan · Recruitment · Session guide</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- ── PART 1: TESTING PLAN ───────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">Part 1</div>
+      <div class="section-number">01</div>
+      <h2>Testing Plan</h2>
+      <p class="intro">Two tracks running in parallel. Track A is moderated — you watch people use the product in real time. Track B is unmoderated — a wider group answers a short survey. Together they answer different questions.</p>
+
+      <div class="callout">
+        <p><strong>The single most important question:</strong> Do people understand what Fresco does within 30 seconds of landing on the marketing site — without any explanation from you? If the answer is no, app quality is irrelevant.</p>
+      </div>
+
+      <!-- Track A -->
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-tag">Track A</div>
+          <h3>Moderated Sessions — 5 people, 60 minutes each</h3>
+        </div>
+        <p class="meta">Week 1 · In-person or video call · You observe, take notes, do not help</p>
+
+        <p>Find 5 product managers, founders, or strategists who make product decisions regularly. Not friends or colleagues who already know about Fresco. Give them nothing in advance — no description, no context. Just a calendar invite.</p>
+
+        <div class="two-col">
+          <div class="col-block">
+            <div class="col-label">Who to recruit</div>
+            <ul>
+              <li>Product managers at startups or scale-ups</li>
+              <li>Founders making build/don't-build decisions</li>
+              <li>Product designers who influence direction</li>
+              <li>Heads of Product / CPOs</li>
+              <li>Strategy consultants working with product teams</li>
+            </ul>
+          </div>
+          <div class="col-block">
+            <div class="col-label">Who NOT to recruit</div>
+            <ul>
+              <li>People who already know about Fresco</li>
+              <li>Friends or colleagues who will be polite</li>
+              <li>Pure engineers with no product decision role</li>
+              <li>People outside the target audience</li>
+              <li>Anyone who asks what it is before the session</li>
+            </ul>
+          </div>
+        </div>
+
+        <p style="margin-top:16px"><strong>Session structure (60 mins):</strong></p>
+
+        <div class="session-block">
+          <div class="session-block-header">
+            <span>Part 1 — Marketing site</span>
+            <span>10 mins</span>
+          </div>
+          <div class="session-block-body">
+            <p>Open frescolab.io. Say: "Take a look at this. Don't click anything yet — just tell me what you think it is and whether you'd sign up."</p>
+            <p>Let them read silently. Note what they look at, where their eyes go, when they stop. Ask: "What does this do?" Record their exact words. Then: "Who do you think this is for?" Then: "What's unclear?"</p>
+            <p>Do not explain or correct anything at this stage.</p>
+          </div>
+        </div>
+
+        <div class="session-block">
+          <div class="session-block-header">
+            <span>Part 2 — Live session</span>
+            <span>30 mins</span>
+          </div>
+          <div class="session-block-body">
+            <p>Say: "I want you to use this app to work through a real decision you're currently facing. Pick something you're actually thinking about — not a hypothetical." Give them the URL. Watch without helping.</p>
+            <p>If they get completely stuck, you can say "what would you expect to happen?" — but don't tell them what to do.</p>
+            <p>Note: where they hesitate, what they re-read, what they skip, whether they read the hints, whether they look at the Analysis tab after a result appears.</p>
+          </div>
+        </div>
+
+        <div class="session-block">
+          <div class="session-block-header">
+            <span>Part 3 — Debrief</span>
+            <span>20 mins</span>
+          </div>
+          <div class="session-block-body">
+            <p>"What did you get out of that?" Then: "Would you do anything differently tomorrow because of it?" Then: "Would you share this output with anyone? Who?" Then: "What would make you pay for this?"</p>
+            <p>Finish with: "How would you describe Fresco to a colleague in one sentence?" — record this verbatim. The gap between their description and yours is your messaging problem.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Track B -->
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-tag">Track B</div>
+          <h3>Remote Survey — 20 people, async</h3>
+        </div>
+        <p class="meta">Week 2 · Via email or Typeform · No moderation needed</p>
+
+        <p>Record a 3-minute Loom walkthrough of a completed Fresco session — pick an Investigate session with a good result. Show the marketing site (30 seconds), then show the session from start to result (2 minutes). Send it to 20 people in your network with the survey below.</p>
+
+        <div class="callout">
+          <p>The goal of Track B is scale, not depth. You want to see whether the messaging problem you identify in Track A is widespread — or whether it only affected a few people.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PART 2: RECRUITMENT MESSAGE ─────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">Part 2</div>
+      <div class="section-number">02</div>
+      <h2>Recruitment Message</h2>
+      <p class="intro">Two versions — one for moderated sessions, one for the remote survey. Use the moderated version for direct outreach. Use the survey version for a broader send.</p>
+
+      <p style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:12px;">Version A — Moderated session (direct outreach)</p>
+      <div class="message-box">Hi [name],
+
+I'm building a product and I'm looking for 5 people to give me honest feedback. I'd love 60 minutes of your time this week or next.
+
+Here's what I need: you make product decisions regularly, and you have something you're currently trying to figure out — a direction to commit to, a problem to define, a decision to pressure-test. You'd use a real tool I'm building to work through it, while I watch and take notes.
+
+No preparation needed. I won't explain the tool beforehand — that's the point. I want to see whether it makes sense without me in the room.
+
+I'll take you through it on a video call. Completely honest feedback is what's useful — good or bad.
+
+If you're up for it, just reply and I'll send a time. Should take 60 minutes.
+
+[Your name]</div>
+
+      <p style="font-size:13px; font-weight:600; color:var(--text); margin:24px 0 12px;">Version B — Remote survey (broader send)</p>
+      <div class="message-box">Hi [name],
+
+I'm working on something and I'd value your honest take. It'll take 5 minutes.
+
+I've put together a 3-minute video showing a tool I'm building for product teams — something that helps structure thinking before a major product decision. Watch it, then answer 5 quick questions. No sign-up needed.
+
+[Loom link]
+[Survey link]
+
+Genuinely useful feedback means telling me what you actually think, not what sounds nice. What doesn't make sense, who you think it's for, whether you'd use it — all useful.
+
+Thanks,
+[Your name]</div>
+    </div>
+
+    <!-- ── PART 3: SESSION GUIDE ─────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">Part 3</div>
+      <div class="section-number">03</div>
+      <h2>Session Questions</h2>
+      <p class="intro">All questions to ask across the moderated session and the remote survey. Questions are ordered by priority — critical questions must be answered, important questions should be answered, nice-to-have questions if time allows.</p>
+
+      <!-- Priority matrix -->
+      <p style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:12px;">Priority framework</p>
+      <div style="margin-bottom:32px;">
+        <div class="priority-row">
+          <span class="priority-tag critical">Critical</span>
+          <div class="priority-content">
+            <div class="q">Questions that directly determine whether Fresco is working</div>
+            <div class="why">If you can only answer 3 things, answer these. Everything else is secondary.</div>
+          </div>
+        </div>
+        <div class="priority-row">
+          <span class="priority-tag important">Important</span>
+          <div class="priority-content">
+            <div class="q">Questions that improve the product and positioning</div>
+            <div class="why">Answer these in the debrief if you have time and they feel natural.</div>
+          </div>
+        </div>
+        <div class="priority-row">
+          <span class="priority-tag nice">Optional</span>
+          <div class="priority-content">
+            <div class="q">Questions that provide useful context</div>
+            <div class="why">Only ask if the conversation goes there organically.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Marketing site questions -->
+      <p style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:4px;">Marketing site — ask after 60 seconds of silent reading</p>
+      <div class="q-list">
+        <div class="q-item">
+          <div class="q-num">Q1 <span class="priority-tag critical" style="font-size:8px; padding:1px 5px;">C</span></div>
+          <div class="q-content">
+            <div class="q-text">What do you think this does?</div>
+            <div class="q-intent">The most important question. Their answer verbatim tells you whether your messaging is working. Don't prompt. Don't correct. Just listen and write it down exactly.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q2 <span class="priority-tag critical" style="font-size:8px; padding:1px 5px;">C</span></div>
+          <div class="q-content">
+            <div class="q-text">Who do you think this is for?</div>
+            <div class="q-intent">Tests whether your target audience is legible from the site. If they describe someone very different from your actual user, you have a targeting problem.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q3 <span class="priority-tag important" style="font-size:8px; padding:1px 5px;">I</span></div>
+          <div class="q-content">
+            <div class="q-text">What's the first thing that caught your attention?</div>
+            <div class="q-intent">Tells you what's doing the most work visually and verbally. If it's not the most important thing, redesign accordingly.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q4 <span class="priority-tag important" style="font-size:8px; padding:1px 5px;">I</span></div>
+          <div class="q-content">
+            <div class="q-text">What's unclear or confusing?</div>
+            <div class="q-intent">Don't ask "what's wrong" — that invites small suggestions. "Unclear or confusing" surfaces real comprehension gaps.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q5 <span class="priority-tag important" style="font-size:8px; padding:1px 5px;">I</span></div>
+          <div class="q-content">
+            <div class="q-text">Would you sign up? What would stop you?</div>
+            <div class="q-intent">Not "would you pay" yet — just sign up. The barrier to a free account tells you the trust gap on the site.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- During session questions (observe, not ask) -->
+      <p style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin:24px 0 4px;">During the live session — observe, don't ask</p>
+      <p style="font-size:13px; color:var(--secondary); margin-bottom:12px;">Don't interrupt. Watch and note when each of these happens.</p>
+      <div class="watch-list">
+        <div class="watch-item"><div class="watch-dot"></div><p><strong>Do they read the question hints</strong> or skip straight to the textarea? If they skip hints, the questions need to be self-explanatory.</p></div>
+        <div class="watch-item"><div class="watch-dot"></div><p><strong>Do they hesitate before answering</strong> any question? Which one? Hesitation = the question is unclear or asking for something they don't have.</p></div>
+        <div class="watch-item"><div class="watch-dot"></div><p><strong>Do they re-read the question</strong> after starting to answer? Signals the question is ambiguous.</p></div>
+        <div class="watch-item"><div class="watch-dot"></div><p><strong>Do they skip any question entirely?</strong> Which one? Why? (Ask after, not during.)</p></div>
+        <div class="watch-item"><div class="watch-dot"></div><p><strong>When the result appears, do they lean in or skim?</strong> Leaning in = the output has resonance. Skimming = it feels generic.</p></div>
+        <div class="watch-item"><div class="watch-dot"></div><p><strong>Do they click the Analysis tab?</strong> Do they scroll through the systems outputs? What do they stop on?</p></div>
+        <div class="watch-item"><div class="watch-dot"></div><p><strong>Do they want to export or share anything?</strong> Do they reach for the Export button unprompted?</p></div>
+        <div class="watch-item"><div class="watch-dot"></div><p><strong>Do they look satisfied or flat</strong> when they finish? The emotional response at the end of the session is the most honest signal.</p></div>
+      </div>
+
+      <!-- Debrief questions -->
+      <p style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin:24px 0 4px;">Debrief — ask after the session ends</p>
+      <div class="q-list">
+        <div class="q-item">
+          <div class="q-num">Q6 <span class="priority-tag critical" style="font-size:8px; padding:1px 5px;">C</span></div>
+          <div class="q-content">
+            <div class="q-text">What did you get out of that?</div>
+            <div class="q-intent">Open-ended. Don't prompt. The answer tells you whether the output created genuine value or just felt like structured busywork. Silence is a valid (and important) answer.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q7 <span class="priority-tag critical" style="font-size:8px; padding:1px 5px;">C</span></div>
+          <div class="q-content">
+            <div class="q-text">Would you do anything differently tomorrow because of what you just ran through?</div>
+            <div class="q-intent">The real test of value. If the answer is no, the output didn't change anything. If yes, ask specifically what — that's your proof point.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q8 <span class="priority-tag critical" style="font-size:8px; padding:1px 5px;">C</span></div>
+          <div class="q-content">
+            <div class="q-text">How would you describe Fresco to a colleague in one sentence?</div>
+            <div class="q-intent">Record this verbatim. Run it across all 5 participants. The common words and frames are your real positioning — better than anything you'd write yourself.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q9 <span class="priority-tag important" style="font-size:8px; padding:1px 5px;">I</span></div>
+          <div class="q-content">
+            <div class="q-text">Would you share this output with anyone? Who?</div>
+            <div class="q-intent">Tests whether the output has a natural sharing moment. If yes, the follow-up is "what would you change before sharing?" — tells you what's missing for it to be presentation-ready.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q10 <span class="priority-tag important" style="font-size:8px; padding:1px 5px;">I</span></div>
+          <div class="q-content">
+            <div class="q-text">What would make you actually use this regularly?</div>
+            <div class="q-intent">Not "what would you improve" — that invites feature requests. "Actually use regularly" surfaces the habit or workflow change needed. The answer is usually about integration, not features.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q11 <span class="priority-tag important" style="font-size:8px; padding:1px 5px;">I</span></div>
+          <div class="q-content">
+            <div class="q-text">What would you pay for this — and what tier would make sense for you?</div>
+            <div class="q-intent">Only ask this if Q6 and Q7 showed genuine value. If there was no perceived value, pricing questions are noise. If there was value, let them name a number first before mentioning your pricing.</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q12 <span class="priority-tag nice" style="font-size:8px; padding:1px 5px;">O</span></div>
+          <div class="q-content">
+            <div class="q-text">What does your current process look like when you're facing this kind of decision?</div>
+            <div class="q-intent">Context for positioning. What is Fresco replacing or supplementing? The answer tells you the real competitive frame — it's usually "nothing structured" or "a Notion doc".</div>
+          </div>
+        </div>
+        <div class="q-item">
+          <div class="q-num">Q13 <span class="priority-tag nice" style="font-size:8px; padding:1px 5px;">O</span></div>
+          <div class="q-content">
+            <div class="q-text">Is there anything you expected it to do that it didn't?</div>
+            <div class="q-intent">Surfaces expectation gaps set by the marketing site. If there's a consistent gap, the site is over-promising something the app doesn't deliver.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Remote survey -->
+      <p style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin:32px 0 4px;">Remote survey — Track B (after watching the Loom)</p>
+      <p style="font-size:13px; color:var(--secondary); margin-bottom:12px;">Keep this to 5 questions maximum. Any longer and completion rate drops significantly.</p>
+      <div>
+        <div class="survey-q">
+          <div class="sq-text">1. In your own words, what does Fresco do?</div>
+          <div class="sq-why">Open text. The answer tells you whether the Loom made the product legible. Compare to Q1 from moderated sessions.</div>
+          <span class="sq-type">Open text</span>
+        </div>
+        <div class="survey-q">
+          <div class="sq-text">2. Who do you think this is for? Is that you?</div>
+          <div class="sq-why">Two-part. First part tests positioning legibility. Second part is self-qualification — tells you if the audience on the site matches people who actually feel it's relevant to them.</div>
+          <span class="sq-type">Open text</span>
+        </div>
+        <div class="survey-q">
+          <div class="sq-text">3. What problem does this solve — and how urgent is that problem for you?</div>
+          <div class="sq-why">Tests whether the pain point lands. "Urgent" is the key word — lots of people have the problem but don't feel pain about it. Pain drives buying.</div>
+          <span class="sq-type">Open text + 1–5 scale</span>
+        </div>
+        <div class="survey-q">
+          <div class="sq-text">4. Would you pay for this? If yes, roughly how much per month?</div>
+          <div class="sq-why">Only useful if Q3 showed urgency. If no one finds it urgent, pricing data is irrelevant. Let them name a number — don't anchor with your current pricing.</div>
+          <span class="sq-type">Yes / No / Maybe + open text</span>
+        </div>
+        <div class="survey-q">
+          <div class="sq-text">5. What's the one thing that would make you actually sign up and use this?</div>
+          <div class="sq-why">The most actionable question in the survey. The single biggest barrier to adoption, stated directly. Collect these across 20 responses and look for the pattern.</div>
+          <span class="sq-type">Open text</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PART 4: WHAT TO DO WITH RESULTS ──────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">Part 4</div>
+      <div class="section-number">04</div>
+      <h2>What to Do With the Results</h2>
+      <p class="intro">After running both tracks, you'll have a lot of raw data. Here's how to process it without drowning in it.</p>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-tag">Step 1</div>
+          <h3>Collect the verbatim answers to Q1 and Q8</h3>
+        </div>
+        <p>From every participant: their answer to "what does this do?" and "how would you describe it in one sentence?" Put them in a list. Look for common words and frames. The most common language is your positioning — use it verbatim on the site.</p>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-tag">Step 2</div>
+          <h3>Identify where every session hesitated or stopped</h3>
+        </div>
+        <p>Look at your observation notes from Part 2 of the moderated sessions. Any step where more than 2 of 5 participants hesitated, re-read, or skipped is a problem to fix. Don't debate it — fix it.</p>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-tag">Step 3</div>
+          <h3>Count the Q7 answers</h3>
+        </div>
+        <p>"Would you do anything differently tomorrow?" If 3 or more of 5 say yes — and can say what specifically — Fresco is creating real value. If 3 or more say no or struggle to answer, the output isn't landing and that's the most important thing to fix before everything else.</p>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-tag">Step 4</div>
+          <h3>Run the results through Fresco</h3>
+        </div>
+        <p>Use the Investigate house with what you've observed. Then Validate with the signal you've collected. Let the product analyse its own validation data. The output will tell you what to prioritise — and it's a good test of whether the product does what it's supposed to do.</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span>Fresco · frescolab.io</span>
+    <span>User Validation Plan · April 2026</span>
+  </div>
+
+</div>
+</body>
+</html>
