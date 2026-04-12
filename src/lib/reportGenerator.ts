@@ -242,6 +242,8 @@ export function generatePDFReport(data: ReportData): void {
     background: var(--black);
     padding: 56px 56px 48px;
     margin-bottom: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .cover-grid-bg {
@@ -575,11 +577,22 @@ export function generatePDFReport(data: ReportData): void {
 
   /* Print */
   @media print {
-    body { background: white; padding: 0; }
+    body { background: white; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .print-bar { display: none; }
     .print-spacer { display: none; }
-    .section, .inputs-block, .decision-block { page-break-inside: avoid; }
-    .cover { page-break-after: always; }
+    /* Never suppress whole blocks — only avoid breaks inside small atomic units */
+    .list-row { break-inside: avoid; }
+    .archetype-card { break-inside: avoid; }
+    .ice-row { break-inside: avoid; }
+    .leverage-row { break-inside: avoid; }
+    .causal-edge { break-inside: avoid; }
+    .scenario-var { break-inside: avoid; }
+    .input-item { break-inside: avoid; }
+    .agent-row { break-inside: avoid; }
+    /* Section labels stay with their content */
+    .section-label { break-after: avoid; }
+    /* Cover always ends a page */
+    .cover { break-after: page; }
   }
 </style>
 </head>
