@@ -3037,13 +3037,27 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               <div className="space-y-2">
                 {/* 0. PDF Report — comprehensive download */}
                 <button onClick={() => {
-                  generatePDFReport({
-                    houseName: meta.name,
-                    formalLabel: (meta as any).formalLabel || meta.name,
-                    result: result as any,
-                    agentEvents: agentEvents,
-                    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-                  });
+                  {
+                    const houseSteps = houseId === 'investigate' ? INVESTIGATE_STEPS
+                      : houseId === 'innovate' ? INNOVATE_STEPS
+                      : houseId === 'validate' ? VALIDATE_STEPS
+                      : evaluateMode === 'journey' ? EVALUATE_STEPS_JOURNEY
+                      : evaluateMode === 'comparison' ? EVALUATE_STEPS_COMPARISON
+                      : EVALUATE_STEPS_SINGLE;
+                    generatePDFReport({
+                      houseName: meta.name,
+                      formalLabel: (meta as any).formalLabel || meta.name,
+                      result: result as any,
+                      agentEvents: agentEvents,
+                      inputs: houseSteps
+                        .filter((s: any) => (values[s.id] || '').trim().length > 0)
+                        .map((s: any) => ({
+                          question: s.question,
+                          answer: serializeStructuredField(s.inputType || 'textarea', values[s.id] || ''),
+                        })),
+                      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+                    });
+                  }
                 }}
                   className="w-full flex items-center gap-3 p-3 border border-fresco-black bg-fresco-black hover:bg-fresco-graphite transition-colors text-left">
                   <svg className="w-4 h-4 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

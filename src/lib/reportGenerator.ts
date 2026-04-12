@@ -21,6 +21,7 @@ interface ReportData {
   formalLabel: string;
   result: HouseResult;
   agentEvents?: { displayName: string; signal: string; structured_artifact?: string }[];
+  inputs?: { question: string; answer: string }[];
   date?: string;
 }
 
@@ -39,70 +40,154 @@ export function generatePDFReport(data: ReportData): void {
   const dateStr = data.date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const so = data.result.systemsOutput;
 
-  const section = (label: string, content: string) => `
-    <div class="section">
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  const esc = (s: string) => String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const section = (label: string, content: string, accent = false) => `
+    <div class="section${accent ? ' accent' : ''}">
       <div class="section-label">${label}</div>
       ${content}
     </div>`;
 
-  const itemList = (items: string[], filled = false) =>
-    items.map((item, i) => `
+  const numList = (items: string[], filled = false) =>
+    `<div class="list">${items.map((item, i) => `
       <div class="list-row">
-        <span class="list-num ${filled ? 'filled' : ''}">${i + 1}</span>
-        <p>${item}</p>
-      </div>`).join('');
+        <span class="num${filled ? ' filled' : ''}">${i + 1}</span>
+        <p>${esc(item)}</p>
+      </div>`).join('')}</div>`;
+
+  // ── Inputs section ────────────────────────────────────────────────────────
+
+  const inputsHTML = data.inputs?.length ? section('Your Inputs', `
+    <div class="inputs-grid">
+      ${data.inputs.filter(i => i.answer?.trim()).map((inp, idx) => `
+        <div class="input-item">
+          <div class="input-q">${String.fromCharCode(65 + idx)}. ${esc(inp.question)}</div>
+          <div class="input-a">${esc(inp.answer).replace(/\n/g, '<br/>')}</div>
+        </div>`).join('')}
+    </div>`) : '';
+
+  // ── Systems outputs ───────────────────────────────────────────────────────
 
   const icebergHTML = so?.icebergLevels ? section('Iceberg Analysis', `
+    <p class="section-intro">What you see is only the surface. The real causes sit deeper.</p>
     <div class="iceberg">
       ${[
-        { l: 'Event', v: so.icebergLevels.event, depth: 0 },
-        { l: 'Pattern', v: so.icebergLevels.pattern, depth: 1 },
-        { l: 'Structure', v: so.icebergLevels.structure, depth: 2 },
-        { l: 'Mental model', v: so.icebergLevels.mentalModel, depth: 3 },
+        { l: 'Event', v: so.icebergLevels.event, d: 0 },
+        { l: 'Pattern', v: so.icebergLevels.pattern, d: 1 },
+        { l: 'Structure', v: so.icebergLevels.structure, d: 2 },
+        { l: 'Mental model', v: so.icebergLevels.mentalModel, d: 3 },
       ].filter(r => r.v).map(r => `
-        <div class="ice-row" style="margin-left:${r.depth * 16}px; border-left-width:${2 + r.depth}px; opacity:${1 - r.depth * 0.06}">
-          <span class="ice-label">${r.l}</span>
-          <span class="ice-val">${r.v}</span>
+        <div class="ice-row" style="margin-left:${r.d * 20}px">
+          <div class="ice-depth" style="width:${3 + r.d * 1.5}px; opacity:${1 - r.d * 0.2}"></div>
+          <div class="ice-content">
+            <span class="ice-label">${r.l}</span>
+            <span class="ice-val">${esc(r.v)}</span>
+          </div>
         </div>`).join('')}
     </div>`) : '';
 
   const archetypeHTML = so?.archetype?.name && so.archetype.name !== 'null' ? section('System Archetype', `
     <div class="archetype-card">
-      <div class="archetype-name">${so.archetype.name}</div>
-      ${so.archetype.description ? `<p class="archetype-desc">${so.archetype.description}</p>` : ''}
-      ${so.archetype.loop ? `<div class="archetype-row"><span class="archetype-row-label">How it shows up</span><p>${so.archetype.loop}</p></div>` : ''}
-      ${so.archetype.escape ? `<div class="archetype-row"><span class="archetype-row-label">How to break out</span><p>${so.archetype.escape}</p></div>` : ''}
+      <div class="archetype-head">
+        <div class="archetype-eyebrow">System archetype detected</div>
+        <div class="archetype-name">${esc(so.archetype.name)}</div>
+      </div>
+      <div class="archetype-body">
+        ${so.archetype.description ? `<p class="archetype-desc">${esc(so.archetype.description)}</p>` : ''}
+        ${so.archetype.loop ? `<div class="archetype-row"><span class="archetype-row-label">How it shows up</span><p>${esc(so.archetype.loop)}</p></div>` : ''}
+        ${so.archetype.escape ? `<div class="archetype-row"><span class="archetype-row-label">How to break out</span><p>${esc(so.archetype.escape)}</p></div>` : ''}
+      </div>
     </div>`) : '';
 
   const leverageHTML = so?.leverageMap?.length ? section('Leverage Map', `
+    <p class="section-intro">Options ranked by systemic leverage — the higher on the map, the more the system shifts.</p>
     <div class="leverage-list">
       ${so.leverageMap.map((opt: any) => {
         const levels = ['parameters','feedback','information','rules','goals','paradigms'];
         const idx = levels.indexOf(opt.leverageLevel?.toLowerCase());
-        const pct = idx === -1 ? 50 : Math.round(((idx + 1) / levels.length) * 100);
+        const pct = idx === -1 ? 40 : Math.round(((idx + 1) / levels.length) * 100);
         return `<div class="leverage-row">
-          <div class="lev-track"><div class="lev-fill" style="width:${pct}%"></div></div>
-          <div class="lev-text">
-            <span class="lev-name">${opt.option}</span>
-            <span class="lev-level">${opt.leverageLevel || ''}</span>
+          <div class="lev-top">
+            <span class="lev-name">${esc(opt.option)}</span>
+            <span class="lev-level">${esc(opt.leverageLevel || '')}</span>
           </div>
-          ${opt.impact ? `<p class="lev-impact">${opt.impact}</p>` : ''}
+          <div class="lev-track"><div class="lev-fill" style="width:${pct}%"></div></div>
+          ${opt.impact ? `<p class="lev-impact">${esc(opt.impact)}</p>` : ''}
         </div>`;
       }).join('')}
     </div>`) : '';
 
-  const simHTML = so?.currentStateSimulation ? section('If Nothing Changes', `
-    <blockquote class="sim-quote">${so.currentStateSimulation}</blockquote>`) : '';
+  const botgHTML = so?.behaviorOverTime ? section('Behaviour Over Time', `
+    <div class="botg">
+      <div class="botg-meta">
+        <span class="botg-variable">${esc(so.behaviorOverTime.variable || '')}</span>
+        ${so.behaviorOverTime.unit ? `<span class="botg-unit">${esc(so.behaviorOverTime.unit)}</span>` : ''}
+      </div>
+      ${so.behaviorOverTime.trend ? `<p class="botg-trend">${esc(so.behaviorOverTime.trend)}</p>` : ''}
+      ${so.behaviorOverTime.projection ? `<div class="botg-projection"><span class="botg-proj-label">Projection</span><p>${esc(so.behaviorOverTime.projection)}</p></div>` : ''}
+    </div>`) : '';
+
+  const causalHTML = so?.causalLoop?.nodes?.length ? section('Causal Loop', `
+    <div class="causal">
+      ${so.causalLoop.dominantLoop ? `<div class="causal-dominant"><span class="causal-loop-label">Dominant loop</span><p>${esc(so.causalLoop.dominantLoop)}</p></div>` : ''}
+      <div class="causal-edges">
+        ${(so.causalLoop.edges || []).slice(0, 6).map((e: any) => `
+          <div class="causal-edge">
+            <span class="edge-from">${esc(e.from)}</span>
+            <span class="edge-arrow">${e.polarity === '+' ? '→ increases →' : '→ decreases →'}</span>
+            <span class="edge-to">${esc(e.to)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`) : '';
+
+  const scenarioHTML = so?.scenarioModel?.variables?.length ? section('Scenario Simulation', `
+    <div class="scenario">
+      ${so.scenarioModel.outcomeVariable ? `<div class="scenario-outcome"><span class="scenario-outcome-label">Outcome variable</span><p class="scenario-outcome-val">${esc(so.scenarioModel.outcomeVariable)}</p></div>` : ''}
+      <div class="scenario-vars">
+        ${so.scenarioModel.variables.slice(0, 5).map((v: any) => `
+          <div class="scenario-var">
+            <div class="svar-top">
+              <span class="svar-name">${esc(v.name)}</span>
+              <span class="svar-score">${v.sensitivityScore || ''}/10</span>
+            </div>
+            <div class="svar-track"><div class="svar-fill" style="width:${(v.sensitivityScore || 5) * 10}%"></div></div>
+            ${v.effect ? `<p class="svar-effect">${esc(v.effect)}</p>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>`) : '';
+
+  const ipoHTML = so?.ipoMap?.inputs?.length ? section('Input → Process → Output', `
+    <div class="ipo-grid">
+      <div class="ipo-col">
+        <div class="ipo-col-label">Inputs</div>
+        ${(so.ipoMap.inputs || []).map((i: any) => `<div class="ipo-item"><span class="ipo-item-label">${esc(i.label)}</span>${i.note ? `<p class="ipo-item-note">${esc(i.note)}</p>` : ''}</div>`).join('')}
+      </div>
+      <div class="ipo-col">
+        <div class="ipo-col-label">Processes</div>
+        ${(so.ipoMap.processes || []).map((p: any) => `<div class="ipo-item"><span class="ipo-item-label">${esc(p.label)}</span>${p.note ? `<p class="ipo-item-note">${esc(p.note)}</p>` : ''}</div>`).join('')}
+      </div>
+      <div class="ipo-col">
+        <div class="ipo-col-label">Outputs</div>
+        ${(so.ipoMap.outputs || []).map((o: any) => `<div class="ipo-item"><span class="ipo-item-label">${esc(o.label)}</span>${o.note ? `<p class="ipo-item-note">${esc(o.note)}</p>` : ''}</div>`).join('')}
+      </div>
+    </div>
+    ${so.ipoMap.bottleneck ? `<div class="ipo-bottleneck"><span class="ipo-bn-label">Bottleneck</span><p>${esc(so.ipoMap.bottleneck)}</p></div>` : ''}`) : '';
 
   const agentHTML = data.agentEvents?.length ? section('Agent Analysis', `
     <div class="agents">
       ${data.agentEvents.map(ev => `
         <div class="agent-row">
-          <div class="agent-name">${ev.displayName}</div>
-          <p class="agent-signal">${ev.signal}</p>
-          ${ev.structured_artifact ? `<p class="agent-artifact">${ev.structured_artifact}</p>` : ''}
+          <div class="agent-name">${esc(ev.displayName)}</div>
+          <p class="agent-signal">${esc(ev.signal)}</p>
+          ${ev.structured_artifact ? `<p class="agent-artifact">${esc(ev.structured_artifact)}</p>` : ''}
         </div>`).join('')}
     </div>`) : '';
+
+  const simHTML = so?.currentStateSimulation ? section('If Nothing Changes', `
+    <blockquote class="sim-quote">${esc(so.currentStateSimulation)}</blockquote>`) : '';
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -114,67 +199,159 @@ export function generatePDFReport(data: ReportData): void {
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --black: #0a0a0a; --white: #ffffff; --off: #fafafa;
-    --border: #e8e8e8; --muted: #999; --text: #1a1a1a;
-    --text-secondary: #555;
+    --black: #1a1a1a;
+    --white: #ffffff;
+    --off: #fafafa;
+    --light: #f5f5f5;
+    --border: #e5e5e5;
+    --border-light: #ebebeb;
+    --muted: #8a8a8a;
+    --mid: #6b6b6b;
+    --text: #1a1a1a;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   body {
-    font-family: 'Inter', -apple-system, sans-serif;
-    background: #f0f0f0; color: var(--text);
-    padding: 40px 20px;
+    font-family: var(--font);
+    background: #ebebeb;
+    color: var(--text);
+    padding: 48px 24px 80px;
+    -webkit-font-smoothing: antialiased;
   }
 
-  .page {
-    max-width: 760px; margin: 0 auto;
-    background: var(--white);
-    box-shadow: 0 4px 40px rgba(0,0,0,0.12);
-  }
+  .page { max-width: 794px; margin: 0 auto; }
 
-  /* Cover */
+  /* ── PRINT BAR ─────────────────────────────────────────────────── */
+  .print-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--black); padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .print-bar p { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .print-btn {
+    height: 30px; padding: 0 16px;
+    background: var(--white); color: var(--black);
+    border: none; font-family: var(--font);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; cursor: pointer;
+  }
+  .print-btn:hover { background: #f0f0f0; }
+
+  /* ── COVER ─────────────────────────────────────────────────────── */
   .cover {
-    background: var(--black); color: var(--white);
-    padding: 56px 64px 48px;
-    position: relative; overflow: hidden;
+    background: var(--black);
+    padding: 56px 56px 48px;
+    margin-bottom: 0;
   }
-  .cover::after {
-    content: ''; position: absolute; top: 0; right: 0;
-    width: 200px; height: 200px;
-    background: radial-gradient(circle at top right, rgba(255,255,255,0.04), transparent);
+
+  .cover-grid-bg {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+    position: absolute; inset: 0; pointer-events: none;
   }
+
+  .cover-inner { position: relative; }
+
   .cover-meta {
-    font-size: 10px; font-weight: 500; letter-spacing: 0.14em;
-    text-transform: uppercase; color: rgba(255,255,255,0.35);
-    margin-bottom: 36px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.12em;
+    text-transform: uppercase; color: rgba(255,255,255,0.25);
+    margin-bottom: 40px; display: flex; align-items: center; gap: 8px;
   }
-  .cover-tag {
-    display: inline-block; font-size: 10px; font-weight: 600;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px;
-    border-radius: 100px; color: rgba(255,255,255,0.5);
+
+  .cover-meta-sep { color: rgba(255,255,255,0.1); }
+
+  .cover-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 3px 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9999px; color: rgba(255,255,255,0.45);
     margin-bottom: 16px;
   }
-  .cover-headline {
-    font-size: 36px; font-weight: 500; line-height: 1.15;
-    letter-spacing: -0.02em; color: var(--white);
-    margin-bottom: 28px;
+
+  .cover-pill-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(255,255,255,0.4);
   }
-  .cover-insight {
-    font-size: 14px; font-style: italic; line-height: 1.6;
-    color: rgba(255,255,255,0.65); border-left: 2px solid rgba(255,255,255,0.2);
-    padding-left: 16px; margin-bottom: 24px;
+
+  .cover-verdict {
+    font-size: 38px; font-weight: 500; line-height: 1.1;
+    letter-spacing: -0.025em; color: var(--white);
+    margin-bottom: 28px; max-width: 580px;
   }
+
+  .cover-sot {
+    font-size: 15px; font-style: italic; line-height: 1.65;
+    color: rgba(255,255,255,0.55);
+    border-left: 2px solid rgba(255,255,255,0.15);
+    padding-left: 18px; margin-bottom: 20px; max-width: 560px;
+  }
+
   .cover-rationale {
-    font-size: 12px; line-height: 1.65; color: rgba(255,255,255,0.45);
+    font-size: 12px; line-height: 1.7;
+    color: rgba(255,255,255,0.35); max-width: 520px;
   }
 
-  /* Body */
-  .body { padding: 0 64px 64px; }
+  /* ── DECISION SECTION (white bg) ───────────────────────────────── */
+  .decision-block {
+    background: var(--white);
+    padding: 0 56px;
+    border-bottom: 1px solid var(--border);
+  }
 
+  .decision-header {
+    padding: 32px 0 0;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 0;
+  }
+
+  .decision-header-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 20px;
+  }
+
+  /* ── INPUTS ────────────────────────────────────────────────────── */
+  .inputs-block {
+    background: var(--off);
+    padding: 32px 56px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .input-item {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .input-item:last-child { border-bottom: none; }
+
+  .input-q {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .input-a {
+    font-size: 13px; color: var(--text); line-height: 1.6;
+  }
+
+  /* ── SECTION (analysis) ────────────────────────────────────────── */
   .section {
-    padding: 32px 0; border-bottom: 1px solid var(--border);
+    background: var(--white);
+    padding: 32px 56px;
+    border-bottom: 1px solid var(--border);
   }
-  .section:last-child { border-bottom: none; }
+
+  .section.accent {
+    background: var(--off);
+  }
 
   .section-label {
     font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
@@ -182,53 +359,60 @@ export function generatePDFReport(data: ReportData): void {
     margin-bottom: 16px;
   }
 
-  /* Sentence of Truth */
+  .section-intro {
+    font-size: 12px; color: var(--muted); line-height: 1.6;
+    margin-bottom: 16px; font-style: italic;
+  }
+
+  /* SOT */
   .sot-box {
-    background: var(--off); border-left: 3px solid var(--black);
-    padding: 20px 24px; font-size: 15px; font-style: italic;
+    border-left: 3px solid var(--black); padding: 16px 20px;
+    background: var(--off); font-size: 15px; font-style: italic;
     line-height: 1.6; color: var(--text);
   }
 
   /* POV */
   .pov-box {
-    background: var(--off); border-left: 4px solid var(--black);
-    padding: 16px 20px; font-size: 14px; font-weight: 500;
-    line-height: 1.55; color: var(--text);
+    border-left: 3px solid var(--black); padding: 16px 20px;
+    font-size: 14px; font-weight: 500; line-height: 1.55;
   }
 
   /* Lists */
-  .list-row {
-    display: flex; align-items: flex-start; gap: 12px;
-    margin-bottom: 12px;
-  }
-  .list-num {
-    width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
-    border: 1.5px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 600; color: var(--muted);
-    margin-top: 1px;
-  }
-  .list-num.filled {
-    background: var(--black); border-color: var(--black); color: var(--white);
-  }
-  .list-row p { font-size: 13px; line-height: 1.55; color: #333; padding-top: 4px; }
+  .list { }
+  .list-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  .list-row:last-child { margin-bottom: 0; }
 
-  /* Next house */
+  .num {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 500; color: var(--muted);
+    margin-top: 2px;
+  }
+  .num.filled { background: var(--black); border-color: var(--black); color: var(--white); }
+  .list-row p { font-size: 13px; line-height: 1.55; color: #333; padding-top: 3px; }
+
+  /* Next step */
   .next-box {
-    background: var(--off); padding: 20px 24px;
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+    background: var(--light); padding: 20px 24px;
+    display: flex; justify-content: space-between; align-items: flex-start;
   }
   .next-label { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
   .next-name { font-size: 15px; font-weight: 500; }
-  .next-reason { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .next-reason { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
 
   /* Iceberg */
-  .iceberg { margin-top: 4px; }
+  .iceberg { }
   .ice-row {
+    display: flex; gap: 0; align-items: stretch;
+    margin-bottom: 4px;
+  }
+  .ice-depth {
+    background: var(--black); flex-shrink: 0; margin-right: 14px;
+  }
+  .ice-content {
     display: flex; gap: 12px; align-items: flex-start;
-    padding: 10px 14px; margin-bottom: 4px;
-    background: var(--off); border-left-color: var(--muted);
-    border-left-style: solid;
+    padding: 10px 14px; background: var(--light); flex: 1;
   }
   .ice-label {
     font-size: 9px; font-weight: 600; text-transform: uppercase;
@@ -239,12 +423,18 @@ export function generatePDFReport(data: ReportData): void {
 
   /* Archetype */
   .archetype-card { border: 1px solid var(--border); overflow: hidden; }
-  .archetype-name {
-    background: var(--black); color: var(--white);
-    padding: 14px 20px; font-size: 15px; font-weight: 500;
+  .archetype-head { background: var(--black); padding: 16px 20px; }
+  .archetype-eyebrow {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 4px;
   }
-  .archetype-desc { padding: 14px 20px 0; font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
-  .archetype-row { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 12px; }
+  .archetype-name { font-size: 16px; font-weight: 500; color: var(--white); }
+  .archetype-body { background: var(--white); }
+  .archetype-desc { padding: 14px 20px; font-size: 12px; color: var(--mid); line-height: 1.6; }
+  .archetype-row {
+    padding: 12px 20px; border-top: 1px solid var(--border);
+    display: flex; gap: 14px; align-items: flex-start;
+  }
   .archetype-row-label {
     font-size: 9px; font-weight: 600; text-transform: uppercase;
     letter-spacing: 0.1em; color: var(--muted); width: 96px; flex-shrink: 0; padding-top: 2px;
@@ -252,32 +442,133 @@ export function generatePDFReport(data: ReportData): void {
   .archetype-row p { font-size: 12px; color: #333; line-height: 1.5; }
 
   /* Leverage */
-  .leverage-row { margin-bottom: 16px; }
-  .lev-track { height: 2px; background: var(--border); border-radius: 2px; margin-bottom: 6px; }
-  .lev-fill { height: 100%; background: var(--black); border-radius: 2px; }
-  .lev-text { display: flex; align-items: baseline; gap: 10px; margin-bottom: 2px; }
+  .leverage-row { margin-bottom: 18px; }
+  .leverage-row:last-child { margin-bottom: 0; }
+  .lev-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
   .lev-name { font-size: 13px; font-weight: 500; }
-  .lev-level { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-  .lev-impact { font-size: 11px; color: var(--muted); }
+  .lev-level {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); border: 1px solid var(--border); padding: 2px 7px;
+    border-radius: 9999px;
+  }
+  .lev-track { height: 2px; background: var(--border); margin-bottom: 6px; }
+  .lev-fill { height: 100%; background: var(--black); }
+  .lev-impact { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  /* Behaviour over time */
+  .botg { padding: 16px 20px; background: var(--light); }
+  .botg-meta { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .botg-variable { font-size: 14px; font-weight: 500; }
+  .botg-unit { font-size: 11px; color: var(--muted); }
+  .botg-trend { font-size: 12px; color: var(--mid); line-height: 1.6; margin-bottom: 10px; }
+  .botg-projection {
+    border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px;
+    display: flex; gap: 12px;
+  }
+  .botg-proj-label {
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); width: 64px; flex-shrink: 0; padding-top: 2px;
+  }
+  .botg-projection p { font-size: 12px; color: #333; line-height: 1.5; }
+
+  /* Causal loop */
+  .causal { }
+  .causal-dominant {
+    display: flex; gap: 12px; padding: 12px 16px;
+    background: var(--black); margin-bottom: 12px;
+    align-items: flex-start;
+  }
+  .causal-loop-label {
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: rgba(255,255,255,0.35);
+    width: 80px; flex-shrink: 0; padding-top: 2px;
+  }
+  .causal-dominant p { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.5; }
+  .causal-edges { }
+  .causal-edge {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--border-light);
+  }
+  .causal-edge:last-child { border-bottom: none; }
+  .edge-from, .edge-to { font-size: 12px; font-weight: 500; color: var(--text); }
+  .edge-arrow { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+
+  /* Scenario */
+  .scenario { }
+  .scenario-outcome {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px 16px; background: var(--light);
+    border-left: 3px solid var(--black); margin-bottom: 16px;
+  }
+  .scenario-outcome-label {
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); width: 80px;
+    flex-shrink: 0; padding-top: 2px;
+  }
+  .scenario-outcome-val { font-size: 13px; font-weight: 500; color: var(--text); }
+  .scenario-var { margin-bottom: 14px; }
+  .scenario-var:last-child { margin-bottom: 0; }
+  .svar-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .svar-name { font-size: 13px; font-weight: 500; }
+  .svar-score { font-size: 10px; color: var(--muted); }
+  .svar-track { height: 2px; background: var(--border); margin-bottom: 5px; }
+  .svar-fill { height: 100%; background: var(--black); }
+  .svar-effect { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  /* IPO */
+  .ipo-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 0; border: 1px solid var(--border); overflow: hidden;
+  }
+  .ipo-col { padding: 16px; border-right: 1px solid var(--border); }
+  .ipo-col:last-child { border-right: none; }
+  .ipo-col-label {
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); margin-bottom: 12px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border-light);
+  }
+  .ipo-item { margin-bottom: 10px; }
+  .ipo-item:last-child { margin-bottom: 0; }
+  .ipo-item-label { font-size: 12px; font-weight: 500; color: var(--text); display: block; margin-bottom: 2px; }
+  .ipo-item-note { font-size: 10px; color: var(--muted); line-height: 1.45; }
+  .ipo-bottleneck {
+    display: flex; gap: 12px; padding: 12px 16px;
+    border: 1px solid var(--border); border-top: none;
+    background: var(--off); align-items: flex-start;
+  }
+  .ipo-bn-label {
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); width: 70px;
+    flex-shrink: 0; padding-top: 2px;
+  }
+  .ipo-bottleneck p { font-size: 12px; color: #333; line-height: 1.5; }
 
   /* Simulation */
   .sim-quote {
-    border-left: 3px solid var(--border); padding: 12px 16px;
-    font-size: 13px; font-style: italic; line-height: 1.6;
-    color: var(--text-secondary);
+    border-left: 3px solid var(--border); padding: 12px 20px;
+    font-size: 13px; font-style: italic; line-height: 1.65;
+    color: var(--mid); background: var(--off);
   }
 
   /* Agents */
-  .agent-row { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
-  .agent-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-  .agent-name { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 6px; }
+  .agents { }
+  .agent-row {
+    padding: 16px 0; border-bottom: 1px solid var(--border-light);
+  }
+  .agent-row:last-child { border-bottom: none; }
+  .agent-name {
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--muted); margin-bottom: 6px;
+  }
   .agent-signal { font-size: 12px; line-height: 1.6; color: #333; }
   .agent-artifact { font-size: 11px; color: var(--muted); margin-top: 6px; font-style: italic; }
 
   /* Footer */
   .footer {
-    padding: 24px 64px; border-top: 1px solid var(--border);
+    background: var(--white);
+    padding: 20px 56px;
     display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--border);
   }
   .footer-brand { font-size: 11px; font-weight: 500; color: var(--muted); }
   .footer-date { font-size: 10px; color: var(--border); }
@@ -285,72 +576,94 @@ export function generatePDFReport(data: ReportData): void {
   /* Print */
   @media print {
     body { background: white; padding: 0; }
-    .page { box-shadow: none; max-width: 100%; }
-    .section { page-break-inside: avoid; }
+    .print-bar { display: none; }
+    .print-spacer { display: none; }
+    .section, .inputs-block, .decision-block { page-break-inside: avoid; }
     .cover { page-break-after: always; }
-    .no-print { display: none; }
   }
-
-  /* Print button */
-  .print-bar {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    background: var(--black); color: var(--white);
-    padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
-  }
-  .print-bar p { font-size: 12px; color: rgba(255,255,255,0.6); }
-  .print-btn {
-    background: var(--white); color: var(--black); border: none;
-    padding: 8px 20px; font-size: 12px; font-weight: 600; cursor: pointer;
-    letter-spacing: 0.04em;
-  }
-  .print-btn:hover { background: #f0f0f0; }
-  @media print { .print-bar { display: none; } }
 </style>
 </head>
 <body>
 
 <div class="print-bar no-print">
-  <p>Fresco · ${data.houseName} Analysis · ${dateStr}</p>
+  <p>Fresco · ${esc(data.houseName)} Analysis · ${dateStr}</p>
   <button class="print-btn" onclick="window.print()">Save as PDF →</button>
 </div>
-
-<div style="margin-top:60px" class="no-print"></div>
+<div class="print-spacer" style="height:48px"></div>
 
 <div class="page">
-  <div class="cover">
-    <div class="cover-meta">${data.houseName} · ${data.formalLabel} · ${dateStr}</div>
-    <div class="cover-tag">${tag}</div>
-    <h1 class="cover-headline">${verdictLabel}</h1>
-    <div class="cover-insight">"${data.result.sentenceOfTruth}"</div>
-    <p class="cover-rationale">${data.result.verdictRationale}</p>
+
+  <!-- ── COVER ─────────────────────────────────────────────────────── -->
+  <div class="cover" style="position:relative; overflow:hidden">
+    <div class="cover-grid-bg"></div>
+    <div class="cover-inner">
+      <div class="cover-meta">
+        <span>${esc(data.houseName)}</span>
+        <span class="cover-meta-sep">·</span>
+        <span>${esc(data.formalLabel)}</span>
+        <span class="cover-meta-sep">·</span>
+        <span>${dateStr}</span>
+      </div>
+      <div class="cover-pill">
+        <span class="cover-pill-dot"></span>
+        ${esc(tag)}
+      </div>
+      <h1 class="cover-verdict">${esc(verdictLabel)}</h1>
+      ${data.result.sentenceOfTruth ? `<div class="cover-sot">"${esc(data.result.sentenceOfTruth)}"</div>` : ''}
+      ${data.result.verdictRationale ? `<p class="cover-rationale">${esc(data.result.verdictRationale)}</p>` : ''}
+    </div>
   </div>
 
-  <div class="body">
-    ${data.result.sentenceOfTruth ? section('The Insight', `<div class="sot-box">"${data.result.sentenceOfTruth}"</div>`) : ''}
-    ${data.result.povStatement ? section('Point of View', `<div class="pov-box">${data.result.povStatement}</div>`) : ''}
-    ${data.result.keyIssues?.length ? section('Key Issues', `<div>${itemList(data.result.keyIssues, false)}</div>`) : ''}
-    ${data.result.necessaryMoves?.length ? section('Recommended Moves', `<div>${itemList(data.result.necessaryMoves, true)}</div>`) : ''}
-    ${data.result.suggestedNextHouse ? section('Next Step', `
+  <!-- ── DECISION ───────────────────────────────────────────────────── -->
+  <div class="decision-block">
+    ${data.result.povStatement ? `
+    <div style="padding: 32px 0; border-bottom: 1px solid var(--border-light)">
+      <div class="section-label">Point of View</div>
+      <div class="pov-box">${esc(data.result.povStatement)}</div>
+    </div>` : ''}
+    ${data.result.keyIssues?.length ? `
+    <div style="padding: 32px 0; border-bottom: 1px solid var(--border-light)">
+      <div class="section-label">Key Issues</div>
+      ${numList(data.result.keyIssues, false)}
+    </div>` : ''}
+    ${data.result.necessaryMoves?.length ? `
+    <div style="padding: 32px 0; border-bottom: 1px solid var(--border-light)">
+      <div class="section-label">Recommended Moves</div>
+      ${numList(data.result.necessaryMoves, true)}
+    </div>` : ''}
+    ${data.result.suggestedNextHouse ? `
+    <div style="padding: 32px 0;">
+      <div class="section-label">Run This Next</div>
       <div class="next-box">
         <div>
-          <div class="next-label">Run this next</div>
-          <div class="next-name">${data.result.suggestedNextHouse.charAt(0).toUpperCase() + data.result.suggestedNextHouse.slice(1)}</div>
-          ${data.result.suggestedNextHouseReason ? `<div class="next-reason">${data.result.suggestedNextHouseReason}</div>` : ''}
+          <div class="next-name">${esc(data.result.suggestedNextHouse.charAt(0).toUpperCase() + data.result.suggestedNextHouse.slice(1))}</div>
+          ${data.result.suggestedNextHouseReason ? `<div class="next-reason">${esc(data.result.suggestedNextHouseReason)}</div>` : ''}
         </div>
-      </div>`) : ''}
-    ${icebergHTML}
-    ${archetypeHTML}
-    ${leverageHTML}
-    ${simHTML}
-    ${agentHTML}
+      </div>
+    </div>` : ''}
   </div>
 
+  <!-- ── INPUTS ─────────────────────────────────────────────────────── -->
+  ${inputsHTML}
+
+  <!-- ── SYSTEMS ANALYSIS ───────────────────────────────────────────── -->
+  ${icebergHTML}
+  ${leverageHTML}
+  ${botgHTML}
+  ${causalHTML}
+  ${scenarioHTML}
+  ${ipoHTML}
+  ${archetypeHTML}
+  ${simHTML}
+  ${agentHTML}
+
+  <!-- ── FOOTER ─────────────────────────────────────────────────────── -->
   <div class="footer">
     <span class="footer-brand">Fresco · frescolab.io</span>
     <span class="footer-date">${dateStr}</span>
   </div>
-</div>
 
+</div>
 </body>
 </html>`;
 
