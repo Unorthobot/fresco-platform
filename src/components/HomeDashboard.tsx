@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Clock, Folder } from 'lucide-react';
+import { ArrowRight, Clock, Folder, ChevronDown, Sparkles } from 'lucide-react';
 import { useFrescoStore, useWorkspaces } from '@/lib/store';
 import { formatRelativeTime } from '@/lib/utils';
 import type { ToolkitType } from '@/types';
@@ -41,6 +41,9 @@ export function HomeDashboard({
   const isGuest = !session && (!user || user.id === 'guest');
   const firstName = isGuest ? '' : (session?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || '');
   const [guestHasRun, setGuestHasRun] = useState(false);
+  const [diagnosticInput, setDiagnosticInput] = useState('');
+  const [recommendedHouse, setRecommendedHouse] = useState<HouseId | null>(null);
+  const [exampleOpen, setExampleOpen] = useState<HouseId | null>(null);
   useEffect(() => {
     try { setGuestHasRun(!!localStorage.getItem('fresco-has-run')); } catch {}
   }, []);
@@ -49,6 +52,24 @@ export function HomeDashboard({
   // guests need the run flag AND at least one in-memory session (so a fresh
   // page load with only the flag but no sessions still shows the empty state).
   const hasActivity = workspaces.length > 0 || sessions.length > 0 || (guestHasRun && sessions.length > 0);
+
+  // ── Diagnostic: recommend a house from a plain-text description ────────────
+  const diagnoseHouse = (input: string): HouseId => {
+    const t = input.toLowerCase();
+    // Evaluate signals: metrics, performance, conversion, drop-off, A/B
+    if (/evaluat|conversion|drop.off|variant|metric|analytic|traffic|bounce|funnel|how.*(doing|performing)/.test(t)) return 'evaluate';
+    // Validate signals: sell, price, willingness to pay, commit, build
+    if (/validat|will.*sell|pricing|willingness|should.*build|before.*build|commercial/.test(t)) return 'validate';
+    // Innovate signals: build, design, solution, feature, product, options
+    if (/innovat|solution|feature|options.*build|how should|what should/.test(t)) return 'innovate';
+    // Default: Investigate
+    return 'investigate';
+  };
+
+  const handleDiagnosticSubmit = () => {
+    if (diagnosticInput.trim().length < 5) return;
+    setRecommendedHouse(diagnoseHouse(diagnosticInput));
+  };
 
   // Verdicts across all sessions
   const verdicts = sessions.reduce((acc, s) => {
@@ -239,20 +260,111 @@ export function HomeDashboard({
         {!hasActivity ? (
           // ── Empty state — first-time user ─────────────────────────────────
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-10">
-            {/* Four equal houses — user self-selects based on where they are */}
-            <div className="mb-2">
-              <p className="text-fresco-sm text-fresco-graphite-mid mb-5">Where are you in your decision?</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                {HOUSES.map((houseId, i) => {
-                  const house = HOUSE_META[houseId];
-                  return (
-                    <motion.button
-                      key={houseId}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.07 }}
+
+            {/* ── Feature 1: Diagnostic input ── */}
+            <div className="mb-8">
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-3">Where are you in your decision?</p>
+              {!recommendedHouse ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={diagnosticInput}
+                    onChange={e => setDiagnosticInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleDiagnosticSubmit(); }}
+                    placeholder="Describe what you're trying to figure out in one sentence…"
+                    className="flex-1 h-10 px-4 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors placeholder:text-fresco-graphite-light"
+                  />
+                  <button
+                    onClick={handleDiagnosticSubmit}
+                    disabled={diagnosticInput.trim().length < 5}
+                    className="h-10 px-4 bg-fresco-black text-white text-fresco-xs font-medium uppercase tracking-wider hover:bg-fresco-graphite transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="border border-fresco-black p-4 bg-fresco-white"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1">Recommended house</p>
+                      <p className="text-fresco-base font-medium text-fresco-black">{HOUSE_META[recommendedHouse].name}</p>
+                    </div>
+                    <button
+                      onClick={() => { setRecommendedHouse(null); setDiagnosticInput(''); }}
+                      className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors mt-1 whitespace-nowrap"
+                    >
+                      Change →
+                    </button>
+                  </div>
+                  <p className="text-fresco-xs text-fresco-graphite-mid mb-4 leading-relaxed">
+                    {recommendedHouse === 'investigate' && 'You need to understand the problem before committing to a direction. Investigate separates what you’ve observed from what you’re assuming.'}
+                    {recommendedHouse === 'innovate' && 'You have a problem and need focused options worth building. Innovate maps constraints, generates options, and surfaces the highest-leverage direction.'}
+                    {recommendedHouse === 'validate' && 'You’re about to commit to something and want to pressure-test it first. Validate tells you whether there’s real demand and what a meaningful test looks like.'}
+                    {recommendedHouse === 'evaluate' && 'You’ve built or shipped something and need to understand how it’s performing. Evaluate diagnoses what’s working, what isn’t, and where to focus.'}
+                  </p>
+                  <button
+                    onClick={() => onStartHouse?.(recommendedHouse)}
+                    className="fresco-btn w-full flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Start {HOUSE_META[recommendedHouse].name}
+                  </button>
+                </motion.div>
+              )}
+            </div>
+
+            {/* ── Four house cards with hover explainer + example toggle ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-8">
+              {HOUSES.map((houseId, i) => {
+                const house = HOUSE_META[houseId];
+                const isExampleOpen = exampleOpen === houseId;
+                const EXAMPLE_OUTPUTS: Record<HouseId, { sot: string; verdict: string; pill: string; issues: string[]; moves: string[] }> = {
+                  investigate: {
+                    sot: "The drop-off isn't a UX problem — users are disqualifying themselves before they reach the form.",
+                    verdict: "Proceed with confidence",
+                    pill: "GO",
+                    issues: ["Evidence and hypothesis have been conflated — no one has tested the core assumption", "The measurement point is downstream of the real decision"],
+                    moves: ["Separate what you've observed from what you believe is causing it", "Test the assumption that users want to complete this step at all"],
+                  },
+                  innovate: {
+                    sot: "Three options are on the table but only one removes the friction that actually causes churn.",
+                    verdict: "Change direction first",
+                    pill: "PIVOT",
+                    issues: ["Options A and B solve for speed, not the real problem", "The constraint isn't time — it's that no one has questioned the verification step"],
+                    moves: ["Remove verification entirely and measure fraud rate for 2 weeks", "If fraud stays below 0.5%, make it permanent"],
+                  },
+                  validate: {
+                    sot: "You have interest signals, not demand signals — nobody has been asked to pay yet.",
+                    verdict: "Change direction first",
+                    pill: "PIVOT",
+                    issues: ["Inbound enquiries are not the same as willingness to pay", "The steelman case against has not been seriously answered"],
+                    moves: ["Send a specific price to the 4 warmest leads this week", "Define a clear go/no-go threshold before the test, not after"],
+                  },
+                  evaluate: {
+                    sot: "The CTA is asking for commitment before the page has earned it.",
+                    verdict: "Change direction first",
+                    pill: "PIVOT",
+                    issues: ["70% scroll past the CTA without clicking — the page isn't answering the buyer's question", "'Book a demo' is asking for too much from someone still evaluating"],
+                    moves: ["Replace 'Book a demo' with 'See it in action' — lower commitment, same intent signal", "Add one proof point above the fold that answers 'why trust this'"],
+                  },
+                };
+                const ex = EXAMPLE_OUTPUTS[houseId];
+                return (
+                  <motion.div
+                    key={houseId}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.07 }}
+                    className="fresco-card flex flex-col"
+                  >
+                    {/* Card header — clickable to start */}
+                    <button
                       onClick={() => onStartHouse?.(houseId)}
-                      className="group fresco-card p-5 flex flex-col text-left hover:border-fresco-black transition-all"
+                      className="group p-5 flex flex-col text-left flex-1 hover:bg-fresco-off-white transition-all"
                     >
                       <div className="flex items-center justify-between mb-4">
                         <span className="text-fresco-xs font-medium text-fresco-graphite-light uppercase tracking-wider">{house.name}</span>
@@ -262,26 +374,84 @@ export function HomeDashboard({
                         {house.formalLabel}
                       </span>
                       <p className="text-fresco-sm font-medium text-fresco-black leading-snug mb-2">{house.output}</p>
-                      <p className="text-fresco-xs text-fresco-graphite-light leading-relaxed flex-1">{house.description}</p>
-                    </motion.button>
-                  );
-                })}
-              </div>
+                      <p className="text-fresco-xs text-fresco-graphite-light leading-relaxed">{house.description}</p>
+                    </button>
+
+                    {/* ── Feature 4: What is this? inline explainer ── */}
+                    <div className="border-t border-fresco-border-light">
+                      <button
+                        onClick={() => setExampleOpen(isExampleOpen ? null : houseId)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors"
+                      >
+                        <span>See an example result</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isExampleOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {/* ── Feature 3: Example output inline ── */}
+                      {isExampleOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-4 pb-4 space-y-3 border-t border-fresco-border-light pt-3">
+                            {/* Sentence of truth */}
+                            <div className="border-l-2 border-fresco-black pl-3 py-0.5">
+                              <p className="text-[10px] text-fresco-graphite-light uppercase tracking-wide mb-1">Insight</p>
+                              <p className="text-fresco-xs text-fresco-black italic leading-relaxed">"{ex.sot}"</p>
+                            </div>
+                            {/* Verdict */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-fresco-xs font-medium text-fresco-black">{ex.verdict}</span>
+                              <span className="text-[9px] font-medium uppercase tracking-wider bg-fresco-light-gray border border-fresco-border text-fresco-graphite-light px-2 py-0.5 rounded-full">{ex.pill}</span>
+                            </div>
+                            {/* Key issues */}
+                            <div>
+                              <p className="text-[10px] text-fresco-graphite-light uppercase tracking-wide mb-1.5">Key issues</p>
+                              {ex.issues.map((issue, idx) => (
+                                <div key={idx} className="flex gap-2 mb-1.5 items-start">
+                                  <span className="w-4 h-4 rounded-full border border-fresco-border flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <span className="text-[9px] text-fresco-graphite-light">{idx + 1}</span>
+                                  </span>
+                                  <p className="text-[11px] text-fresco-graphite-soft leading-relaxed">{issue}</p>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Recommended moves */}
+                            <div>
+                              <p className="text-[10px] text-fresco-graphite-light uppercase tracking-wide mb-1.5">Recommended moves</p>
+                              {ex.moves.map((move, idx) => (
+                                <div key={idx} className="flex gap-2 mb-1.5 items-start">
+                                  <span className="w-4 h-4 rounded-full bg-fresco-black flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <span className="text-[9px] text-white font-medium">{idx + 1}</span>
+                                  </span>
+                                  <p className="text-[11px] text-fresco-graphite-soft leading-relaxed">{move}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
 
-            {/* What to expect — below the fold, no pressure */}
+            {/* ── What happens — now inline per house, plus summary strip ── */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="mt-8 pt-8 border-t border-fresco-border-light"
+              className="pt-6 border-t border-fresco-border-light"
             >
               <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-4">What happens when you run a house</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {[
-                  { step: '01', label: 'Answer 3–4 questions', desc: 'Specific to your situation. No generic prompts.' },
-                  { step: '02', label: '3 agents analyse sequentially', desc: 'Each one builds on the previous. Not one big prompt.' },
-                  { step: '03', label: 'Get a verdict + systems analysis', desc: 'GO, PIVOT, STOP, or NEEDS MORE SIGNAL — plus the structure beneath the problem.' },
+                  { step: '01', label: 'Answer 3–4 questions', desc: 'Specific to your situation — not generic prompts. The questions separate evidence from assumption.' },
+                  { step: '02', label: '3 agents analyse sequentially', desc: 'Each one builds on the previous. You get depth, not just breadth.' },
+                  { step: '03', label: 'A verdict + the structure beneath it', desc: 'GO, PIVOT, STOP, or NEEDS MORE SIGNAL — plus archetypes, causal loops, and scenario simulation.' },
                 ].map(item => (
                   <div key={item.step} className="flex gap-4">
                     <span className="text-[10px] font-medium text-fresco-graphite-light/40 tabular-nums mt-0.5 flex-shrink-0">{item.step}</span>

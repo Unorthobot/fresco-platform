@@ -2050,6 +2050,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [overrideReason, setOverrideReason] = useState('');
   const [outputTab, setOutputTab] = useState<'decision' | 'analysis'>('decision');
   const [showTabTooltip, setShowTabTooltip] = useState(false);
+  // Feature 5: first session detection — drives progressive question guidance
+  const [isFirstSession] = useState(() => {
+    try { return !localStorage.getItem('fresco-has-run'); } catch { return false; }
+  });
 
   // Challenge step state
   const [challengeQuestions, setChallengeQuestions] = useState<ChallengeQuestion[]>([]);
@@ -2447,6 +2451,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             );
           })()}
 
+          {/* Feature 5: First-session guidance banner */}
+          {isFirstSession && !result && (
+            <div className="mb-6 p-4 border border-fresco-border-light bg-fresco-off-white">
+              <p className="text-fresco-xs font-medium text-fresco-black mb-1">Answer each question as honestly as you can</p>
+              <p className="text-[11px] text-fresco-graphite-light leading-relaxed">The agents work best when you separate what you've actually observed from what you believe is causing it. Specifics beat generalities — real numbers, real quotes, real friction points.</p>
+            </div>
+          )}
+
           {/* House-specific conversation */}
           <div className="mb-8">
             {houseId === 'investigate' && (
@@ -2538,28 +2550,52 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               ) : (
                 <h2 className="text-fresco-lg font-medium text-fresco-black">Analysis</h2>
               )}
-              {/* First-run tab tooltip */}
+              {/* Feature 2: First-run contextual card — replaces tooltip */}
               {showTabTooltip && (
                 <motion.div
-                  initial={{ opacity: 0, y: -6 }}
+                  initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-2 p-3 bg-fresco-black text-white relative"
+                  className="mt-2 border border-fresco-border bg-fresco-off-white"
                 >
-                  <button
-                    onClick={() => {
-                      setShowTabTooltip(false);
-                      localStorage.setItem('fresco-tab-tooltip-seen', 'true');
-                    }}
-                    className="absolute top-2 right-2 text-white/40 hover:text-white transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                  <p className="text-fresco-xs font-medium text-white mb-1">Two views of your analysis</p>
-                  <p className="text-[10px] text-white/60 leading-relaxed pr-4">
-                    <span className="text-white/90">Decision</span> — verdict, issues, what to do next.{' '}
-                    <span className="text-white/90">Analysis</span> — the systems thinking layer: iceberg, archetypes, causal loops, scenario simulation.
-                  </p>
+                  <div className="flex items-start justify-between px-4 pt-3 pb-2">
+                    <p className="text-fresco-xs font-medium text-fresco-black">You have two views of this analysis</p>
+                    <button
+                      onClick={() => {
+                        setShowTabTooltip(false);
+                        localStorage.setItem('fresco-tab-tooltip-seen', 'true');
+                      }}
+                      className="text-fresco-graphite-light hover:text-fresco-black transition-colors ml-3 mt-0.5 flex-shrink-0"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-0 border-t border-fresco-border-light">
+                    <button
+                      onClick={() => {
+                        setOutputTab('decision');
+                        setShowTabTooltip(false);
+                        localStorage.setItem('fresco-tab-tooltip-seen', 'true');
+                        outputScrollRef.current?.scrollTo({ top: 0 });
+                      }}
+                      className="p-3 text-left border-r border-fresco-border-light hover:bg-fresco-light-gray transition-colors"
+                    >
+                      <p className="text-fresco-xs font-medium text-fresco-black mb-1">Decision</p>
+                      <p className="text-[10px] text-fresco-graphite-light leading-relaxed">Verdict, key issues, what to do next. Start here.</p>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setOutputTab('analysis');
+                        setShowTabTooltip(false);
+                        localStorage.setItem('fresco-tab-tooltip-seen', 'true');
+                        outputScrollRef.current?.scrollTo({ top: 0 });
+                      }}
+                      className="p-3 text-left hover:bg-fresco-light-gray transition-colors"
+                    >
+                      <p className="text-fresco-xs font-medium text-fresco-black mb-1">Analysis</p>
+                      <p className="text-[10px] text-fresco-graphite-light leading-relaxed">Archetypes, causal loops, scenario simulation. The structure beneath the verdict.</p>
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </div>
