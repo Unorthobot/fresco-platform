@@ -42,7 +42,9 @@ export function HomeDashboard({
   const firstName = isGuest ? '' : (session?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || '');
   const [guestHasRun, setGuestHasRun] = useState(false);
   const [diagnosticInput, setDiagnosticInput] = useState('');
+  const [diagnosticLoading, setDiagnosticLoading] = useState(false);
   const [recommendedHouse, setRecommendedHouse] = useState<HouseId | null>(null);
+  const [diagnosticExplanation, setDiagnosticExplanation] = useState('');
   const [exampleOpen, setExampleOpen] = useState<HouseId | null>(null);
   useEffect(() => {
     try { setGuestHasRun(!!localStorage.getItem('fresco-has-run')); } catch {}
@@ -53,22 +55,31 @@ export function HomeDashboard({
   // page load with only the flag but no sessions still shows the empty state).
   const hasActivity = workspaces.length > 0 || sessions.length > 0 || (guestHasRun && sessions.length > 0);
 
-  // ── Diagnostic: recommend a house from a plain-text description ────────────
-  const diagnoseHouse = (input: string): HouseId => {
-    const t = input.toLowerCase();
-    // Evaluate signals: metrics, performance, conversion, drop-off, A/B
-    if (/evaluat|conversion|drop.off|variant|metric|analytic|traffic|bounce|funnel|how.*(doing|performing)/.test(t)) return 'evaluate';
-    // Validate signals: sell, price, willingness to pay, commit, build
-    if (/validat|will.*sell|pricing|willingness|should.*build|before.*build|commercial/.test(t)) return 'validate';
-    // Innovate signals: build, design, solution, feature, product, options
-    if (/innovat|solution|feature|options.*build|how should|what should/.test(t)) return 'innovate';
-    // Default: Investigate
-    return 'investigate';
-  };
-
-  const handleDiagnosticSubmit = () => {
-    if (diagnosticInput.trim().length < 5) return;
-    setRecommendedHouse(diagnoseHouse(diagnosticInput));
+  // ── Diagnostic: call API to get contextual house recommendation ─────────────
+  const handleDiagnosticSubmit = async () => {
+    if (diagnosticInput.trim().length < 5 || diagnosticLoading) return;
+    setDiagnosticLoading(true);
+    try {
+      const res = await fetch('/api/diagnose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: diagnosticInput }),
+      });
+      const data = await res.json();
+      setRecommendedHouse(data.house as HouseId);
+      setDiagnosticExplanation(data.explanation || '');
+    } catch {
+      // fallback — keyword match
+      const t = diagnosticInput.toLowerCase();
+      const house = /evaluat|conversion|drop|variant|metric|analytic|traffic|bounce|funnel/.test(t) ? 'evaluate'
+        : /validat|will.*sell|pricing|willingness|should.*build|before.*build/.test(t) ? 'validate'
+        : /innovat|solution|feature|how should|what should/.test(t) ? 'innovate'
+        : 'investigate';
+      setRecommendedHouse(house as HouseId);
+      setDiagnosticExplanation('');
+    } finally {
+      setDiagnosticLoading(false);
+    }
   };
 
   // Verdicts across all sessions
@@ -273,13 +284,17 @@ export function HomeDashboard({
                     onKeyDown={e => { if (e.key === 'Enter') handleDiagnosticSubmit(); }}
                     placeholder="Describe what you're trying to figure out in one sentence…"
                     className="flex-1 h-10 px-4 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors placeholder:text-fresco-graphite-light"
+                    disabled={diagnosticLoading}
                   />
                   <button
                     onClick={handleDiagnosticSubmit}
-                    disabled={diagnosticInput.trim().length < 5}
-                    className="h-10 px-4 bg-fresco-black text-white text-fresco-xs font-medium uppercase tracking-wider hover:bg-fresco-graphite transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={diagnosticInput.trim().length < 5 || diagnosticLoading}
+                    className="h-10 px-4 bg-fresco-black text-white text-fresco-xs font-medium uppercase tracking-wider hover:bg-fresco-graphite transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    <ArrowRight className="w-4 h-4" />
+                    {diagnosticLoading
+                      ? <><span className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" /></>
+                      : <ArrowRight className="w-4 h-4" />
+                    }
                   </button>
                 </div>
               ) : (
@@ -294,17 +309,14 @@ export function HomeDashboard({
                       <p className="text-fresco-base font-medium text-fresco-black">{HOUSE_META[recommendedHouse].name}</p>
                     </div>
                     <button
-                      onClick={() => { setRecommendedHouse(null); setDiagnosticInput(''); }}
+                      onClick={() => { setRecommendedHouse(null); setDiagnosticInput(''); setDiagnosticExplanation(''); }}
                       className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors mt-1 whitespace-nowrap"
                     >
                       Change →
                     </button>
                   </div>
                   <p className="text-fresco-xs text-fresco-graphite-mid mb-4 leading-relaxed">
-                    {recommendedHouse === 'investigate' && 'You need to understand the problem before committing to a direction. Investigate separates what you’ve observed from what you’re assuming.'}
-                    {recommendedHouse === 'innovate' && 'You have a problem and need focused options worth building. Innovate maps constraints, generates options, and surfaces the highest-leverage direction.'}
-                    {recommendedHouse === 'validate' && 'You’re about to commit to something and want to pressure-test it first. Validate tells you whether there’s real demand and what a meaningful test looks like.'}
-                    {recommendedHouse === 'evaluate' && 'You’ve built or shipped something and need to understand how it’s performing. Evaluate diagnoses what’s working, what isn’t, and where to focus.'}
+                    {diagnosticExplanation}
                   </p>
                   <button
                     onClick={() => onStartHouse?.(recommendedHouse)}
