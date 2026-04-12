@@ -42,10 +42,13 @@ export function HomeDashboard({
   const firstName = isGuest ? '' : (session?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || '');
   const [guestHasRun, setGuestHasRun] = useState(false);
   useEffect(() => {
-    // Guests don't sync from DB — check localStorage flag instead
     try { setGuestHasRun(!!localStorage.getItem('fresco-has-run')); } catch {}
   }, []);
-  const hasActivity = sessions.length > 0 || guestHasRun;
+  // hasActivity = true only when there's real persistent work to return to:
+  // authenticated users need at least one workspace or session in the DB;
+  // guests need the run flag AND at least one in-memory session (so a fresh
+  // page load with only the flag but no sessions still shows the empty state).
+  const hasActivity = workspaces.length > 0 || sessions.length > 0 || (guestHasRun && sessions.length > 0);
 
   // Verdicts across all sessions
   const verdicts = sessions.reduce((acc, s) => {
