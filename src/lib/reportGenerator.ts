@@ -241,7 +241,6 @@ export function generatePDFReport(data: ReportData): void {
   .cover {
     background: var(--black);
     padding: 56px 56px 48px;
-    margin-bottom: 0;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -591,8 +590,8 @@ export function generatePDFReport(data: ReportData): void {
     .agent-row { break-inside: avoid; }
     /* Section labels stay with their content */
     .section-label { break-after: avoid; }
-    /* Cover always ends a page */
-    .cover { break-after: page; }
+    /* Let content flow naturally — no forced page breaks */
+    .cover { break-after: auto; }
   }
 </style>
 </head>
