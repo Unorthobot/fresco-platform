@@ -152,6 +152,19 @@ export default function FrescoAppContent() {
     return () => window.removeEventListener('fresco:upgrade', handler);
   }, []);
 
+  // Handle ?house= query param from marketing site — start the right house on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const houseParam = params.get('house') as HouseId | null;
+    const validHouses: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
+    if (!houseParam || !validHouses.includes(houseParam)) return;
+    // Remove param from URL without reload
+    const clean = window.location.pathname;
+    window.history.replaceState({}, '', clean);
+    // Start immediately — handleStartHouse handles workspace creation
+    handleStartHouse(houseParam);
+  }, [isSyncComplete]); // re-run once sync completes so authenticated users get their workspace
+
   const handleNavigate = (section: string) => {
     if (section === 'home') {
       setActiveWorkspace(null);
