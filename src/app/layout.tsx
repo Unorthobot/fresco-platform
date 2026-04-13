@@ -7,8 +7,12 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Fresco - Thinking System for Builders',
-  description: 'The operating system for clear thinking. Structure clarity before action begins.',
+  title: 'Fresco — The thinking layer for your product team',
+  description: 'Run any product decision through four specialist agents. Get a GO, PIVOT, STOP, or NEEDS MORE SIGNAL verdict — with the structure beneath it.',
+  icons: {
+    icon: '/fresco-logo.png',
+    apple: '/fresco-logo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
