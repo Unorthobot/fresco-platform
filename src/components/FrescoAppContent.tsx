@@ -280,8 +280,8 @@ export default function FrescoAppContent() {
       sessionStorage.removeItem('post_login_action');
       if (action.type === 'checkout') {
         const checkoutUrls: Record<string, string> = {
-          pro:    'https://frescolab.lemonsqueezy.com/buy/1422679',
-          studio: 'https://frescolab.lemonsqueezy.com/buy/1422725',
+          pro:    'https://frescolab.lemonsqueezy.com/checkout/buy/7621eccf-cb2f-4f75-94f0-c092b201f03b',
+          studio: 'https://frescolab.lemonsqueezy.com/checkout/buy/76f524c3-3cf8-49cf-98c3-2cd56465d460',
         };
         const url = checkoutUrls[action.plan];
         if (url) window.open(url, '_blank', 'noopener');

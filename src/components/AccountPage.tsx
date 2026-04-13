@@ -62,8 +62,8 @@ export function AccountPage() {
   };
 
   const CHECKOUT_URLS: Record<'pro' | 'studio', string> = {
-    pro:    'https://frescolab.lemonsqueezy.com/buy/1422679',
-    studio: 'https://frescolab.lemonsqueezy.com/buy/1422725',
+    pro:    'https://frescolab.lemonsqueezy.com/checkout/buy/7621eccf-cb2f-4f75-94f0-c092b201f03b',
+    studio: 'https://frescolab.lemonsqueezy.com/checkout/buy/76f524c3-3cf8-49cf-98c3-2cd56465d460',
   };
 
   const handleUpgrade = (planKey: 'pro' | 'studio') => {
