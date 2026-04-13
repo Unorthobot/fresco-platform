@@ -90,9 +90,9 @@ export default function FrescoAppContent() {
   // Compute effective view - ensures we never show a blank screen
   // justNavigatedRef suppresses premature fallback while the store catches up
   const effectiveView = (() => {
+    if (justNavigatedRef.current) return currentView; // hold position during navigation
     if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
     if (currentView === 'session' && !currentSession) {
-      if (justNavigatedRef.current) return 'session'; // store not yet updated — hold position
       return activeWorkspaceId ? 'workspace' : 'home';
     }
     return currentView;
@@ -138,14 +138,18 @@ export default function FrescoAppContent() {
 
   // Handle deleted workspace - navigate back to home
   useEffect(() => {
-    if (!isSyncComplete) return; // Wait for DB sync before redirecting
+    // Never reset during an in-progress navigation — workspace may not be in store yet
+    if (justNavigatedRef.current) return;
+    // For authenticated users wait for DB sync; guests have no sync so skip this guard
+    const isGuest = !session?.user?.id || session?.user?.id === 'guest';
+    if (!isGuest && !isSyncComplete) return;
     if ((currentView === 'workspace' || currentView === 'session') && (!activeWorkspaceId || !currentWorkspace)) {
       setActiveSession(null);
       setActiveWorkspace(null);
       setActiveSection('home');
       setCurrentView('home');
     }
-  }, [activeWorkspaceId, currentWorkspace, setActiveSession, setActiveWorkspace, setActiveSection]);
+  }, [activeWorkspaceId, currentWorkspace, isSyncComplete, session, setActiveSession, setActiveWorkspace, setActiveSection]);
 
   // Scroll to top when view changes
   useEffect(() => {
@@ -217,7 +221,7 @@ export default function FrescoAppContent() {
     setActiveSection('toolkit');
     setCurrentView('session');
     // Clear the flag after one event loop tick — store will have updated by then
-    setTimeout(() => { justNavigatedRef.current = false; }, 200);
+    setTimeout(() => { justNavigatedRef.current = false; }, 1000);
   };
 
   const handleCreateWorkspace = async () => {
