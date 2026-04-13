@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useDBSync, useDBWrite, useDBSyncComplete } from '@/lib/useDBSync';
@@ -153,17 +153,20 @@ export default function FrescoAppContent() {
   }, []);
 
   // Handle ?house= query param from marketing site — start the right house on load
+  const houseParamFired = useRef(false);
   useEffect(() => {
+    if (houseParamFired.current) return;
     const params = new URLSearchParams(window.location.search);
     const houseParam = params.get('house') as HouseId | null;
     const validHouses: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
     if (!houseParam || !validHouses.includes(houseParam)) return;
-    // Remove param from URL without reload
-    const clean = window.location.pathname;
-    window.history.replaceState({}, '', clean);
-    // Start immediately — handleStartHouse handles workspace creation
+    // For authenticated users, wait until DB sync is complete so their workspace exists
+    const isGuest = !session?.user?.id;
+    if (!isGuest && !isSyncComplete) return;
+    houseParamFired.current = true;
+    window.history.replaceState({}, '', window.location.pathname);
     handleStartHouse(houseParam);
-  }, [isSyncComplete]); // re-run once sync completes so authenticated users get their workspace
+  }, [isSyncComplete, session]);
 
   const handleNavigate = (section: string) => {
     if (section === 'home') {
