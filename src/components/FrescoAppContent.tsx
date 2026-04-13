@@ -279,13 +279,12 @@ export default function FrescoAppContent() {
       const action = JSON.parse(raw);
       sessionStorage.removeItem('post_login_action');
       if (action.type === 'checkout') {
-        fetch('/api/lemonsqueezy/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan: action.plan }),
-        })
-          .then(r => r.json())
-          .then(data => { if (data.url) window.location.href = data.url; });
+        const checkoutUrls: Record<string, string> = {
+          pro:    'https://frescolab.lemonsqueezy.com/buy/1422679',
+          studio: 'https://frescolab.lemonsqueezy.com/buy/1422725',
+        };
+        const url = checkoutUrls[action.plan];
+        if (url) window.open(url, '_blank', 'noopener');
       }
     } catch (e) {
       console.error('post_login_action error', e);

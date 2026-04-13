@@ -61,7 +61,16 @@ export function AccountPage() {
     }
   };
 
-  const handleUpgrade = async (planKey: 'pro' | 'studio') => {
+  const CHECKOUT_URLS: Record<'pro' | 'studio', string> = {
+    pro:    'https://frescolab.lemonsqueezy.com/buy/1422679',
+    studio: 'https://frescolab.lemonsqueezy.com/buy/1422725',
+  };
+
+  const handleUpgrade = (planKey: 'pro' | 'studio') => {
+    window.open(CHECKOUT_URLS[planKey], '_blank', 'noopener');
+  };
+
+  const _unused = async (planKey: 'pro' | 'studio') => {
     setLoadingPlan(planKey);
     try {
       const res = await fetch('/api/lemonsqueezy/checkout', {

@@ -58,26 +58,15 @@ const PLANS = [
 ];
 
 export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProps) {
-  const [loading, setLoading] = useState<'pro' | 'studio' | null>(null);
   const [showArchitecture, setShowArchitecture] = useState(false);
 
-  const handleUpgrade = async (plan: 'pro' | 'studio') => {
-    setLoading(plan);
-    try {
-      const res = await fetch('/api/lemonsqueezy/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
-      });
-      if (res.status === 401) { window.location.href = '/login'; return; }
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else throw new Error(data.error || 'No checkout URL');
-    } catch {
-      alert('Failed to start checkout. Please try again.');
-    } finally {
-      setLoading(null);
-    }
+  const CHECKOUT_URLS: Record<'pro' | 'studio', string> = {
+    pro:    'https://frescolab.lemonsqueezy.com/buy/1422679',
+    studio: 'https://frescolab.lemonsqueezy.com/buy/1422725',
+  };
+
+  const handleUpgrade = (plan: 'pro' | 'studio') => {
+    window.open(CHECKOUT_URLS[plan], '_blank', 'noopener');
   };
 
   return (
@@ -195,13 +184,13 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
 
                     <button
                       onClick={() => handleUpgrade(plan.key)}
-                      disabled={loading !== null}
+                      
                       className={plan.primary
                         ? 'w-full py-3 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors disabled:opacity-50'
                         : 'w-full py-3 border border-fresco-border text-fresco-black text-fresco-sm font-medium hover:bg-fresco-light-gray transition-colors disabled:opacity-50'
                       }
                     >
-                      {loading === plan.key ? 'Loading…' : plan.cta}
+                      {plan.cta}
                     </button>
                   </div>
                 );
