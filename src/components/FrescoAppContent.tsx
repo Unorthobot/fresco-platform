@@ -83,11 +83,16 @@ export default function FrescoAppContent() {
   const currentSession = activeSessionId ? sessions.find(s => s.id === activeSessionId) : null;
   const currentWorkspace = activeWorkspaceId ? workspaces.find(w => w.id === activeWorkspaceId) : null;
 
+  // Refs for navigation coordination
+  const houseParamFired = useRef(false);
+  const justNavigatedRef = useRef(false);
+
   // Compute effective view - ensures we never show a blank screen
+  // justNavigatedRef suppresses premature fallback while the store catches up
   const effectiveView = (() => {
     if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
     if (currentView === 'session' && !currentSession) {
-      // Session gone — go to workspace if we have one, otherwise home
+      if (justNavigatedRef.current) return 'session'; // store not yet updated — hold position
       return activeWorkspaceId ? 'workspace' : 'home';
     }
     return currentView;
@@ -155,8 +160,6 @@ export default function FrescoAppContent() {
   }, []);
 
   // Handle ?house= query param from marketing site — start the right house on load
-  const houseParamFired = useRef(false);
-  const justNavigatedRef = useRef(false);
   useEffect(() => {
     if (houseParamFired.current) return;
     const params = new URLSearchParams(window.location.search);
