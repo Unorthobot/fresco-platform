@@ -118,6 +118,8 @@ export default function FrescoAppContent() {
   // Handle deleted session - navigate back to workspace or home
   useEffect(() => {
     if (activeSessionId && !currentSession) {
+      // Suppress if we just navigated — session may not be in store yet
+      if (justNavigatedRef.current) return;
       if (activeWorkspaceId) {
         setActiveSession(null);
         setCurrentView('workspace');
@@ -154,6 +156,7 @@ export default function FrescoAppContent() {
 
   // Handle ?house= query param from marketing site — start the right house on load
   const houseParamFired = useRef(false);
+  const justNavigatedRef = useRef(false);
   useEffect(() => {
     if (houseParamFired.current) return;
     const params = new URLSearchParams(window.location.search);
@@ -205,10 +208,13 @@ export default function FrescoAppContent() {
   };
 
   const handleNavigateToSession = (sessionId: string, workspaceId: string) => {
+    justNavigatedRef.current = true;
     setActiveWorkspace(workspaceId);
     setActiveSession(sessionId);
     setActiveSection('toolkit');
     setCurrentView('session');
+    // Clear the flag after one event loop tick — store will have updated by then
+    setTimeout(() => { justNavigatedRef.current = false; }, 200);
   };
 
   const handleCreateWorkspace = async () => {
