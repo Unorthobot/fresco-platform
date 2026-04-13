@@ -90,11 +90,9 @@ export default function FrescoAppContent() {
   // Compute effective view - ensures we never show a blank screen
   // justNavigatedRef suppresses premature fallback while the store catches up
   const effectiveView = (() => {
-    if (justNavigatedRef.current) return currentView; // hold position during navigation
-    if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
-    if (currentView === 'session' && !currentSession) {
-      return activeWorkspaceId ? 'workspace' : 'home';
-    }
+    if (justNavigatedRef.current) { console.log('[effectiveView] justNavigated=true, holding', currentView); return currentView; }
+    if (currentView === 'workspace' && !activeWorkspaceId) { console.log('[effectiveView] workspace but no workspaceId → home'); return 'home'; }
+    if (currentView === 'session' && !currentSession) { console.log('[effectiveView] session but no currentSession → fallback', {activeWorkspaceId, activeSessionId, sessionsLen: sessions.length}); return activeWorkspaceId ? 'workspace' : 'home'; }
     return currentView;
   })();
 
@@ -122,9 +120,9 @@ export default function FrescoAppContent() {
 
   // Handle deleted session - navigate back to workspace or home
   useEffect(() => {
+    console.log('[deleted-session effect]', {activeSessionId, hasSession: !!currentSession, justNav: justNavigatedRef.current});
     if (activeSessionId && !currentSession) {
-      // Suppress if we just navigated — session may not be in store yet
-      if (justNavigatedRef.current) return;
+      if (justNavigatedRef.current) { console.log('[deleted-session] suppressed by justNav'); return; }
       if (activeWorkspaceId) {
         setActiveSession(null);
         setCurrentView('workspace');
@@ -138,8 +136,8 @@ export default function FrescoAppContent() {
 
   // Handle deleted workspace - navigate back to home
   useEffect(() => {
-    // Never reset during an in-progress navigation — workspace may not be in store yet
-    if (justNavigatedRef.current) return;
+    console.log('[deleted-workspace effect]', {justNav: justNavigatedRef.current, currentView, activeWorkspaceId, hasWorkspace: !!currentWorkspace, isSyncComplete});
+    if (justNavigatedRef.current) { console.log('[deleted-workspace] suppressed by justNav'); return; }
     // For authenticated users wait for DB sync; guests have no sync so skip this guard
     const isGuest = !session?.user?.id || session?.user?.id === 'guest';
     if (!isGuest && !isSyncComplete) return;
@@ -215,6 +213,7 @@ export default function FrescoAppContent() {
   };
 
   const handleNavigateToSession = (sessionId: string, workspaceId: string) => {
+    console.log('[handleNavigateToSession]', {sessionId, workspaceId});
     justNavigatedRef.current = true;
     setActiveWorkspace(workspaceId);
     setActiveSession(sessionId);
