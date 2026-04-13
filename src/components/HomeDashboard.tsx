@@ -30,6 +30,16 @@ export function HomeDashboard({
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
 
+  // Handle ?house= param from marketing site — fires here where app is fully stable
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const houseParam = params.get('house');
+    const valid = ['investigate', 'innovate', 'validate', 'evaluate'];
+    if (!houseParam || !valid.includes(houseParam)) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    onStartHouse?.(houseParam as any);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     setNow(new Date());
     const t = setInterval(() => setNow(new Date()), 60000);

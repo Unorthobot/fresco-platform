@@ -83,16 +83,12 @@ export default function FrescoAppContent() {
   const currentSession = activeSessionId ? sessions.find(s => s.id === activeSessionId) : null;
   const currentWorkspace = activeWorkspaceId ? workspaces.find(w => w.id === activeWorkspaceId) : null;
 
-  // Refs for navigation coordination
-  const houseParamFired = useRef(false);
-  const justNavigatedRef = useRef(false);
-
   // Compute effective view - ensures we never show a blank screen
-  // justNavigatedRef suppresses premature fallback while the store catches up
   const effectiveView = (() => {
-    if (justNavigatedRef.current) { console.log('[effectiveView] justNavigated=true, holding', currentView); return currentView; }
-    if (currentView === 'workspace' && !activeWorkspaceId) { console.log('[effectiveView] workspace but no workspaceId → home'); return 'home'; }
-    if (currentView === 'session' && !currentSession) { console.log('[effectiveView] session but no currentSession → fallback', {activeWorkspaceId, activeSessionId, sessionsLen: sessions.length}); return activeWorkspaceId ? 'workspace' : 'home'; }
+    if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
+    if (currentView === 'session' && !currentSession) {
+      return activeWorkspaceId ? 'workspace' : 'home';
+    }
     return currentView;
   })();
 
@@ -120,9 +116,7 @@ export default function FrescoAppContent() {
 
   // Handle deleted session - navigate back to workspace or home
   useEffect(() => {
-    console.log('[deleted-session effect]', {activeSessionId, hasSession: !!currentSession, justNav: justNavigatedRef.current});
     if (activeSessionId && !currentSession) {
-      if (justNavigatedRef.current) { console.log('[deleted-session] suppressed by justNav'); return; }
       if (activeWorkspaceId) {
         setActiveSession(null);
         setCurrentView('workspace');
@@ -136,11 +130,7 @@ export default function FrescoAppContent() {
 
   // Handle deleted workspace - navigate back to home
   useEffect(() => {
-    console.log('[deleted-workspace effect]', {justNav: justNavigatedRef.current, currentView, activeWorkspaceId, hasWorkspace: !!currentWorkspace, isSyncComplete});
-    if (justNavigatedRef.current) { console.log('[deleted-workspace] suppressed by justNav'); return; }
-    // For authenticated users wait for DB sync; guests have no sync so skip this guard
-    const isGuest = !session?.user?.id || session?.user?.id === 'guest';
-    if (!isGuest && !isSyncComplete) return;
+    if (!isSyncComplete) return;
     if ((currentView === 'workspace' || currentView === 'session') && (!activeWorkspaceId || !currentWorkspace)) {
       setActiveSession(null);
       setActiveWorkspace(null);
@@ -161,20 +151,7 @@ export default function FrescoAppContent() {
     return () => window.removeEventListener('fresco:upgrade', handler);
   }, []);
 
-  // Handle ?house= query param from marketing site — start the right house on load
-  useEffect(() => {
-    if (houseParamFired.current) return;
-    const params = new URLSearchParams(window.location.search);
-    const houseParam = params.get('house') as HouseId | null;
-    const validHouses: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
-    if (!houseParam || !validHouses.includes(houseParam)) return;
-    // For authenticated users, wait until DB sync is complete so their workspace exists
-    const isGuest = !session?.user?.id;
-    if (!isGuest && !isSyncComplete) return;
-    houseParamFired.current = true;
-    window.history.replaceState({}, '', window.location.pathname);
-    handleStartHouse(houseParam);
-  }, [isSyncComplete, session]);
+
 
   const handleNavigate = (section: string) => {
     if (section === 'home') {
@@ -213,14 +190,10 @@ export default function FrescoAppContent() {
   };
 
   const handleNavigateToSession = (sessionId: string, workspaceId: string) => {
-    console.log('[handleNavigateToSession]', {sessionId, workspaceId});
-    justNavigatedRef.current = true;
     setActiveWorkspace(workspaceId);
     setActiveSession(sessionId);
     setActiveSection('toolkit');
     setCurrentView('session');
-    // Clear the flag after one event loop tick — store will have updated by then
-    setTimeout(() => { justNavigatedRef.current = false; }, 1000);
   };
 
   const handleCreateWorkspace = async () => {
