@@ -22,6 +22,7 @@ const PLANS = [
     key: 'pro' as const,
     name: 'Pro',
     price: 29,
+    zarPrice: 530,
     description: 'For individuals who make product decisions regularly.',
     icon: Zap,
     features: [
@@ -40,6 +41,7 @@ const PLANS = [
     key: 'studio' as const,
     name: 'Studio',
     price: 79,
+    zarPrice: 1290,
     description: 'For teams who think together.',
     icon: Users,
     features: [
@@ -170,6 +172,9 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
                         <span className="text-fresco-4xl font-medium text-fresco-black">${plan.price}</span>
                         <span className="text-fresco-sm text-fresco-graphite-light">/month</span>
                       </div>
+                      {'zarPrice' in plan && (
+                        <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">≈ R{(plan as any).zarPrice.toLocaleString()}/month</p>
+                      )}
                       <p className="text-fresco-sm text-fresco-graphite-mid mt-1">{plan.description}</p>
                     </div>
 

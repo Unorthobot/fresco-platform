@@ -295,7 +295,7 @@ export function AccountPage() {
                   {loadingPlan === 'pro' ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
                   ) : (
-                    <><Crown className="w-4 h-4" /> Upgrade to Pro - $29/mo</>
+                    <><Crown className="w-4 h-4" /> Upgrade to Pro — $29/mo (≈ R530)</>
                   )}
                 </button>
                 <button
@@ -306,7 +306,7 @@ export function AccountPage() {
                   {loadingPlan === 'studio' ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
                   ) : (
-                    <><Users className="w-4 h-4" /> Upgrade to Studio - $79/mo</>
+                    <><Users className="w-4 h-4" /> Upgrade to Studio — $79/mo (≈ R1,290)</>
                   )}
                 </button>
               </div>
@@ -321,7 +321,7 @@ export function AccountPage() {
                 {loadingPlan === 'studio' ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
                 ) : (
-                  <><Users className="w-4 h-4" /> Upgrade to Studio - $79/mo</>
+                  <><Users className="w-4 h-4" /> Upgrade to Studio — $79/mo (≈ R1,290)</>
                 )}
               </button>
             )}
