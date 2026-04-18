@@ -89,6 +89,10 @@ export default function FrescoAppContent() {
     if (currentView === 'session' && !currentSession) {
       return activeWorkspaceId ? 'workspace' : 'home';
     }
+    // Workspace deleted while in a session — session exists but its workspace is gone
+    if (currentView === 'session' && currentSession && !currentWorkspace) {
+      return 'home';
+    }
     return currentView;
   })();
 
@@ -130,14 +134,13 @@ export default function FrescoAppContent() {
 
   // Handle deleted workspace - navigate back to home
   useEffect(() => {
-    if (!isSyncComplete) return;
     if ((currentView === 'workspace' || currentView === 'session') && (!activeWorkspaceId || !currentWorkspace)) {
       setActiveSession(null);
       setActiveWorkspace(null);
       setActiveSection('home');
       setCurrentView('home');
     }
-  }, [activeWorkspaceId, currentWorkspace, isSyncComplete, session, setActiveSession, setActiveWorkspace, setActiveSection]);
+  }, [activeWorkspaceId, currentWorkspace, currentView, setActiveSession, setActiveWorkspace, setActiveSection]);
 
   // Scroll to top when view changes
   useEffect(() => {
