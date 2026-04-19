@@ -236,15 +236,15 @@ export default function FrescoAppContent() {
         setShowUpgradeModal(true);
         return;
       }
-      // Auto-create a workspace silently — user can rename later
       const houseNames: Record<string, string> = {
         investigate: 'Investigate', innovate: 'Innovate',
         validate: 'Validate', evaluate: 'Evaluate',
       };
       const month = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
       const title = `${houseNames[houseId] || 'New'} · ${month}`;
-      // Optimistically set view to session immediately — prevents home screen
-      // flashing during the async workspace + session creation
+      // Set both section AND view before async work — prevents the view-update
+      // effect from snapping back to home while activeSection is still 'home'
+      setActiveSection('toolkit');
       setCurrentView('session');
       try {
         const workspace = await db.createWorkspace(title, '');
@@ -252,15 +252,18 @@ export default function FrescoAppContent() {
         const session = await db.createHouseSession(workspaceId, houseId);
         handleNavigateToSession(session.id, workspaceId);
       } catch {
+        setActiveSection('home');
         setCurrentView('home');
       }
       return;
     }
+    setActiveSection('toolkit');
     setCurrentView('session');
     try {
       const session = await db.createHouseSession(workspaceId, houseId);
       handleNavigateToSession(session.id, workspaceId);
     } catch {
+      setActiveSection('home');
       setCurrentView('home');
     }
   };
