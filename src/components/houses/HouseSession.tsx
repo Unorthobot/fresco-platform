@@ -1446,7 +1446,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   {
     id: 'situation',
     question: "What are you trying to figure out?",
-    hint: "What decision are you trying to make? What would you need to know to feel confident making it?",
+    hint: "Name the decision you're trying to make.",
     placeholder: "e.g. Drop-off after signup is climbing and we're about to commit to a redesign. Before we do, I need to understand whether it's a product problem, a messaging problem, or an acquisition problem — because the fix is completely different for each.",
     minHeight: 120,
     agent: 'Insight Stack',
@@ -1454,7 +1454,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   {
     id: 'observations',
     question: "What have you actually observed?",
-    hint: "Facts, numbers, quotes, things you've seen or heard. No guessing yet — just what you actually know.",
+    hint: "Just the facts — no guessing yet.",
     placeholder: "e.g. Step 3 drop-off: 60% this month, up from 45% in January. Power users skip it entirely. Mobile drop-off 2x desktop. Same two field names in every support ticket for 6 months. Users who complete it have 3x retention at day-30.",
     minHeight: 180,
     agent: 'Insight Stack',
@@ -1462,7 +1462,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   {
     id: 'assumptions',
     question: "What do you believe is causing it — and what are you assuming?",
-    hint: "What do you think is going on? Then name the things you're assuming to be true that you haven't actually checked.",
+    hint: "Your theory, plus what you're assuming is true.",
     placeholder: "e.g. I think the fields are asking for information users don't have at that point. But I'm assuming the fields are actually necessary — nobody has questioned that in 2 years. I'm also assuming the problem is at step 3 rather than earlier in the funnel.",
     minHeight: 160,
     agent: 'Belief Mapper',
@@ -1470,7 +1470,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   {
     id: 'position_synthesis',
     question: "What would change your mind?",
-    hint: "What would you have to find out to make you completely change your mind? What's the one thing, if it turned out to be false, that would change everything?",
+    hint: "One finding that would flip your view.",
     inputType: 'synthesis' as const,
     placeholder: "e.g. If drop-off was consistent across all user types I'd reconsider whether it's the fields at all. If power users (who skip step 3) had worse retention, that would change everything. If the problem started before step 3, the redesign is solving the wrong thing entirely.",
     minHeight: 140,
@@ -1482,7 +1482,7 @@ const INNOVATE_STEPS: ConversationStep[] = [
   {
     id: 'start',
     question: "What are you trying to build or improve — and who is it for?",
-    hint: "Describe what you're making and who it's for. What does that person do today instead — and why isn't that good enough?",
+    hint: "Who's it for, and what do they do today instead?",
     placeholder: "e.g. Redesign onboarding for SMB customers who currently take 6 days to reach first value. They're signing up because they saw a specific feature in a demo — but onboarding never shows them that feature. They churn before getting there.",
     minHeight: 140,
     agent: 'Flow Board',
@@ -1490,7 +1490,7 @@ const INNOVATE_STEPS: ConversationStep[] = [
   {
     id: 'breakdown',
     question: "Walk through how it works today. Where do things go wrong?",
-    hint: "Describe what happens step by step, from start to finish. Where do people get stuck, drop off, or get confused? Which of those is the worst?",
+    hint: "Walk through the flow. Where's the worst stuck point?",
     placeholder: "e.g. Invite → signup → email verification (40% drop — unexpected step) → empty dashboard (12 options, no guidance) → first project creation (takes 20 mins, should take 2). The verification drop is bad but the empty dashboard is where most churn actually happens.",
     minHeight: 180,
     agent: 'Flow Board',
@@ -1498,7 +1498,7 @@ const INNOVATE_STEPS: ConversationStep[] = [
   {
     id: 'options',
     question: "What are your real options — and what constraints are you working within?",
-    hint: "List 2-3 real options you're actually considering. What are the limits — time, budget, team size? Leave out anything that's not genuinely on the table.",
+    hint: "2–3 realistic options. Leave out what's not on the table.",
     placeholder: "e.g. Option A: Skip verification, add fraud detection (1 week, medium risk). Option B: Magic link instead of password (3 days, low risk, doesn't fix dashboard). Option C: Guided setup wizard (6 weeks, fixes the real problem but slow). Budget: 2 engineers, 3 weeks max.",
     inputType: 'options' as const,
     minHeight: 160,
@@ -1507,7 +1507,7 @@ const INNOVATE_STEPS: ConversationStep[] = [
   {
     id: 'constraint',
     question: "What's the one thing you're most unsure about?",
-    hint: "What's the biggest thing you don't know yet? If you turned out to be wrong about it, would your whole plan fall apart?",
+    hint: "The one unknown that would break everything.",
     inputType: 'synthesis' as const,
     placeholder: "e.g. I don't actually know if the verification drop-off is the real problem or a symptom. If users are deciding to churn before they ever hit verification — during the demo or the invite email — then fixing verification changes nothing.",
     minHeight: 130,
@@ -1519,7 +1519,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   {
     id: 'subject',
     question: "What are you about to commit to — and what would make you confident it's the right call?",
-    hint: "Name the decision and what you're risking — time, money, people. What would need to be true for you to feel sure you're making the right call?",
+    hint: "What's the decision, and what are you risking?",
     placeholder: "e.g. We're about to spend 3 months building an enterprise tier. For me to feel confident: at least 3 enterprise buyers willing to pay £500+/month, a clear use case differentiated from our SMB tier, and a pricing model that doesn't cannibalise existing revenue.",
     minHeight: 140,
     agent: 'Experience Scorecard',
@@ -1527,7 +1527,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   {
     id: 'criteria',
     question: "What evidence do you have that real people actually want this?",
-    hint: "Separate what you've actually seen or heard from what you're assuming. Conversations, signups, orders — what's real interest vs what you're hoping for?",
+    hint: "Real signals vs what you're hoping for.",
     placeholder: "e.g. 4 enterprise inbound enquiries this quarter (real). Sales team says they hear it 'all the time' (assumed, not measured). 1 customer said they'd pay more for SSO (real but n=1). Our competitor launched enterprise last year (real signal but different market).",
     minHeight: 160,
     agent: 'Experience Scorecard',
@@ -1535,7 +1535,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   {
     id: 'audience',
     question: "What's the best argument against doing this — and how do you respond to it?",
-    hint: "What would a smart, sceptical person say to talk you out of this? What's the most uncomfortable reason this might be a mistake — and what's your honest answer to it?",
+    hint: "The sharpest case against — and your honest response.",
     placeholder: "e.g. The strongest case against: we're building enterprise features because enterprise deals feel bigger, not because we've validated enterprise buyers need what we build. Our product is designed for speed — enterprise requires compliance and controls that would slow us down for everyone.",
     minHeight: 160,
     agent: 'Influence Map',
@@ -1543,7 +1543,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   {
     id: 'actuals',
     question: "What would a successful test look like in 2–4 weeks?",
-    hint: "What's the smallest test you could run? What would you do, what would you measure, and what result would make you confident enough to proceed — or stop?",
+    hint: "Smallest test, measurable result, clear threshold.",
     placeholder: "e.g. Email the 4 inbound enterprise leads with a specific value prop and price point. Success: 2 of 4 agree to a paid pilot at £400+/month within 3 weeks. If we can't get 2 paid pilots from the warmest leads we have, we don't build the tier.",
     inputType: 'metrics' as const,
     minHeight: 140,
@@ -1556,7 +1556,7 @@ const EVALUATE_STEPS_SINGLE: ConversationStep[] = [
     id: 'subject',
     inputType: 'evaluatebrief' as const,
     question: 'What is this page supposed to do — and what are the actual numbers?',
-    hint: "Goal first, then reality. What action should a visitor take? What's the target metric, and what's the actual?",
+    hint: "The action you want, the target, the reality.",
     placeholder: "e.g. Pricing page for mid-market SaaS buyers. Goal: book a demo. Target: 4% conversion. Actual: 2.1%. 45s avg time on page. 70% scroll past pricing without clicking the CTA. Drop-off highest on mobile.",
     minHeight: 160,
     agent: 'Page Scorecard',
@@ -1564,7 +1564,7 @@ const EVALUATE_STEPS_SINGLE: ConversationStep[] = [
   {
     id: 'score_criteria',
     question: 'What do you think is causing the gap?',
-    hint: "State your diagnosis — and name what you've already tried. What have you changed before, and did it move the needle?",
+    hint: "Your diagnosis, plus what you've already tried.",
     placeholder: "e.g. I think the headline is too generic — 'Built for teams' doesn't tell a mid-market buyer why they should care. We changed the CTA from 'Contact sales' to 'Book a demo' 2 months ago — no measurable lift. Haven't touched the headline or pricing structure.",
     minHeight: 160,
     agent: 'Page Scorecard',
@@ -1572,7 +1572,7 @@ const EVALUATE_STEPS_SINGLE: ConversationStep[] = [
   {
     id: 'concerns',
     question: "What would a 50% improvement look like — and what's the highest-leverage change to get there?",
-    hint: "Don't list everything that could be better. Name the single change most likely to move the metric. What's the bet?",
+    hint: "The one change most likely to move the metric.",
     placeholder: "e.g. A 50% improvement gets us to ~3.2% conversion. I think the highest-leverage change is replacing 'Book a demo' with a lower-commitment CTA — 'See it in action' or 'Start free'. The current CTA asks for too much before we've earned it.",
     minHeight: 140,
     agent: 'Variant Lens',
@@ -1583,7 +1583,7 @@ const EVALUATE_STEPS_JOURNEY: ConversationStep[] = [
   {
     id: 'subject',
     question: 'Walk through the flow step by step — with the numbers at each stage.',
-    hint: "Each step: what happens, what the drop-off or completion rate is, and what you know about why. Performance data makes this useful. Without it, it's just a description.",
+    hint: "Each step: what happens, the numbers, the why.",
     placeholder: "e.g. Landing page: 8s avg time, 65% bounce. Pricing: 60% scroll to bottom, 2.1% click CTA. Signup form: 40% complete, 60% abandon (mostly at company size field). Onboarding: 30% reach first meaningful action within 24hrs. 70% churn before day 7.",
     minHeight: 200,
     agent: 'Journey Trace',
@@ -1591,7 +1591,7 @@ const EVALUATE_STEPS_JOURNEY: ConversationStep[] = [
   {
     id: 'trust_drops',
     question: 'Where does the user arrive at each step with an unanswered question?',
-    hint: "What does a user need to believe or understand to take the next action? Where does the flow fail to answer that question before asking them to proceed?",
+    hint: "Where the flow fails to answer the user's next question.",
     placeholder: "e.g. User arrives at signup still unsure if this is worth their time — pricing page didn't answer 'why should I trust this'. Onboarding asks them to invite their team before they've seen any value themselves — wrong sequence.",
     minHeight: 160,
     agent: 'Journey Trace',
@@ -1599,7 +1599,7 @@ const EVALUATE_STEPS_JOURNEY: ConversationStep[] = [
   {
     id: 'transitions',
     question: 'What is the one break in the sequence that, if fixed, would most improve the whole flow?',
-    hint: "Don't list everything. Name the single highest-leverage intervention — the break that, if repaired, makes the most downstream difference.",
+    hint: "The single highest-leverage fix.",
     placeholder: "e.g. The biggest break is between pricing and signup. Users click the CTA having decided to try it, then hit a form that asks for company info — it feels like being sold to, not signed up. A frictionless signup that asks nothing upfront would change the whole trajectory.",
     minHeight: 140,
     agent: 'Journey Trace',
@@ -1610,7 +1610,7 @@ const EVALUATE_STEPS_COMPARISON: ConversationStep[] = [
   {
     id: 'version_a',
     question: 'Describe Version A — and what it was trying to do.',
-    hint: "Describe what it looks like and what it's trying to do. What did you believe about your users that led to this design? Include numbers if you have them.",
+    hint: "What it does, the belief behind it, the numbers if you have them.",
     placeholder: "e.g. Headline: 'Built for teams'. CTA: 'Book a demo'. Logic: enterprise buyers need to see a demo before committing. No social proof above fold. Conversion: 2.1%. Avg time on page: 45s.",
     minHeight: 160,
     agent: 'Variant Lens',
@@ -1618,7 +1618,7 @@ const EVALUATE_STEPS_COMPARISON: ConversationStep[] = [
   {
     id: 'version_b',
     question: 'Describe Version B — and the hypothesis behind it.',
-    hint: "What's different, why did you make that change, and what are you expecting to happen? Be specific about why you think the change will work.",
+    hint: "What changed, why, and what you expect.",
     placeholder: "e.g. Headline: 'Close deals 40% faster'. CTA: 'Start free trial'. Logic: buyers want proof before a sales conversation, not a demo first. 3 customer quotes above fold. Hypothesis: lower-commitment CTA + outcome-led headline → 4%+ conversion.",
     minHeight: 160,
     agent: 'Variant Lens',
@@ -1626,7 +1626,7 @@ const EVALUATE_STEPS_COMPARISON: ConversationStep[] = [
   {
     id: 'delta_focus',
     question: 'What result would change your decision — and what result would leave you uncertain?',
-    hint: "What result would make you confident one version is better? And what result would leave you unsure — the kind of outcome that wouldn't tell you what to do next?",
+    hint: "What result means a winner, and what leaves you unsure.",
     placeholder: "e.g. Version B at 3.5%+ conversion = clear winner, roll it out. Below 2.5% = current is better, rethink the hypothesis. Between 2.5–3.5% = inconclusive — the CTA might be right but the headline isn't doing enough work.",
     minHeight: 140,
     agent: 'Variant Lens',
@@ -1990,7 +1990,7 @@ function EvaluateFlow({
         step={{
           id: 'goal',
           question: 'What are you trying to understand?',
-          hint: 'What specifically do you want to understand?',
+          hint: 'What do you want to understand?',
           placeholder: "e.g. Why the pricing page isn't converting — and the highest-leverage changes before a redesign.",
           minHeight: 80,
         }}
