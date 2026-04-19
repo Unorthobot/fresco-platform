@@ -243,11 +243,26 @@ export default function FrescoAppContent() {
       };
       const month = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
       const title = `${houseNames[houseId] || 'New'} · ${month}`;
-      const workspace = await db.createWorkspace(title, '');
-      workspaceId = workspace.id;
+      // Optimistically set view to session immediately — prevents home screen
+      // flashing during the async workspace + session creation
+      setCurrentView('session');
+      try {
+        const workspace = await db.createWorkspace(title, '');
+        workspaceId = workspace.id;
+        const session = await db.createHouseSession(workspaceId, houseId);
+        handleNavigateToSession(session.id, workspaceId);
+      } catch {
+        setCurrentView('home');
+      }
+      return;
     }
-    const session = await db.createHouseSession(workspaceId, houseId);
-    handleNavigateToSession(session.id, workspaceId);
+    setCurrentView('session');
+    try {
+      const session = await db.createHouseSession(workspaceId, houseId);
+      handleNavigateToSession(session.id, workspaceId);
+    } catch {
+      setCurrentView('home');
+    }
   };
 
   const handleBackToHome = () => {

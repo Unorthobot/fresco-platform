@@ -1415,7 +1415,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   {
     id: 'situation',
     question: "What are you trying to figure out?",
-    hint: "State the decision you're facing. What would you need to understand to make it with confidence?",
+    hint: "What decision are you trying to make? What would you need to know to feel confident making it?",
     placeholder: "e.g. Drop-off after signup is climbing and we're about to commit to a redesign. Before we do, I need to understand whether it's a product problem, a messaging problem, or an acquisition problem — because the fix is completely different for each.",
     minHeight: 120,
     agent: 'Insight Stack',
@@ -1423,7 +1423,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   {
     id: 'observations',
     question: "What have you actually observed?",
-    hint: "Evidence only — data, quotes, behaviours, patterns. No interpretation yet. What do you know for certain?",
+    hint: "Facts, numbers, quotes, things you've seen or heard. No guessing yet — just what you actually know.",
     placeholder: "e.g. Step 3 drop-off: 60% this month, up from 45% in January. Power users skip it entirely. Mobile drop-off 2x desktop. Same two field names in every support ticket for 6 months. Users who complete it have 3x retention at day-30.",
     minHeight: 180,
     agent: 'Insight Stack',
@@ -1431,7 +1431,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   {
     id: 'assumptions',
     question: "What do you believe is causing it — and what are you assuming?",
-    hint: "Now interpret the evidence. State your hypothesis, then name the beliefs behind it that you haven't tested.",
+    hint: "What do you think is going on? Then name the things you're assuming to be true that you haven't actually checked.",
     placeholder: "e.g. I think the fields are asking for information users don't have at that point. But I'm assuming the fields are actually necessary — nobody has questioned that in 2 years. I'm also assuming the problem is at step 3 rather than earlier in the funnel.",
     minHeight: 160,
     agent: 'Belief Mapper',
@@ -1439,7 +1439,7 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
   {
     id: 'position_synthesis',
     question: "What would change your mind?",
-    hint: "Name the one finding that would prove your hypothesis wrong. What evidence would send you in a completely different direction?",
+    hint: "What would you have to find out to make you completely change your mind? What's the one thing, if it turned out to be false, that would change everything?",
     inputType: 'synthesis' as const,
     placeholder: "e.g. If drop-off was consistent across all user types I'd reconsider whether it's the fields at all. If power users (who skip step 3) had worse retention, that would change everything. If the problem started before step 3, the redesign is solving the wrong thing entirely.",
     minHeight: 140,
@@ -1450,16 +1450,16 @@ const INVESTIGATE_STEPS: ConversationStep[] = [
 const INNOVATE_STEPS: ConversationStep[] = [
   {
     id: 'start',
-    question: "What are you trying to build or improve — and what problem does it solve for whom?",
-    hint: "Be specific about both the solution and the person. What does this person do today instead, and why is that a problem?",
+    question: "What are you trying to build or improve — and who is it for?",
+    hint: "Describe what you're making and who it's for. What does that person do today instead — and why isn't that good enough?",
     placeholder: "e.g. Redesign onboarding for SMB customers who currently take 6 days to reach first value. They're signing up because they saw a specific feature in a demo — but onboarding never shows them that feature. They churn before getting there.",
     minHeight: 140,
     agent: 'Flow Board',
   },
   {
     id: 'breakdown',
-    question: "Walk through how it works today. Where does the flow break down?",
-    hint: "Describe each step from trigger to outcome. Where does momentum stall? What's the highest-friction moment — and is it necessary friction or just unresolved?",
+    question: "Walk through how it works today. Where do things go wrong?",
+    hint: "Describe what happens step by step, from start to finish. Where do people get stuck, drop off, or get confused? Which of those is the worst?",
     placeholder: "e.g. Invite → signup → email verification (40% drop — unexpected step) → empty dashboard (12 options, no guidance) → first project creation (takes 20 mins, should take 2). The verification drop is bad but the empty dashboard is where most churn actually happens.",
     minHeight: 180,
     agent: 'Flow Board',
@@ -1467,7 +1467,7 @@ const INNOVATE_STEPS: ConversationStep[] = [
   {
     id: 'options',
     question: "What are your real options — and what constraints are you working within?",
-    hint: "List 2-3 genuine choices. What's the time, resource, and risk envelope? Don't include options that aren't actually on the table.",
+    hint: "List 2-3 real options you're actually considering. What are the limits — time, budget, team size? Leave out anything that's not genuinely on the table.",
     placeholder: "e.g. Option A: Skip verification, add fraud detection (1 week, medium risk). Option B: Magic link instead of password (3 days, low risk, doesn't fix dashboard). Option C: Guided setup wizard (6 weeks, fixes the real problem but slow). Budget: 2 engineers, 3 weeks max.",
     inputType: 'options' as const,
     minHeight: 160,
@@ -1475,8 +1475,8 @@ const INNOVATE_STEPS: ConversationStep[] = [
   },
   {
     id: 'constraint',
-    question: "What's the one thing you're most uncertain about?",
-    hint: "What's the biggest unknown — the thing that, if you're wrong about it, would make the chosen direction pointless?",
+    question: "What's the one thing you're most unsure about?",
+    hint: "What's the biggest thing you don't know yet? If you turned out to be wrong about it, would your whole plan fall apart?",
     inputType: 'synthesis' as const,
     placeholder: "e.g. I don't actually know if the verification drop-off is the real problem or a symptom. If users are deciding to churn before they ever hit verification — during the demo or the invite email — then fixing verification changes nothing.",
     minHeight: 130,
@@ -1488,7 +1488,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   {
     id: 'subject',
     question: "What are you about to commit to — and what would make you confident it's the right call?",
-    hint: "Name the decision and the stake. What are you betting — time, money, team attention? What would you need to be true to proceed with confidence?",
+    hint: "Name the decision and what you're risking — time, money, people. What would need to be true for you to feel sure you're making the right call?",
     placeholder: "e.g. We're about to spend 3 months building an enterprise tier. For me to feel confident: at least 3 enterprise buyers willing to pay £500+/month, a clear use case differentiated from our SMB tier, and a pricing model that doesn't cannibalise existing revenue.",
     minHeight: 140,
     agent: 'Experience Scorecard',
@@ -1496,15 +1496,15 @@ const VALIDATE_STEPS: ConversationStep[] = [
   {
     id: 'criteria',
     question: "What evidence do you have that real people actually want this?",
-    hint: "Separate what you know from what you're assuming. Conversations, intent signals, pre-orders, waitlists — what's real demand vs projected demand?",
+    hint: "Separate what you've actually seen or heard from what you're assuming. Conversations, signups, orders — what's real interest vs what you're hoping for?",
     placeholder: "e.g. 4 enterprise inbound enquiries this quarter (real). Sales team says they hear it 'all the time' (assumed, not measured). 1 customer said they'd pay more for SSO (real but n=1). Our competitor launched enterprise last year (real signal but different market).",
     minHeight: 160,
     agent: 'Experience Scorecard',
   },
   {
     id: 'audience',
-    question: "What's the strongest argument against doing this — and how do you answer it?",
-    hint: "Steelman the case against. What would a smart, sceptical colleague say? What's the most uncomfortable reason this might be wrong?",
+    question: "What's the best argument against doing this — and how do you respond to it?",
+    hint: "What would a smart, sceptical person say to talk you out of this? What's the most uncomfortable reason this might be a mistake — and what's your honest answer to it?",
     placeholder: "e.g. The strongest case against: we're building enterprise features because enterprise deals feel bigger, not because we've validated enterprise buyers need what we build. Our product is designed for speed — enterprise requires compliance and controls that would slow us down for everyone.",
     minHeight: 160,
     agent: 'Influence Map',
@@ -1512,7 +1512,7 @@ const VALIDATE_STEPS: ConversationStep[] = [
   {
     id: 'actuals',
     question: "What would a successful test look like in 2–4 weeks?",
-    hint: "Define the minimum experiment. What's the specific action, the measurable outcome, and the threshold that would change your decision?",
+    hint: "What's the smallest test you could run? What would you do, what would you measure, and what result would make you confident enough to proceed — or stop?",
     placeholder: "e.g. Email the 4 inbound enterprise leads with a specific value prop and price point. Success: 2 of 4 agree to a paid pilot at £400+/month within 3 weeks. If we can't get 2 paid pilots from the warmest leads we have, we don't build the tier.",
     inputType: 'metrics' as const,
     minHeight: 140,
@@ -1579,7 +1579,7 @@ const EVALUATE_STEPS_COMPARISON: ConversationStep[] = [
   {
     id: 'version_a',
     question: 'Describe Version A — and what it was trying to do.',
-    hint: "Not just what it says — what was the strategic intent? What belief about the user does it encode? Include performance data if you have it.",
+    hint: "Describe what it looks like and what it's trying to do. What did you believe about your users that led to this design? Include numbers if you have them.",
     placeholder: "e.g. Headline: 'Built for teams'. CTA: 'Book a demo'. Logic: enterprise buyers need to see a demo before committing. No social proof above fold. Conversion: 2.1%. Avg time on page: 45s.",
     minHeight: 160,
     agent: 'Variant Lens',
@@ -1587,7 +1587,7 @@ const EVALUATE_STEPS_COMPARISON: ConversationStep[] = [
   {
     id: 'version_b',
     question: 'Describe Version B — and the hypothesis behind it.',
-    hint: "What changed, what belief drove the change, and what result are you expecting? Be specific about the causal logic — not just 'we think this will convert better'.",
+    hint: "What's different, why did you make that change, and what are you expecting to happen? Be specific about why you think the change will work.",
     placeholder: "e.g. Headline: 'Close deals 40% faster'. CTA: 'Start free trial'. Logic: buyers want proof before a sales conversation, not a demo first. 3 customer quotes above fold. Hypothesis: lower-commitment CTA + outcome-led headline → 4%+ conversion.",
     minHeight: 160,
     agent: 'Variant Lens',
@@ -1595,7 +1595,7 @@ const EVALUATE_STEPS_COMPARISON: ConversationStep[] = [
   {
     id: 'delta_focus',
     question: 'What result would change your decision — and what result would leave you uncertain?',
-    hint: "Define what 'winning' actually means here. And name the result that would be ambiguous — the outcome that wouldn't tell you what to do next.",
+    hint: "What result would make you confident one version is better? And what result would leave you unsure — the kind of outcome that wouldn't tell you what to do next?",
     placeholder: "e.g. Version B at 3.5%+ conversion = clear winner, roll it out. Below 2.5% = current is better, rethink the hypothesis. Between 2.5–3.5% = inconclusive — the CTA might be right but the headline isn't doing enough work.",
     minHeight: 140,
     agent: 'Variant Lens',
