@@ -257,6 +257,9 @@ export default function FrescoAppContent() {
       }
       return;
     }
+    // Set workspace + section + view before the async session creation
+    // so the view-update effect never sees the workspace-without-session state
+    setActiveWorkspace(workspaceId);
     setActiveSection('toolkit');
     setCurrentView('session');
     try {
