@@ -83,8 +83,12 @@ export default function FrescoAppContent() {
   const currentSession = activeSessionId ? sessions.find(s => s.id === activeSessionId) : null;
   const currentWorkspace = activeWorkspaceId ? workspaces.find(w => w.id === activeWorkspaceId) : null;
 
+  // Ref to suppress effectiveView fallbacks during in-progress navigation
+  const navigatingRef = useRef(false);
+
   // Compute effective view - ensures we never show a blank screen
   const effectiveView = (() => {
+    if (navigatingRef.current) return currentView; // hold position during navigation
     if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
     if (currentView === 'session' && !currentSession) {
       return activeWorkspaceId ? 'workspace' : 'home';
@@ -231,43 +235,32 @@ export default function FrescoAppContent() {
 
   const handleStartHouse = async (houseId: HouseId) => {
     let workspaceId = activeWorkspaceId;
-    if (!workspaceId) {
-      if (!canCreateWorkspace()) {
-        setShowUpgradeModal(true);
-        return;
-      }
-      const houseNames: Record<string, string> = {
-        investigate: 'Investigate', innovate: 'Innovate',
-        validate: 'Validate', evaluate: 'Evaluate',
-      };
-      const month = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-      const title = `${houseNames[houseId] || 'New'} · ${month}`;
-      // Set both section AND view before async work — prevents the view-update
-      // effect from snapping back to home while activeSection is still 'home'
-      setActiveSection('toolkit');
-      setCurrentView('session');
-      try {
-        const workspace = await db.createWorkspace(title, '');
-        workspaceId = workspace.id;
-        const session = await db.createHouseSession(workspaceId, houseId);
-        handleNavigateToSession(session.id, workspaceId);
-      } catch {
-        setActiveSection('home');
-        setCurrentView('home');
-      }
+    if (!canCreateWorkspace() && !workspaceId) {
+      setShowUpgradeModal(true);
       return;
     }
-    // Set workspace + section + view before the async session creation
-    // so the view-update effect never sees the workspace-without-session state
-    setActiveWorkspace(workspaceId);
-    setActiveSection('toolkit');
+    // Block effectiveView fallbacks for the duration of navigation
+    navigatingRef.current = true;
     setCurrentView('session');
+    setActiveSection('toolkit');
     try {
+      if (!workspaceId) {
+        const houseNames: Record<string, string> = {
+          investigate: 'Investigate', innovate: 'Innovate',
+          validate: 'Validate', evaluate: 'Evaluate',
+        };
+        const month = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+        const title = `${houseNames[houseId] || 'New'} · ${month}`;
+        const workspace = await db.createWorkspace(title, '');
+        workspaceId = workspace.id;
+      }
       const session = await db.createHouseSession(workspaceId, houseId);
       handleNavigateToSession(session.id, workspaceId);
     } catch {
       setActiveSection('home');
       setCurrentView('home');
+    } finally {
+      navigatingRef.current = false;
     }
   };
 
