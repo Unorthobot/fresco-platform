@@ -102,6 +102,7 @@ export default function FrescoAppContent() {
 
   // Update view based on active state
   useEffect(() => {
+    if (navigatingRef.current) return; // don't override during in-progress navigation
     if (activeSection === 'archive') {
       setCurrentView('archive');
     } else if (activeSection === 'settings') {
@@ -111,7 +112,6 @@ export default function FrescoAppContent() {
     } else if (activeSection === 'team') {
       setCurrentView('team');
     } else if (activeSection === 'home') {
-      // Explicit home — always go home regardless of session/workspace state
       setCurrentView('home');
     } else if (activeSessionId) {
       setCurrentView('session');
@@ -124,6 +124,7 @@ export default function FrescoAppContent() {
 
   // Handle deleted session - navigate back to workspace or home
   useEffect(() => {
+    if (navigatingRef.current) return;
     if (activeSessionId && !currentSession) {
       if (activeWorkspaceId) {
         setActiveSession(null);
@@ -138,6 +139,7 @@ export default function FrescoAppContent() {
 
   // Handle deleted workspace - navigate back to home
   useEffect(() => {
+    if (navigatingRef.current) return;
     if ((currentView === 'workspace' || currentView === 'session') && (!activeWorkspaceId || !currentWorkspace)) {
       setActiveSession(null);
       setActiveWorkspace(null);
@@ -260,7 +262,8 @@ export default function FrescoAppContent() {
       setActiveSection('home');
       setCurrentView('home');
     } finally {
-      navigatingRef.current = false;
+      // Wait one tick so React can process the state updates before releasing the guard
+      setTimeout(() => { navigatingRef.current = false; }, 0);
     }
   };
 
