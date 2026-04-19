@@ -66,6 +66,37 @@ const VERDICT_STYLES: Record<string, { bg: string; text: string; border: string;
   'STOP':                { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
 };
 
+// Maps each agent to its thinking phase. Makes the Stanford d-School double
+// diamond structure visible in the UI — diverge (explore widely) vs converge
+// (synthesise a position). Investigate and Innovate follow the classic double
+// diamond. Validate is interrogative (not truly divergent — it pressure-tests
+// a pending decision). Evaluate is diagnostic (observes, then focuses).
+const AGENT_PHASES: Record<string, { phase: string; label: string }> = {
+  // Investigate — first diamond: problem understanding
+  'Insight Stack':         { phase: 'diverge',     label: 'Exploring reality' },
+  'Belief Mapper':         { phase: 'diverge',     label: 'Exposing assumptions' },
+  'Position Builder':      { phase: 'converge',    label: 'Synthesising position' },
+  // Innovate — second diamond: solution design
+  'Flow Board':            { phase: 'diverge',     label: 'Mapping the system' },
+  'Strategy Sketchbook':   { phase: 'diverge',     label: 'Generating options' },
+  'Experiment Brief':      { phase: 'converge',    label: 'Synthesising direction' },
+  // Validate — interrogative (convergent by design)
+  'Experience Scorecard':  { phase: 'interrogate', label: 'Interrogating evidence' },
+  'Influence Map':         { phase: 'interrogate', label: 'Stress-testing barriers' },
+  'Results Tracker':       { phase: 'converge',    label: 'Synthesising verdict' },
+  // Evaluate — diagnostic (observe, then focus)
+  'Page Scorecard':        { phase: 'observe',     label: 'Observing reality' },
+  'Variant Lens':          { phase: 'observe',     label: 'Comparing signal' },
+  'Journey Trace':         { phase: 'converge',    label: 'Finding the lever' },
+};
+
+const PHASE_STYLES: Record<string, { label: string; symbol: string }> = {
+  diverge:     { label: 'Diverge',     symbol: '◇' },
+  converge:    { label: 'Converge',    symbol: '◆' },
+  interrogate: { label: 'Interrogate', symbol: '◉' },
+  observe:     { label: 'Observe',     symbol: '◐' },
+};
+
 // ─── Chip / tag input ────────────────────────────────────────────────────────
 // For discrete items: assumptions, patterns, signals
 
@@ -2650,23 +2681,43 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 )}
                 {/* Completed agents — compact check marks */}
-                {agentEvents.slice(0, -1).map((ev, i) => (
-                  <div key={i} className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light py-1">
-                    <div className="w-3 h-3 rounded-full bg-fresco-black flex items-center justify-center flex-shrink-0">
-                      <svg width="7" height="5" viewBox="0 0 7 5" fill="none"><path d="M1 2.5L2.8 4L6 1" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {agentEvents.slice(0, -1).map((ev, i) => {
+                  const phaseInfo = AGENT_PHASES[ev.displayName];
+                  const phaseStyle = phaseInfo ? PHASE_STYLES[phaseInfo.phase] : null;
+                  return (
+                    <div key={i} className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light py-1">
+                      <div className="w-3 h-3 rounded-full bg-fresco-black flex items-center justify-center flex-shrink-0">
+                        <svg width="7" height="5" viewBox="0 0 7 5" fill="none"><path d="M1 2.5L2.8 4L6 1" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                      <span>{ev.displayName}</span>
+                      {phaseStyle && (
+                        <span className="text-fresco-graphite-light/50" title={phaseStyle.label}>
+                          <span className="mx-1">·</span>{phaseStyle.symbol} {phaseStyle.label}
+                        </span>
+                      )}
                     </div>
-                    <span>{ev.displayName}</span>
-                  </div>
-                ))}
+                  );
+                })}
                 {/* Current agent — expanded */}
                 {agentEvents.length > 0 && (() => {
                   const ev = agentEvents[agentEvents.length - 1];
                   return (
                     <motion.div key={agentEvents.length} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                       className="p-3 bg-fresco-light-gray border-l-2 border-fresco-black">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-fresco-black animate-pulse" />
-                        <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">{ev.displayName}</span>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-fresco-black animate-pulse" />
+                          <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">{ev.displayName}</span>
+                        </div>
+                        {(() => {
+                          const phaseInfo = AGENT_PHASES[ev.displayName];
+                          const phaseStyle = phaseInfo ? PHASE_STYLES[phaseInfo.phase] : null;
+                          return phaseStyle ? (
+                            <span className="text-[10px] font-medium text-fresco-graphite-light uppercase tracking-wider" title={phaseInfo?.label}>
+                              {phaseStyle.symbol} {phaseStyle.label}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                       <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">{ev.signal}</p>
                     </motion.div>
