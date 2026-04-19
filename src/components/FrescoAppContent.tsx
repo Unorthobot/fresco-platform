@@ -26,6 +26,7 @@ type View = 'home' | 'workspace' | 'session' | 'archive' | 'settings' | 'account
 
 export default function FrescoAppContent() {
   const [currentView, setCurrentView] = useState<View>('home');
+  const [startingHouse, setStartingHouse] = useState<HouseId | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
@@ -83,12 +84,8 @@ export default function FrescoAppContent() {
   const currentSession = activeSessionId ? sessions.find(s => s.id === activeSessionId) : null;
   const currentWorkspace = activeWorkspaceId ? workspaces.find(w => w.id === activeWorkspaceId) : null;
 
-  // Ref to suppress effectiveView fallbacks during in-progress navigation
-  const navigatingRef = useRef(false);
-
   // Compute effective view - ensures we never show a blank screen
   const effectiveView = (() => {
-    if (navigatingRef.current) return currentView; // hold position during navigation
     if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
     if (currentView === 'session' && !currentSession) {
       return activeWorkspaceId ? 'workspace' : 'home';
@@ -102,7 +99,6 @@ export default function FrescoAppContent() {
 
   // Update view based on active state
   useEffect(() => {
-    if (navigatingRef.current) return; // don't override during in-progress navigation
     if (activeSection === 'archive') {
       setCurrentView('archive');
     } else if (activeSection === 'settings') {
@@ -112,6 +108,7 @@ export default function FrescoAppContent() {
     } else if (activeSection === 'team') {
       setCurrentView('team');
     } else if (activeSection === 'home') {
+      // Explicit home — always go home regardless of session/workspace state
       setCurrentView('home');
     } else if (activeSessionId) {
       setCurrentView('session');
@@ -124,7 +121,6 @@ export default function FrescoAppContent() {
 
   // Handle deleted session - navigate back to workspace or home
   useEffect(() => {
-    if (navigatingRef.current) return;
     if (activeSessionId && !currentSession) {
       if (activeWorkspaceId) {
         setActiveSession(null);
@@ -139,7 +135,6 @@ export default function FrescoAppContent() {
 
   // Handle deleted workspace - navigate back to home
   useEffect(() => {
-    if (navigatingRef.current) return;
     if ((currentView === 'workspace' || currentView === 'session') && (!activeWorkspaceId || !currentWorkspace)) {
       setActiveSession(null);
       setActiveWorkspace(null);
@@ -237,14 +232,11 @@ export default function FrescoAppContent() {
 
   const handleStartHouse = async (houseId: HouseId) => {
     let workspaceId = activeWorkspaceId;
-    if (!canCreateWorkspace() && !workspaceId) {
+    if (!workspaceId && !canCreateWorkspace()) {
       setShowUpgradeModal(true);
       return;
     }
-    // Block effectiveView fallbacks for the duration of navigation
-    navigatingRef.current = true;
-    setCurrentView('session');
-    setActiveSection('toolkit');
+    setStartingHouse(houseId);
     try {
       if (!workspaceId) {
         const houseNames: Record<string, string> = {
@@ -258,12 +250,10 @@ export default function FrescoAppContent() {
       }
       const session = await db.createHouseSession(workspaceId, houseId);
       handleNavigateToSession(session.id, workspaceId);
-    } catch {
-      setActiveSection('home');
-      setCurrentView('home');
+    } catch (err) {
+      console.error('Failed to start house:', err);
     } finally {
-      // Wait one tick so React can process the state updates before releasing the guard
-      setTimeout(() => { navigatingRef.current = false; }, 0);
+      setStartingHouse(null);
     }
   };
 
@@ -323,7 +313,15 @@ export default function FrescoAppContent() {
 
       <main id="main-content" className="md:ml-[220px] min-h-screen relative">
         <AnimatePresence mode="sync">
-          {effectiveView === 'home' && (
+          {startingHouse && (
+            <motion.div key="starting-house" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="h-screen flex items-center justify-center fresco-grid-bg-subtle">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-8 h-8 border-2 border-fresco-border border-t-fresco-black rounded-full animate-spin" />
+                <p className="fresco-label">Starting {startingHouse}…</p>
+              </div>
+            </motion.div>
+          )}
+          {!startingHouse && effectiveView === 'home' && (
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <HomeDashboard
                 onNavigateToWorkspace={handleNavigateToWorkspace}
@@ -334,7 +332,7 @@ onStartToolkit={handleStartToolkit}
             </motion.div>
           )}
 
-          {effectiveView === 'workspace' && activeWorkspaceId && (
+          {!startingHouse && effectiveView === 'workspace' && activeWorkspaceId && (
             <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <WorkspaceOverview
                 workspaceId={activeWorkspaceId}
@@ -346,7 +344,7 @@ onStartToolkit={handleStartToolkit}
             </motion.div>
           )}
 
-          {effectiveView === 'session' && activeWorkspaceId && currentSession && (
+          {!startingHouse && effectiveView === 'session' && activeWorkspaceId && currentSession && (
             <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="h-screen">
               <ToolkitRouter
                 sessionId={currentSession.id}
@@ -358,25 +356,25 @@ onStartToolkit={handleStartToolkit}
             </motion.div>
           )}
 
-          {effectiveView === 'archive' && (
+          {!startingHouse && effectiveView === 'archive' && (
             <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <ArchivePage onOpenSession={(sessionId, workspaceId) => handleNavigateToSession(sessionId, workspaceId)} />
             </motion.div>
           )}
 
-          {effectiveView === 'settings' && (
+          {!startingHouse && effectiveView === 'settings' && (
             <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <SettingsPage />
             </motion.div>
           )}
 
-          {effectiveView === 'account' && (
+          {!startingHouse && effectiveView === 'account' && (
             <motion.div key="account" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <AccountPage />
             </motion.div>
           )}
 
-          {effectiveView === 'team' && (
+          {!startingHouse && effectiveView === 'team' && (
             <motion.div key="team" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <TeamPage
                 userId={user?.id || ''}
