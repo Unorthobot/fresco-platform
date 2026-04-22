@@ -49,6 +49,7 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, 
   if (session.houseType) {
     return (
       <HouseSession
+        key={sessionId}
         houseId={session.houseType as HouseId}
         workspaceId={workspaceId}
         sessionId={sessionId}
