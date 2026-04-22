@@ -38,9 +38,19 @@ function IcebergView({ levels }: { levels: { event: string; pattern: string; str
     { label: 'Mental model', desc: 'What belief keeps it in place', value: levels.mentalModel, depth: 4 },
   ];
 
+  const surfaceDivider = (label: string) => (
+    <div className="flex items-center gap-1 pl-3">
+      <div className="h-px flex-1 bg-fresco-border-light" />
+      <span className="text-[9px] text-fresco-graphite-light uppercase tracking-wider px-1">{label}</span>
+      <div className="h-px flex-1 bg-fresco-border-light" />
+    </div>
+  );
+
   return (
     <div className="space-y-1">
+      {surfaceDivider('above the surface')}
       {rows.map((row, i) => (
+        <>
         <div key={i} className={cn(
           'flex items-start gap-3 p-3 border-l-2',
           i === 0 ? 'border-fresco-border bg-white' :
@@ -54,12 +64,9 @@ function IcebergView({ levels }: { levels: { event: string; pattern: string; str
           </div>
           <p className="text-fresco-xs text-fresco-graphite-soft leading-relaxed flex-1">{row.value}</p>
         </div>
+        {i === 0 && <div className="pt-1">{surfaceDivider('below the surface')}</div>}
+        </>
       ))}
-      <div className="mt-1 flex items-center gap-1 pl-3">
-        <div className="h-px flex-1 bg-fresco-border-light" />
-        <span className="text-[9px] text-fresco-graphite-light uppercase tracking-wider px-1">above the surface</span>
-        <div className="h-px flex-1 bg-fresco-border-light" />
-      </div>
     </div>
   );
 }
