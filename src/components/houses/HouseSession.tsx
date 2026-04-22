@@ -2256,6 +2256,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 setResult(vd as HouseResult);
                 await persistResult(vd as HouseResult);
                 incrementUsage();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 // Show tab tooltip on first ever result
                 const hasSeenTooltip = localStorage.getItem('fresco-tab-tooltip-seen');
                 if (!hasSeenTooltip) {
@@ -2269,7 +2270,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         }
       } else {
         const data = await response.json();
-        if (data.verdict) { setResult(data); await persistResult(data); }
+        if (data.verdict) { setResult(data); await persistResult(data); window.scrollTo({ top: 0, behavior: 'smooth' }); }
       }
     } catch (err) {
       console.error('House run failed:', err);
@@ -2535,12 +2536,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               className={cn('fresco-btn w-full', (!canRun || isRunning) && 'opacity-40 cursor-not-allowed')}>
               {isRunning
                 ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Working through it…</span></>
-                : <><Sparkles className="w-4 h-4" /><span>Get a verdict</span></>
+                : <><Sparkles className="w-4 h-4" /><span>Think it through</span></>
               }
             </button>
             {!canRun && !isRunning && !runError && (
               <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
-                Start answering to unlock the run button
+                Start answering to unlock this
               </p>
             )}
             {runError && !isRunning && (
