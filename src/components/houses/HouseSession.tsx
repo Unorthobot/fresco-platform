@@ -145,7 +145,7 @@ function ChipInput({ value, onChange, placeholder, onInteract }: {
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           placeholder={placeholder || 'Type and press Enter to add'}
-          className="flex-1 h-10 px-4 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black transition-all"
+          className="flex-1 h-10 px-4 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black transition-all"
         />
         <button
           type="button"
@@ -217,7 +217,7 @@ function ContradictionInput({ value, onChange, onInteract }: {
               value={pair.assumed}
               onChange={e => updatePair(i, 'assumed', e.target.value)}
               placeholder="e.g. Users want more features"
-              className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black"
+              className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black"
             />
           </div>
           <div>
@@ -226,7 +226,7 @@ function ContradictionInput({ value, onChange, onInteract }: {
               value={pair.actually}
               onChange={e => updatePair(i, 'actually', e.target.value)}
               placeholder="e.g. They churn when we add them"
-              className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black"
+              className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black"
             />
           </div>
           <button
@@ -292,6 +292,7 @@ function OptionCardsInput({ value, onChange, onInteract }: {
             <input
               value={card.label}
               onChange={e => updateCard(i, 'label', e.target.value)}
+              onBlur={() => { if (card.label.trim() || card.description.trim()) onInteract?.(); }}
               placeholder={`Option ${letters[i] || i + 1} — short name`}
               className="flex-1 text-fresco-base font-medium text-fresco-black bg-transparent border-b border-fresco-border-light focus:outline-none focus:border-fresco-black pb-0.5"
             />
@@ -299,6 +300,7 @@ function OptionCardsInput({ value, onChange, onInteract }: {
           <textarea
             value={card.description}
             onChange={e => updateCard(i, 'description', e.target.value)}
+            onBlur={() => { if (card.label.trim() || card.description.trim()) onInteract?.(); }}
             placeholder="Describe this option — what it involves, what it gains, what it gives up"
             className="w-full text-fresco-sm text-fresco-graphite-soft bg-transparent border-none resize-none focus:outline-none leading-relaxed"
             style={{ minHeight: 60 }}
@@ -1159,7 +1161,7 @@ function NumberedStepsInput({ value, onChange, placeholder, onInteract }: {
           <input value={item} onChange={e => update(i, e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
             placeholder={i === 0 ? (placeholder || 'First step…') : `Step ${i + 1}…`}
-            className="flex-1 h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+            className="flex-1 h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
           {count > 1 && (
             <button type="button" onClick={() => remove(i)} className="opacity-0 group-hover:opacity-100 transition-opacity">
               <X className="w-3.5 h-3.5 text-fresco-graphite-light hover:text-red-400" />
@@ -1195,20 +1197,20 @@ function TestBriefInput({ value, onChange, onInteract }: { value: string; onChan
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Method — what will you do?</p>
         <input value={data.method || ''} onChange={e => update('method', e.target.value)}
           placeholder="e.g. A/B test SMS vs email verification, 50/50 split"
-          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Duration</p>
           <input value={data.duration || ''} onChange={e => update('duration', e.target.value)}
             placeholder="e.g. 2 weeks"
-            className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+            className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
         </div>
         <div>
           <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Sample / split</p>
           <input value={data.sample || ''} onChange={e => update('sample', e.target.value)}
             placeholder="e.g. All new signups"
-            className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+            className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
         </div>
       </div>
       <button type="button" onClick={() => onInteract?.()}
@@ -1231,19 +1233,19 @@ function AudienceProfileInput({ value, onChange, onInteract }: { value: string; 
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Who exactly?</p>
         <input value={data.who || ''} onChange={e => update('who', e.target.value)}
           placeholder="e.g. CFOs at mid-market SaaS companies, $5M–$50M ARR"
-          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
       </div>
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">What do they currently believe?</p>
         <input value={data.believes || ''} onChange={e => update('believes', e.target.value)}
           placeholder="e.g. AI tools are a cost centre, not an investment"
-          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
       </div>
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Why do they believe it?</p>
         <input value={data.why || ''} onChange={e => update('why', e.target.value)}
           placeholder="e.g. They've seen AI hype without measurable ROI"
-          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
       </div>
       <button type="button" onClick={() => onInteract?.()}
         className="mt-3 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1">
@@ -1277,7 +1279,7 @@ function BarrierMovesInput({ value, onChange, blockers, onInteract }: {
             <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1">Barrier</p>
             <input value={pair.barrier} onChange={e => update(i, 'barrier', e.target.value)}
               placeholder="e.g. We tried something similar and it failed"
-              className="w-full h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border-light rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+              className="w-full h-9 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border-light rounded-none focus:outline-none focus:border-fresco-black" />
           </div>
           <div>
             <p className="text-fresco-xs text-emerald-600 uppercase tracking-wide mb-1">How you'll move them past it</p>
@@ -1366,19 +1368,19 @@ function EvaluateBriefInput({ value, onChange, onInteract }: { value: string; on
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Goal of this page/flow</p>
         <input value={data.goal || ''} onChange={e => update('goal', e.target.value)}
           placeholder="e.g. Get mid-market buyers to book a demo"
-          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
       </div>
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Who's the audience?</p>
         <input value={data.audience || ''} onChange={e => update('audience', e.target.value)}
           placeholder="e.g. SaaS buyers at $10M–$100M ARR, evaluating 3–5 tools"
-          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
       </div>
       <div>
         <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-1.5">Current performance</p>
         <input value={data.metric || ''} onChange={e => update('metric', e.target.value)}
           placeholder="e.g. 2.1% conversion, 45s avg time, 70% scroll past pricing"
-          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
       </div>
       <button type="button" onClick={() => onInteract?.()}
         className="mt-3 text-fresco-xs font-medium text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1">
@@ -1421,7 +1423,7 @@ function PriorityChipsInput({ value, onChange, placeholder, onInteract }: {
         <input value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           placeholder={placeholder || 'Add item and press Enter'}
-          className="flex-1 h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black" />
+          className="flex-1 h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black" />
         <button type="button" onClick={add} disabled={!draft.trim()}
           className="h-10 px-4 text-fresco-sm border border-fresco-border text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-all disabled:opacity-30">
           Add
@@ -1897,7 +1899,7 @@ function UrlTagInput({ urls, onChange, maxUrls, label }: {
               }
             }}
             placeholder={urls.length === 0 ? 'https://yoursite.com/page' : 'Add another URL…'}
-            className="flex-1 h-9 px-3 text-fresco-xs text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:ring-1 focus:ring-fresco-black font-mono"
+            className="flex-1 h-9 px-3 text-fresco-xs text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black font-mono"
           />
           <button
             type="button"
