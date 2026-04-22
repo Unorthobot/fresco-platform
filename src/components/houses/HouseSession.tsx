@@ -2654,15 +2654,28 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               )}
             </AnimatePresence>
 
-            <button
-              onClick={handleRunWithChallenge}
-              disabled={!canRun || isRunning}
-              className={cn('fresco-btn w-full', (!canRun || isRunning) && 'opacity-40 cursor-not-allowed')}>
-              {isRunning
-                ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Working through it…</span></>
-                : <><Sparkles className="w-4 h-4" /><span>Think it through</span></>
-              }
-            </button>
+            {isRunning ? (
+              <div className="flex items-center gap-2">
+                <button
+                  disabled
+                  className="fresco-btn flex-1 opacity-60 cursor-default">
+                  <Loader2 className="w-4 h-4 animate-spin" /><span>Working through it…</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStop}
+                  className="px-4 py-3 border border-fresco-border text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black hover:border-fresco-black transition-colors">
+                  Stop
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleRunWithChallenge}
+                disabled={!canRun}
+                className={cn('fresco-btn w-full', !canRun && 'opacity-40 cursor-not-allowed')}>
+                <Sparkles className="w-4 h-4" /><span>Think it through</span>
+              </button>
+            )}
             {!canRun && !isRunning && !runError && (
               <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
                 Start answering to unlock this
