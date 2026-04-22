@@ -24,7 +24,7 @@ interface ToolkitRouterProps {
   workspaceId: string;
   onBack?: () => void;
   onStartToolkit?: (toolkitType: string) => void | Promise<void>;
-  onNavigateToHouse?: (houseId: HouseId) => void;
+  onNavigateToHouse?: (houseId: HouseId, fromSessionId?: string) => void;
 }
 
 export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, onNavigateToHouse }: ToolkitRouterProps) {

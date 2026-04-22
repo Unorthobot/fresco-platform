@@ -36,7 +36,7 @@ interface HouseSessionProps {
   workspaceId: string;
   sessionId: string;
   onBack?: () => void;
-  onNavigateToHouse?: (houseId: HouseId) => void;
+  onNavigateToHouse?: (houseId: HouseId, fromSessionId?: string) => void;
 }
 
 interface AgentStreamEvent {
@@ -2046,10 +2046,67 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     return null;
   };
 
+  // ─── Handoff detection ──────────────────────────────────────────────────────
+  // When a user clicks 'Open' on the Run-this-next card, the parent stashes the
+  // source session id in sessionStorage. We pick it up here and use it to seed
+  // the new session with relevant context and a pre-filled first question.
+  const handoff = (() => {
+    try {
+      const sourceSessionId = sessionStorage.getItem(`fresco-handoff-${sessionId}`);
+      if (!sourceSessionId) return null;
+      const sourceSession = sessions.find(s => s.id === sourceSessionId);
+      if (!sourceSession) return null;
+      const sourceHouse = (sourceSession as any).houseType as HouseId | undefined;
+      const sourceResult = (sourceSession as any).aiOutputs?.houseResult as HouseResult | undefined;
+      if (!sourceHouse || !sourceResult) return null;
+      return { sourceSessionId, sourceHouse, sourceResult };
+    } catch { return null; }
+  })();
+
+  // ─── First-question pre-fill (templated from handoff) ───────────────────────
+  // Small helper that turns a prior session's output into a first-draft answer
+  // for the new session's opening question. Templates are per target house.
+  const buildPrefillForHouse = (target: HouseId, src: { sourceHouse: HouseId; sourceResult: HouseResult }): string => {
+    const { sourceHouse, sourceResult } = src;
+    const sourceName = HOUSE_META[sourceHouse].name;
+    const truth = sourceResult.sentenceOfTruth?.trim() || '';
+    const nextMove = (sourceResult.necessaryMoves || [])[0]?.trim() || '';
+    switch (target) {
+      case 'investigate':
+        return truth ? `Following on from ${sourceName}, which concluded: "${truth}". I want to dig deeper into what's actually going on beneath that — what observations I actually have, what I'm assuming, and what would change my view.` : '';
+      case 'innovate':
+        return nextMove ? `The direction from ${sourceName} was: ${nextMove}. I want to turn this into 2–3 concrete options worth building, and figure out what I'd test first.` : truth ? `Based on ${sourceName}'s finding: "${truth}". I want to work out what to build or change next, and what constraints I'm working within.` : '';
+      case 'validate':
+        return nextMove ? `${sourceName} recommends: ${nextMove}. Before we commit, I want to pressure-test whether this will actually work — what evidence supports it, what's the strongest argument against, and what small test would change my mind.` : truth ? `Given the finding from ${sourceName}: "${truth}". I'm considering committing to a direction based on this. I want to check whether it will survive contact with reality before we spend time building.` : '';
+      case 'evaluate':
+        return truth ? `Building on ${sourceName} which found: "${truth}". Now I want to look at how things are actually performing against this, what's working, what isn't, and where the highest-leverage intervention is.` : '';
+      default:
+        return '';
+    }
+  };
+
+  const getFirstStepId = (target: HouseId): string => {
+    if (target === 'investigate') return 'situation';
+    if (target === 'innovate') return 'start';
+    if (target === 'validate') return 'subject';
+    if (target === 'evaluate') return 'subject';
+    return '';
+  };
+
   const [values, setValues] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem(`fresco-inputs-${sessionId}`);
-      return saved ? JSON.parse(saved) : {};
+      const parsed = saved ? JSON.parse(saved) : {};
+      // If this is a fresh handoff (no saved values yet) and we have a source
+      // session, seed the first question with a templated draft.
+      if (Object.keys(parsed).length === 0 && handoff) {
+        const firstId = getFirstStepId(houseId);
+        const prefill = buildPrefillForHouse(houseId, handoff);
+        if (firstId && prefill) {
+          return { [firstId]: prefill };
+        }
+      }
+      return parsed;
     } catch { return {}; }
   });
   const [attachmentContext, setAttachmentContext] = useState<Record<string, string>>({});
@@ -2186,19 +2243,74 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     const abort = new AbortController();
     abortRef.current = abort;
     setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
+    // Once the run starts, clear the handoff marker so a refresh doesn't re-seed.
+    try { sessionStorage.removeItem(`fresco-handoff-${sessionId}`); } catch {}
     const userInput = buildUserInput();
 
     try {
+      // ─── Rich cross-session context ─────────────────────────────────────
+      // Fresco should feel like a thinking partner that remembers prior work
+      // in this workspace — not a series of disconnected forms.
       const priorSessions = sessions.filter(s => s.workspaceId === workspaceId && s.id !== sessionId);
-      const context = priorSessions
-        .filter(s => s.sentenceOfTruth?.content || s.insights?.length)
-        .slice(0, 3)
-        .map(s => {
-          const lines: string[] = [];
-          if (s.sentenceOfTruth?.content) lines.push(`Core finding: "${s.sentenceOfTruth.content}"`);
-          if (s.insights?.length) lines.push(`Insights: ${s.insights.slice(0, 2).map((i: any) => i.content || i).join('; ')}`);
+
+      // For each prior session, extract a full digest (not just sentence-of-truth)
+      const digestSession = (s: any): string | null => {
+        const hr = s.aiOutputs?.houseResult as HouseResult | undefined;
+        if (!hr) {
+          // Legacy fallback — older sessions may only have sentenceOfTruth + insights
+          const sot = s.sentenceOfTruth?.content;
+          if (!sot && !s.insights?.length) return null;
+          const label = s.houseType ? HOUSE_META[s.houseType as HouseId].name : (s.title || 'Earlier session');
+          const lines = [`━━ ${label} ━━`];
+          if (sot) lines.push(`Sentence of truth: "${sot}"`);
+          if (s.insights?.length) lines.push(`Insights: ${s.insights.slice(0, 3).map((i: any) => i.content || i).join(' | ')}`);
           return lines.join('\n');
-        }).join('\n---\n');
+        }
+        const label = HOUSE_META[hr.house as HouseId]?.name || hr.house;
+        const lines = [`━━ ${label} · verdict: ${hr.verdict} ━━`];
+        if (hr.sentenceOfTruth) lines.push(`Sentence of truth: "${hr.sentenceOfTruth}"`);
+        if (hr.verdictRationale) lines.push(`Why that verdict: ${hr.verdictRationale}`);
+        if (hr.keyIssues?.length) lines.push(`Key issues: ${hr.keyIssues.slice(0, 4).join(' | ')}`);
+        if (hr.necessaryMoves?.length) lines.push(`Recommended next moves: ${hr.necessaryMoves.slice(0, 4).join(' | ')}`);
+        if (hr.suggestedNextHouse) lines.push(`Recommended next house: ${HOUSE_META[hr.suggestedNextHouse]?.name || hr.suggestedNextHouse} — ${hr.suggestedNextHouseReason || ''}`.trim());
+        return lines.join('\n');
+      };
+
+      const priorDigests = priorSessions
+        .sort((a: any, b: any) => (new Date(b.updatedAt || b.createdAt).getTime()) - (new Date(a.updatedAt || a.createdAt).getTime()))
+        .slice(0, 4)
+        .map(digestSession)
+        .filter(Boolean) as string[];
+
+      // Handoff block: if this session was started from another via 'Open', call
+      // it out explicitly so agents treat the previous finding as foundational.
+      let handoffBlock = '';
+      if (handoff) {
+        const srcName = HOUSE_META[handoff.sourceHouse].name;
+        const hr = handoff.sourceResult;
+        handoffBlock = `━━ CONTINUED FROM ${srcName.toUpperCase()} ━━\n` +
+          `This session was started directly from a ${srcName} session. Treat its output as foundational context — the user expects you to build on it, not re-derive what it already established.\n` +
+          `${srcName} concluded with: "${hr.sentenceOfTruth}" (verdict: ${hr.verdict}).\n` +
+          (hr.necessaryMoves?.length ? `Key next moves it recommended: ${hr.necessaryMoves.slice(0, 3).join(' | ')}\n` : '') +
+          (hr.suggestedNextHouseReason ? `Why the user is now here: ${hr.suggestedNextHouseReason}` : '');
+      }
+
+      // Workspace summary (simple derived rollup across all sessions)
+      const workspaceSummary = (() => {
+        if (priorDigests.length === 0) return '';
+        const verdicts = priorSessions
+          .map((s: any) => s.aiOutputs?.houseResult?.verdict)
+          .filter(Boolean);
+        const verdictCounts = verdicts.reduce((acc: Record<string, number>, v: string) => { acc[v] = (acc[v] || 0) + 1; return acc; }, {});
+        const verdictSummary = Object.entries(verdictCounts).map(([v, n]) => `${n}× ${v}`).join(', ');
+        const housesRun = Array.from(new Set(priorSessions.map((s: any) => s.houseType).filter(Boolean))).map((h: any) => HOUSE_META[h as HouseId]?.name || h).join(', ');
+        const lines = [`━━ WORKSPACE ROLLUP ━━`];
+        if (housesRun) lines.push(`Houses already run in this workspace: ${housesRun}`);
+        if (verdictSummary) lines.push(`Verdicts so far: ${verdictSummary}`);
+        return lines.join('\n');
+      })();
+
+      const context = [handoffBlock, workspaceSummary, ...priorDigests].filter(Boolean).join('\n\n---\n\n');
 
       const body: Record<string, string> = { userInput };
       if (context) body.context = context;
@@ -2432,6 +2544,19 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 </motion.div>
               )}
             </AnimatePresence>
+            {handoff && !result && (
+              <div className="mb-6 px-4 py-3 border-l-2 border-fresco-black bg-fresco-light-gray">
+                <p className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider mb-1">Continued from {HOUSE_META[handoff.sourceHouse].name}</p>
+                <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">
+                  {handoff.sourceResult.sentenceOfTruth && (
+                    <>This session picks up from: <span className="text-fresco-black">"{handoff.sourceResult.sentenceOfTruth}"</span></>
+                  )}
+                </p>
+                <p className="text-fresco-xs text-fresco-graphite-light mt-1.5">
+                  The first question below is pre-filled — edit or keep as-is, then carry on.
+                </p>
+              </div>
+            )}
             <div className="flex items-center gap-3 mb-1">
               <img src={meta.icon} alt="" className="w-6 h-6 opacity-60 icon-theme"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -2868,7 +2993,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       <p className="text-fresco-sm font-medium text-fresco-black">{HOUSE_META[result.suggestedNextHouse].name}</p>
                       <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5">{result.suggestedNextHouseReason}</p>
                     </div>
-                    <button onClick={() => onNavigateToHouse?.(result.suggestedNextHouse!)}
+                    <button onClick={() => onNavigateToHouse?.(result.suggestedNextHouse!, sessionId)}
                       className="flex-shrink-0 flex items-center gap-1.5 text-fresco-xs font-medium text-fresco-black border border-fresco-black px-3 py-1.5 hover:bg-fresco-black hover:text-white transition-colors">
                       Open <ArrowRight className="w-3 h-3" />
                     </button>

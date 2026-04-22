@@ -230,7 +230,7 @@ export default function FrescoAppContent() {
     handleNavigateToSession(session.id, workspaceId);
   };
 
-  const handleStartHouse = async (houseId: HouseId) => {
+  const handleStartHouse = async (houseId: HouseId, fromSessionId?: string) => {
     let workspaceId = activeWorkspaceId;
     if (!workspaceId && !canCreateWorkspace()) {
       setShowUpgradeModal(true);
@@ -249,6 +249,15 @@ export default function FrescoAppContent() {
         workspaceId = workspace.id;
       }
       const session = await db.createHouseSession(workspaceId, houseId);
+      // Record a handoff if this session was started from another — we stash the
+      // source session id in sessionStorage keyed on the new session id so
+      // HouseSession can pick it up on mount. sessionStorage (not state) so it
+      // survives the navigation state transitions.
+      if (fromSessionId) {
+        try {
+          sessionStorage.setItem(`fresco-handoff-${session.id}`, fromSessionId);
+        } catch { /* storage unavailable — continue anyway */ }
+      }
       handleNavigateToSession(session.id, workspaceId);
     } catch (err) {
       console.error('Failed to start house:', err);
@@ -351,7 +360,7 @@ onStartToolkit={handleStartToolkit}
                 workspaceId={activeWorkspaceId}
                 onBack={handleBackToWorkspace}
                 onStartToolkit={handleStartToolkit}
-                onNavigateToHouse={(houseId) => handleStartHouse(houseId)}
+                onNavigateToHouse={(houseId, fromSessionId) => handleStartHouse(houseId, fromSessionId)}
               />
             </motion.div>
           )}
