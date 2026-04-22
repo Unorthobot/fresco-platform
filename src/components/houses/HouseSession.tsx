@@ -292,7 +292,6 @@ function OptionCardsInput({ value, onChange, onInteract }: {
             <input
               value={card.label}
               onChange={e => updateCard(i, 'label', e.target.value)}
-              onBlur={() => { if (card.label.trim() || card.description.trim()) onInteract?.(); }}
               placeholder={`Option ${letters[i] || i + 1} — short name`}
               className="flex-1 text-fresco-base font-medium text-fresco-black bg-transparent border-b border-fresco-border-light focus:outline-none focus:border-fresco-black pb-0.5"
             />
@@ -300,7 +299,6 @@ function OptionCardsInput({ value, onChange, onInteract }: {
           <textarea
             value={card.description}
             onChange={e => updateCard(i, 'description', e.target.value)}
-            onBlur={() => { if (card.label.trim() || card.description.trim()) onInteract?.(); }}
             placeholder="Describe this option — what it involves, what it gains, what it gives up"
             className="w-full text-fresco-sm text-fresco-graphite-soft bg-transparent border-none resize-none focus:outline-none leading-relaxed"
             style={{ minHeight: 60 }}
