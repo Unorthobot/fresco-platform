@@ -2432,12 +2432,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="flex items-center gap-2 mb-3">
-              <img src={meta.icon} alt={meta.name} className="w-4 h-4 opacity-60 icon-theme"
+            <div className="flex items-center gap-3 mb-1">
+              <img src={meta.icon} alt="" className="w-6 h-6 opacity-60 icon-theme"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <span className="fresco-label capitalize">{meta.name}</span>
+              <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight">{meta.name}</h1>
             </div>
-            <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight mb-1">{meta.name}</h1>
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2.5 py-0.5 rounded-full">
                 {(meta as any).formalLabel}
