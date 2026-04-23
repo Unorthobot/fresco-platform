@@ -97,6 +97,38 @@ const PHASE_STYLES: Record<string, { label: string; symbol: string }> = {
   observe:     { label: 'Observe',     symbol: '◐' },
 };
 
+// ─── Starter phrases ─────────────────────────────────────────────────────────
+// Short sentence stems the user can click to insert at the start of an empty
+// textarea. Reduces articulation friction — starting a sentence is the hardest
+// part. Keyed by step id so each question gets its own set of stems.
+const STARTER_PHRASES: Record<string, string[]> = {
+  // Investigate
+  situation:           ["I'm trying to figure out…", "The decision I'm facing is…", "I need to understand whether…"],
+  observations:        ["What I've actually seen is…", "The data shows…", "Users have told me…"],
+  assumptions:         ["I think it's because…", "My best guess is…", "I'm assuming that…"],
+  position_synthesis:  ["If I found out that…", "It would change my mind if…", "The one thing that would flip my view is…"],
+
+  // Innovate
+  start:       ["I'm trying to build…", "I want to improve…", "The problem I'm solving is…"],
+  breakdown:   ["Today the flow goes…", "Where it breaks down is…", "The biggest stuck point is…"],
+  constraint:  ["I'm most unsure about…", "What I can't verify yet is…", "The riskiest assumption is…"],
+
+  // Validate
+  subject:   ["I'm about to commit to…", "We're planning to…", "The decision on the table is…"],
+  criteria:  ["The real signals I have are…", "I know for a fact that…", "People have actually…"],
+  audience:  ["A sceptic would say…", "The strongest case against is…", "The uncomfortable truth might be…"],
+
+  // Evaluate
+  trust_drops:  ["Trust drops when…", "The moment users hesitate is…", "Confidence breaks at…"],
+  transitions:  ["The break that matters most is…", "If I could only fix one thing…", "The highest-leverage change is…"],
+  score_criteria: ["My diagnosis is…", "What I think is happening is…", "I've already tried…"],
+  concerns:     ["The single change I'd bet on is…", "The one thing most likely to move the metric is…"],
+  version_a:    ["Version A is trying to…", "The belief behind A is…", "A says to users…"],
+  version_b:    ["Version B tries to…", "We changed it because…", "B is betting that…"],
+  delta_focus:  ["A clear winner would look like…", "An ambiguous result would be…", "What would leave me uncertain is…"],
+};
+
+
 // ─── Chip / tag input ────────────────────────────────────────────────────────
 // For discrete items: assumptions, patterns, signals
 
@@ -757,6 +789,7 @@ function useVoice(onText: (t: string) => void) {
 function QuestionCard({
   step, value, onChange, onBlur, onAttach, isActive, isAnswered, isLocked,
   onActivate, showAgent = false, criteriaValue = '', secondaryValue = '',
+  stepNumber, totalSteps, priorSummary,
 }: {
   step: ConversationStep;
   value: string;
@@ -770,6 +803,9 @@ function QuestionCard({
   showAgent?: boolean;
   criteriaValue?: string;
   secondaryValue?: string;
+  stepNumber?: number;
+  totalSteps?: number;
+  priorSummary?: { question: string; preview: string } | null;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const voice = useVoice(t => onChange(value ? `${value}\n\n${t}` : t));
@@ -874,6 +910,35 @@ function QuestionCard({
       {/* Active / unanswered state */}
       {(isActive || !isAnswered) && !isLocked && (
         <div className="px-4 py-4">
+          {/* Thread context — show what the user established in prior answers */}
+          {isActive && priorSummary && (
+            <details className="mb-3 group">
+              <summary className="cursor-pointer list-none flex items-start gap-2 text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors">
+                <span className="text-fresco-graphite-light/70 flex-shrink-0 mt-0.5">↑</span>
+                <span className="flex-1">
+                  <span className="font-medium">Earlier:</span> “{priorSummary.preview}”
+                </span>
+              </summary>
+              <div className="mt-2 pl-4 border-l border-fresco-border-light">
+                <p className="text-fresco-xs text-fresco-graphite-light mb-1">{priorSummary.question}</p>
+                <p className="text-fresco-xs text-fresco-graphite-mid whitespace-pre-wrap leading-relaxed">{priorSummary.preview}</p>
+              </div>
+            </details>
+          )}
+          {/* Progress marker — only when active so it doesn't clutter */}
+          {isActive && stepNumber !== undefined && totalSteps !== undefined && totalSteps > 1 && (
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light">
+                Question {stepNumber} of {totalSteps}
+              </p>
+              {stepNumber === totalSteps && (
+                <p className="text-[10px] text-fresco-graphite-light">Last one</p>
+              )}
+              {stepNumber === totalSteps - 1 && totalSteps > 2 && (
+                <p className="text-[10px] text-fresco-graphite-light">One more after this</p>
+              )}
+            </div>
+          )}
           <div className="flex items-start justify-between mb-1">
             <p className={cn(
               'font-medium leading-snug',
@@ -943,6 +1008,29 @@ function QuestionCard({
               {/* Default textarea — with voice + file */}
               {(!step.inputType || step.inputType === 'textarea' || step.inputType === 'synthesis') && (
                 <div className="relative">
+                  {/* Starter phrases — appear only when the field is empty, to reduce cold-start friction */}
+                  {!value.trim() && STARTER_PHRASES[step.id] && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      <span className="text-[10px] uppercase tracking-wider text-fresco-graphite-light/70 self-center mr-1">Start with:</span>
+                      {STARTER_PHRASES[step.id].map(phrase => (
+                        <button
+                          key={phrase}
+                          type="button"
+                          onClick={() => {
+                            onChange(phrase + ' ');
+                            requestAnimationFrame(() => {
+                              textRef.current?.focus();
+                              const end = textRef.current?.value.length ?? 0;
+                              textRef.current?.setSelectionRange(end, end);
+                            });
+                          }}
+                          className="text-fresco-xs text-fresco-graphite-mid bg-fresco-light-gray hover:bg-fresco-border hover:text-fresco-black transition-colors px-2 py-0.5 border border-fresco-border-light"
+                        >
+                          {phrase}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <textarea
                     ref={textRef}
                     value={value}
@@ -1775,6 +1863,41 @@ function ConversationFlow({
             isLocked={isLocked}
             onActivate={() => setActiveIdx(idx)}
             showAgent={true}
+            stepNumber={idx + 1}
+            totalSteps={steps.length}
+            priorSummary={(() => {
+              // Show the most recent answered step before this one, if any.
+              // Gives the user thread context without forcing them to re-read.
+              if (idx === 0) return null;
+              for (let j = idx - 1; j >= 0; j--) {
+                const prev = steps[j];
+                const v = values[prev.id];
+                if (!v) continue;
+                // For structured types, try a lightweight preview
+                let preview = v;
+                if (prev.inputType === 'options') {
+                  try {
+                    const cards = JSON.parse(v).filter((c: any) => c.label?.trim());
+                    preview = cards.map((c: any) => c.label).join(', ');
+                  } catch { /* leave as-is */ }
+                } else if (prev.inputType === 'metrics') {
+                  try {
+                    const rows = JSON.parse(v).filter((r: any) => r.metric?.trim());
+                    preview = rows.map((r: any) => `${r.metric}: ${r.actual || '—'}`).join('; ');
+                  } catch { /* leave as-is */ }
+                } else if (prev.inputType === 'evaluatebrief') {
+                  try {
+                    const p = JSON.parse(v);
+                    preview = [p.goal, p.audience, p.metric].filter(Boolean).join(' · ');
+                  } catch { /* leave as-is */ }
+                }
+                // Trim to a single-line preview for the collapsed summary
+                const oneLine = preview.replace(/\s+/g, ' ').trim();
+                const truncated = oneLine.length > 120 ? oneLine.slice(0, 120) + '…' : oneLine;
+                return { question: prev.question, preview: truncated };
+              }
+              return null;
+            })()}
             criteriaValue={values['criteria'] || ''}
             secondaryValue={
               step.id === 'move_them' ? (values['blockers'] || '') :
