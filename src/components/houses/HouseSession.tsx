@@ -2521,8 +2521,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         if (data.verdict) { setResult(data); await persistResult(data); inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }
       }
     } catch (err) {
-      console.error('House run failed:', err);
-      setRunError('Something went wrong. Check your connection and try again.');
+      // Don't treat a deliberate user abort as an error — Stop was clicked.
+      const wasAbort = (err as any)?.name === 'AbortError' || abort.signal.aborted;
+      if (!wasAbort) {
+        console.error('House run failed:', err);
+        setRunError('Something went wrong. Check your connection and try again.');
+      }
     }
     setIsRunning(false);
   }, [canRun, values, url, houseId, sessions, workspaceId, sessionId]);
@@ -2533,6 +2537,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     setIsRunning(false);
     setAgentEvents([]);
     setPageFetchMessage(null);
+    setRunError(null);
   }, []);
 
   // Stable ref so handleRunWithChallenge always calls the latest handleRun
