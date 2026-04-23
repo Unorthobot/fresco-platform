@@ -15,7 +15,7 @@ interface HomeDashboardProps {
   onNavigateToWorkspace?: (workspaceId: string) => void;
   onNavigateToSession?: (sessionId: string, workspaceId: string) => void;
   onStartToolkit?: (toolkitType: ToolkitType) => void | Promise<void>;
-  onStartHouse?: (houseId: HouseId) => void | Promise<void>;
+  onStartHouse?: (houseId: HouseId, fromSessionId?: string, initialInput?: string) => void | Promise<void>;
 }
 
 const HOUSES: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
@@ -246,7 +246,7 @@ export function HomeDashboard({
                            timeOfDay === 'evening' ? 'Tonight' : 'Right now'}
                         </p>
                         <button
-                          onClick={() => onStartHouse?.(finalHouse)}
+                          onClick={() => onStartHouse?.(finalHouse, undefined, diagnosticInput)}
                           className="w-full text-right group"
                         >
                           <p className="text-fresco-sm font-medium text-fresco-black group-hover:underline underline-offset-2">
@@ -319,7 +319,7 @@ export function HomeDashboard({
                     {diagnosticExplanation}
                   </p>
                   <button
-                    onClick={() => onStartHouse?.(recommendedHouse)}
+                    onClick={() => onStartHouse?.(recommendedHouse, undefined, diagnosticInput)}
                     className="fresco-btn w-full flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />

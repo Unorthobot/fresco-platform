@@ -230,7 +230,7 @@ export default function FrescoAppContent() {
     handleNavigateToSession(session.id, workspaceId);
   };
 
-  const handleStartHouse = async (houseId: HouseId, fromSessionId?: string) => {
+  const handleStartHouse = async (houseId: HouseId, fromSessionId?: string, initialInput?: string) => {
     let workspaceId = activeWorkspaceId;
     if (!workspaceId && !canCreateWorkspace()) {
       setShowUpgradeModal(true);
@@ -257,6 +257,13 @@ export default function FrescoAppContent() {
         try {
           sessionStorage.setItem(`fresco-handoff-${session.id}`, fromSessionId);
         } catch { /* storage unavailable — continue anyway */ }
+      }
+      // If the user typed a diagnostic sentence on the home screen, carry it
+      // into the new session as a pre-fill for the first question.
+      if (initialInput && initialInput.trim()) {
+        try {
+          sessionStorage.setItem(`fresco-seed-${session.id}`, initialInput.trim());
+        } catch { /* ignore */ }
       }
       handleNavigateToSession(session.id, workspaceId);
     } catch (err) {

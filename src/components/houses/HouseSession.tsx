@@ -2220,14 +2220,21 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     try {
       const saved = localStorage.getItem(`fresco-inputs-${sessionId}`);
       const parsed = saved ? JSON.parse(saved) : {};
-      // If this is a fresh handoff (no saved values yet) and we have a source
-      // session, seed the first question with a templated draft.
-      if (Object.keys(parsed).length === 0 && handoff) {
+      // Two possible pre-fills, applied only when there are no saved values:
+      //   1. Handoff — arrived via 'Run this next' from another session (rich)
+      //   2. Seed    — arrived via home diagnostic, user's own typed input
+      // Handoff takes priority because it carries structured prior context.
+      if (Object.keys(parsed).length === 0) {
         const firstId = getFirstStepId(houseId);
-        const prefill = buildPrefillForHouse(houseId, handoff);
-        if (firstId && prefill) {
-          return { [firstId]: prefill };
+        if (handoff && firstId) {
+          const prefill = buildPrefillForHouse(houseId, handoff);
+          if (prefill) return { [firstId]: prefill };
         }
+        // No handoff — check for a diagnostic seed (user's own sentence)
+        try {
+          const seed = sessionStorage.getItem(`fresco-seed-${sessionId}`);
+          if (seed && firstId) return { [firstId]: seed };
+        } catch { /* ignore */ }
       }
       return parsed;
     } catch { return {}; }
@@ -2366,8 +2373,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     const abort = new AbortController();
     abortRef.current = abort;
     setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
-    // Once the run starts, clear the handoff marker so a refresh doesn't re-seed.
-    try { sessionStorage.removeItem(`fresco-handoff-${sessionId}`); } catch {}
+    // Once the run starts, clear the handoff + seed markers so a refresh
+    // doesn't re-seed. The values are already persisted to localStorage.
+    try {
+      sessionStorage.removeItem(`fresco-handoff-${sessionId}`);
+      sessionStorage.removeItem(`fresco-seed-${sessionId}`);
+    } catch {}
     const userInput = buildUserInput();
 
     try {
