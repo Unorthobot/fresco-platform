@@ -70,14 +70,13 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   };
 
   const handleDeleteWorkspace = (workspaceId: string) => {
-    // Navigate home first so the view never sees a workspace without its data
     setDeleteConfirm(null);
-    setActiveSession(null);
-    setActiveWorkspace(null);
-    setActiveSection('home');
+    // store.deleteWorkspace atomically: removes workspace, removes its
+    // sessions, nulls activeWorkspaceId/activeSessionId if they matched,
+    // sets activeSection to 'home'. Doing it in one synchronous call avoids
+    // the brittle 'null state, wait 50ms, delete' dance that kept regressing.
+    db.deleteWorkspace(workspaceId);
     onNavigate?.('home');
-    // Delete after navigation state is set
-    setTimeout(() => db.deleteWorkspace(workspaceId), 50);
   };
 
   const handleNavClick = (section: string) => {

@@ -84,15 +84,15 @@ export default function FrescoAppContent() {
   const currentSession = activeSessionId ? sessions.find(s => s.id === activeSessionId) : null;
   const currentWorkspace = activeWorkspaceId ? workspaces.find(w => w.id === activeWorkspaceId) : null;
 
-  // Compute effective view - ensures we never show a blank screen
+  // Compute effective view — NEVER returns a state that could blank the screen.
+  // Every branch must terminate in a view that has a matching render case below.
   const effectiveView = (() => {
+    // Workspace view needs an active workspace
     if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
-    if (currentView === 'session' && !currentSession) {
-      return activeWorkspaceId ? 'workspace' : 'home';
-    }
-    // Workspace deleted while in a session — session exists but its workspace is gone
-    if (currentView === 'session' && currentSession && !currentWorkspace) {
-      return 'home';
+    // Session view needs: session in store + its workspace in store
+    if (currentView === 'session') {
+      if (!currentSession) return activeWorkspaceId && currentWorkspace ? 'workspace' : 'home';
+      if (!currentWorkspace) return 'home';
     }
     return currentView;
   })();
@@ -133,15 +133,16 @@ export default function FrescoAppContent() {
     }
   }, [activeSessionId, currentSession, activeWorkspaceId, setActiveSession, setActiveWorkspace]);
 
-  // Handle deleted workspace - navigate back to home
+  // Handle deleted workspace — if an active workspace id points nowhere,
+  // reset everything. Fires regardless of currentView so we can't get stuck.
   useEffect(() => {
-    if ((currentView === 'workspace' || currentView === 'session') && (!activeWorkspaceId || !currentWorkspace)) {
+    if (activeWorkspaceId && !currentWorkspace) {
       setActiveSession(null);
       setActiveWorkspace(null);
       setActiveSection('home');
       setCurrentView('home');
     }
-  }, [activeWorkspaceId, currentWorkspace, currentView, setActiveSession, setActiveWorkspace, setActiveSection]);
+  }, [activeWorkspaceId, currentWorkspace, setActiveSession, setActiveWorkspace, setActiveSection]);
 
   // Scroll to top when view changes
   useEffect(() => {
@@ -396,6 +397,45 @@ onStartToolkit={handleStartToolkit}
                 userId={user?.id || ''}
                 userSubscription={user?.subscription || 'free'}
                 onUpgrade={() => setShowUpgradeModal(true)}
+              />
+            </motion.div>
+          )}
+          {/* Safety net — if no branch above matched (e.g. a race during delete
+              where state is briefly inconsistent), render home rather than
+              show a blank screen. */}
+          {!startingHouse && ![
+            'home', 'workspace', 'session', 'archive', 'settings', 'account', 'team'
+          ].includes(effectiveView) && (
+            <motion.div key="fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <HomeDashboard
+                onNavigateToWorkspace={handleNavigateToWorkspace}
+                onNavigateToSession={handleNavigateToSession}
+                onStartToolkit={handleStartToolkit}
+                onStartHouse={handleStartHouse}
+              />
+            </motion.div>
+          )}
+          {/* Additional guard: the 'session' branch requires both currentSession
+              AND activeWorkspaceId. If effectiveView got stuck on 'session' but
+              those are missing, render home. */}
+          {!startingHouse && effectiveView === 'session' && (!activeWorkspaceId || !currentSession) && (
+            <motion.div key="session-fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <HomeDashboard
+                onNavigateToWorkspace={handleNavigateToWorkspace}
+                onNavigateToSession={handleNavigateToSession}
+                onStartToolkit={handleStartToolkit}
+                onStartHouse={handleStartHouse}
+              />
+            </motion.div>
+          )}
+          {/* Same guard for workspace. */}
+          {!startingHouse && effectiveView === 'workspace' && !activeWorkspaceId && (
+            <motion.div key="workspace-fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <HomeDashboard
+                onNavigateToWorkspace={handleNavigateToWorkspace}
+                onNavigateToSession={handleNavigateToSession}
+                onStartToolkit={handleStartToolkit}
+                onStartHouse={handleStartHouse}
               />
             </motion.div>
           )}
