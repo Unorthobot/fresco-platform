@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ErrorBoundary } from './ErrorBoundary';
 import { useSession } from 'next-auth/react';
 import { useDBSync, useDBWrite, useDBSyncComplete } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
@@ -329,6 +330,15 @@ export default function FrescoAppContent() {
       <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} onStartHouse={handleStartHouse} />
 
       <main id="main-content" className="md:ml-[220px] min-h-screen relative">
+        <ErrorBoundary
+          onReset={() => {
+            // Force-navigate home and clear any stale IDs
+            setActiveSession(null);
+            setActiveWorkspace(null);
+            setActiveSection('home');
+            setCurrentView('home');
+          }}
+        >
         <AnimatePresence mode="sync">
           {startingHouse && (
             <motion.div key="starting-house" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="h-screen flex items-center justify-center fresco-grid-bg-subtle">
@@ -440,6 +450,7 @@ onStartToolkit={handleStartToolkit}
             </motion.div>
           )}
         </AnimatePresence>
+        </ErrorBoundary>
       </main>
 
       {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
