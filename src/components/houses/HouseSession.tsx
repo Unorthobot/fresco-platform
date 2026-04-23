@@ -2249,6 +2249,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [isRunning, setIsRunning] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const outputScrollRef = useRef<HTMLDivElement>(null);
+  const inputScrollRef = useRef<HTMLDivElement>(null);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
   const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>(() => {
@@ -2502,7 +2503,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 setResult(vd as HouseResult);
                 await persistResult(vd as HouseResult);
                 incrementUsage();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                 // Show tab tooltip on first ever result
                 const hasSeenTooltip = localStorage.getItem('fresco-tab-tooltip-seen');
                 if (!hasSeenTooltip) {
@@ -2516,7 +2518,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         }
       } else {
         const data = await response.json();
-        if (data.verdict) { setResult(data); await persistResult(data); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        if (data.verdict) { setResult(data); await persistResult(data); inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }
       }
     } catch (err) {
       console.error('House run failed:', err);
@@ -2636,7 +2638,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         style={{ minWidth: result ? 360 : undefined }}
       >
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto" ref={inputScrollRef}>
           <div className={cn("mx-auto py-6 md:py-10", result ? "px-4" : "max-w-[640px] px-4 md:px-8")}>
 
           {/* Back + header */}
