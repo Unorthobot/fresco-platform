@@ -115,17 +115,23 @@ export function ArchivePage({ onOpenSession }: ArchivePageProps) {
                                 → {HOUSE_META[houseId]?.output}
                               </span>
                             )}
-                            {verdict && (
-                              <span className={[
-                                'text-fresco-xs font-medium px-2 py-0.5 rounded-full border',
-                                verdict === 'GO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                verdict === 'PIVOT' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                verdict === 'KILL' ? 'bg-red-50 text-red-600 border-red-200' :
-                                'bg-gray-50 text-gray-500 border-gray-200'
-                              ].join(' ')}>
-                                {verdict === 'DEFERRED' ? 'Pending' : verdict}
-                              </span>
-                            )}
+                            {verdict && (() => {
+                              // Map decision-style verdicts to the verdict colour system.
+                              // KILL is the old label for STOP; DEFERRED/pending stays muted grey.
+                              const accent =
+                                verdict === 'GO'    ? 'var(--verdict-go-accent)' :
+                                verdict === 'PIVOT' ? 'var(--verdict-pivot-accent)' :
+                                verdict === 'KILL'  ? 'var(--verdict-stop-accent)' :
+                                verdict === 'STOP'  ? 'var(--verdict-stop-accent)' :
+                                verdict === 'INVESTIGATE FURTHER' ? 'var(--verdict-signal-accent)' :
+                                null;
+                              return (
+                                <span className="text-fresco-xs font-medium px-2 py-0.5 rounded-full border bg-fresco-light-gray text-fresco-black border-fresco-border flex items-center gap-1.5">
+                                  {accent && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: accent }} />}
+                                  {verdict === 'DEFERRED' ? 'Pending' : verdict}
+                                </span>
+                              );
+                            })()}
                           </div>
                           {!isHouse && session.steps?.[0]?.content && (
                             <p className="text-fresco-xs text-fresco-graphite-mid line-clamp-1 mb-1">{session.steps[0].content.slice(0, 80)}</p>

@@ -58,13 +58,19 @@ interface ConversationStep {
   sliderLabels?: string[]; // for sliders inputType — one label per slider
 }
 
-const VERDICT_STYLES: Record<string, { bg: string; text: string; border: string; dot: string; label: string }> = {
-  'GO':                  { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
-  'PIVOT':               { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
-  'INVESTIGATE FURTHER': { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
-  'Needs more signal':   { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
-  'STOP':                { bg: 'bg-fresco-light-gray', text: 'text-fresco-black', border: 'border-fresco-border', dot: 'bg-fresco-black', label: 'text-fresco-graphite-mid' },
+// Verdict colour tokens — the ONE place in the whole UI where colour appears.
+// Each key resolves to CSS variables defined in globals.css (theme-aware).
+// 'accent' drives borders, dots, and labels. 'tint' is the soft fill used for
+// subtle card backgrounds. Greyscale stays everywhere else in the app.
+const VERDICT_COLOURS: Record<string, { accent: string; tint: string }> = {
+  'GO':                  { accent: 'var(--verdict-go-accent)',     tint: 'var(--verdict-go-tint)' },
+  'PIVOT':               { accent: 'var(--verdict-pivot-accent)',  tint: 'var(--verdict-pivot-tint)' },
+  'STOP':                { accent: 'var(--verdict-stop-accent)',   tint: 'var(--verdict-stop-tint)' },
+  'INVESTIGATE FURTHER': { accent: 'var(--verdict-signal-accent)', tint: 'var(--verdict-signal-tint)' },
 };
+
+// Helper — returns verdict accent/tint with INVESTIGATE FURTHER fallback
+const verdictColour = (v?: string) => VERDICT_COLOURS[v || ''] || VERDICT_COLOURS['INVESTIGATE FURTHER'];
 
 // Maps each agent to its thinking phase. Makes the Stanford d-School double
 // diamond structure visible in the UI — diverge (explore widely) vs converge
@@ -2620,7 +2626,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     URL.revokeObjectURL(u);
   };
 
-  const vs = result ? (VERDICT_STYLES[result.verdict] || VERDICT_STYLES['INVESTIGATE FURTHER']) : null;
 
   // Plain English verdict labels — what the verdict actually means in context
   const VERDICT_PLAIN: Record<string, { headline: string; subline: string; tag: string }> = {
@@ -3038,15 +3043,25 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </button>
                     )}
                   </div>
-                  {/* System verdict — plain English + spectrum + rationale */}
-                  <div className="border border-fresco-border p-4">
+                  {/* System verdict — plain English + spectrum + rationale.
+                      The ONLY chromatic moment in the whole product: a 3px
+                      coloured left border keyed to the verdict. Card body
+                      stays monochrome. */}
+                  <div
+                    className="border border-fresco-border p-4"
+                    style={{ borderLeftWidth: 3, borderLeftColor: verdictColour(result.verdict).accent }}
+                  >
                     {/* Plain English verdict headline */}
                     <div className="mb-4">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <p className="text-fresco-lg font-medium text-fresco-black leading-snug">
                           {verdictPlain?.headline}
                         </p>
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5">
+                        <span
+                          className="text-[10px] font-medium uppercase tracking-wider bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5"
+                          style={{ color: verdictColour(result.verdict).accent }}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: verdictColour(result.verdict).accent }} />
                           {result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict}
                         </span>
                       </div>
@@ -3352,12 +3367,18 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <button onClick={() => setShowExportModal(false)}><X className="w-4 h-4 text-fresco-graphite-light" /></button>
               </div>
 
-              {/* Verdict summary */}
-              <div className="mb-5 p-3 bg-fresco-light-gray border-l-2 border-fresco-black">
+              {/* Verdict summary — verdict colour on the left border + label */}
+              <div
+                className="mb-5 p-3 bg-fresco-light-gray"
+                style={{ borderLeft: `2px solid ${verdictColour(result.verdict).accent}` }}
+              >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light">{meta.name}</span>
                   <span className="text-[10px] text-fresco-graphite-light/60">·</span>
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light">
+                  <span
+                    className="text-[10px] font-medium uppercase tracking-wider"
+                    style={{ color: verdictColour(result.verdict).accent }}
+                  >
                     {result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict}
                   </span>
                 </div>

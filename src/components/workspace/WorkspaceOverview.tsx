@@ -174,6 +174,16 @@ const CATEGORY_LABELS: Record<ToolkitCategory, string> = {
   evaluate: 'Evaluate',
 };
 
+// Verdict colours — matches HouseSession. Used on session cards and the
+// houses-run summary so users can scan verdicts across a workspace at a glance.
+const VERDICT_COLOURS: Record<string, { accent: string; tint: string }> = {
+  'GO':                  { accent: 'var(--verdict-go-accent)',     tint: 'var(--verdict-go-tint)' },
+  'PIVOT':               { accent: 'var(--verdict-pivot-accent)',  tint: 'var(--verdict-pivot-tint)' },
+  'STOP':                { accent: 'var(--verdict-stop-accent)',   tint: 'var(--verdict-stop-tint)' },
+  'INVESTIGATE FURTHER': { accent: 'var(--verdict-signal-accent)', tint: 'var(--verdict-signal-tint)' },
+};
+const verdictColour = (v?: string) => VERDICT_COLOURS[v || ''] || VERDICT_COLOURS['INVESTIGATE FURTHER'];
+
 export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartToolkit, onStartHouse }: WorkspaceOverviewProps) {
   const { workspaces, sessions, deleteSession, activeSessionId } = useFrescoStore();
   const db = useDBWrite();
@@ -282,15 +292,24 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
           <div>
             {isEditingTitle ? (
               <div className="flex items-center gap-2">
-                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} 
+                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); handleSaveTitle(); }
+                    if (e.key === 'Escape') { e.preventDefault(); setIsEditingTitle(false); }
+                  }}
+                  onBlur={handleSaveTitle}
                   className="text-fresco-3xl font-medium text-fresco-black tracking-tight bg-transparent border-b-2 border-fresco-black focus:outline-none" autoFocus />
                 <button onClick={handleSaveTitle} className="p-2 text-fresco-black hover:bg-fresco-light-gray rounded-fresco transition-colors"><Check className="w-5 h-5" /></button>
                 <button onClick={() => setIsEditingTitle(false)} className="p-2 text-fresco-graphite-light hover:bg-fresco-light-gray rounded-fresco transition-colors"><X className="w-5 h-5" /></button>
               </div>
             ) : (
               <div className="flex items-center gap-3 group">
-                <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight">{workspace.title}</h1>
-                <button onClick={() => { setEditTitle(workspace.title); setIsEditingTitle(true); }} 
+                <h1
+                  className="text-fresco-3xl font-medium text-fresco-black tracking-tight cursor-text"
+                  onDoubleClick={() => { setEditTitle(workspace.title); setIsEditingTitle(true); }}
+                  title="Double-click to rename"
+                >{workspace.title}</h1>
+                <button onClick={() => { setEditTitle(workspace.title); setIsEditingTitle(true); }}
                   className="p-2 text-fresco-graphite-light opacity-0 group-hover:opacity-100 hover:text-fresco-black rounded-fresco transition-all">
                   <Edit3 className="w-4 h-4" />
                 </button>
@@ -511,13 +530,13 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                     {session.sentenceOfTruth?.content && (
                                       <Sparkles className="w-4 h-4 text-fresco-graphite" />
                                     )}
-                                    {/* House verdict badge */}
+                                    {/* House verdict badge — dot tinted to the verdict; label stays monochrome */}
                                     {(() => {
                                       const v = (session as any).aiOutputs?.verdict || (session as any).aiOutputs?.houseResult?.verdict;
                                       if (!v) return null;
-                                      const vstyle = 'bg-fresco-light-gray text-fresco-black border-fresco-border';
                                       return (
-                                        <span className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${vstyle}`}>
+                                        <span className="text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-fresco-light-gray text-fresco-black border-fresco-border flex items-center gap-1.5">
+                                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: verdictColour(v).accent }} />
                                           {v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : v}
                                         </span>
                                       );
@@ -651,18 +670,23 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                 <div>
                   <span className="fresco-label block mb-3">Houses run</span>
                   <div className="space-y-1.5">
-                    {houseRuns.map(({ house, count, verdict }) => {
-                      const vstyle = 'text-fresco-black';
-                      return (
-                        <div key={house} className="flex items-center justify-between py-1.5 border-b border-fresco-border-light last:border-0">
-                          <span className="text-fresco-sm text-fresco-graphite-soft capitalize">{house}</span>
-                          <div className="flex items-center gap-2">
-                            {verdict && <span className={`text-fresco-xs font-medium ${vstyle}`}>{verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}</span>}
-                            {count > 1 && <span className="text-fresco-xs text-fresco-graphite-light">×{count}</span>}
-                          </div>
+                    {houseRuns.map(({ house, count, verdict }) => (
+                      <div key={house} className="flex items-center justify-between py-1.5 border-b border-fresco-border-light last:border-0">
+                        <span className="text-fresco-sm text-fresco-graphite-soft capitalize">{house}</span>
+                        <div className="flex items-center gap-2">
+                          {verdict && (
+                            <span
+                              className="text-fresco-xs font-medium flex items-center gap-1.5"
+                              style={{ color: verdictColour(verdict).accent }}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: verdictColour(verdict).accent }} />
+                              {verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}
+                            </span>
+                          )}
+                          {count > 1 && <span className="text-fresco-xs text-fresco-graphite-light">×{count}</span>}
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 </div>
               );

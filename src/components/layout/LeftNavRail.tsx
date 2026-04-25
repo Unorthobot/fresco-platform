@@ -151,6 +151,8 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
                             <>
                               <button
                                 onClick={() => { setActiveWorkspace(workspace.id); setActiveSession(null); setActiveSection('workspaces'); onNavigate?.('workspaces'); }}
+                                onDoubleClick={() => handleRename(workspace.id, workspace.title)}
+                                title="Double-click to rename"
                                 className={cn(
                                   'flex items-center gap-2 w-full px-2 py-1.5 text-fresco-sm transition-all text-left rounded-none',
                                   hoveredWorkspace === workspace.id ? 'pr-14' : '',

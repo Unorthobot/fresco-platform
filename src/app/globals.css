@@ -28,6 +28,18 @@
   /* Grid background - smaller size */
   --fresco-grid-color: rgba(0, 0, 0, 0.03);
   --fresco-grid-size: 12px;
+
+  /* Verdict colours — used ONLY on verdict cards and verdict summary pills.
+     Not accent colours for general UI. Each verdict has an accent (for borders,
+     dots, labels) and a soft tint (for subtle card backgrounds). */
+  --verdict-go-accent:     #1f5135;  /* deep forest green — confident, grounded */
+  --verdict-go-tint:       #f0f5f2;
+  --verdict-pivot-accent:  #a56821;  /* muted ochre — redirectional */
+  --verdict-pivot-tint:    #faf5ed;
+  --verdict-stop-accent:   #8b2a2a;  /* deep red — weighted, not alarming */
+  --verdict-stop-tint:     #faf0f0;
+  --verdict-signal-accent: #3e5878;  /* slate blue — thoughtful, unresolved */
+  --verdict-signal-tint:   #f1f4f8;
 }
 
 /* Dark mode - fully inverted with good contrast */
@@ -44,6 +56,16 @@
   --fresco-border: #333333;
   --fresco-border-light: #2a2a2a;
   --fresco-grid-color: rgba(255, 255, 255, 0.03);
+
+  /* Verdict colours — dark mode variants, lifted for contrast on dark bg */
+  --verdict-go-accent:     #5ea37a;
+  --verdict-go-tint:       #1c2a23;
+  --verdict-pivot-accent:  #d4a360;
+  --verdict-pivot-tint:    #2c251a;
+  --verdict-stop-accent:   #d06a6a;
+  --verdict-stop-tint:     #2c1c1c;
+  --verdict-signal-accent: #7892b8;
+  --verdict-signal-tint:   #1d232c;
 }
 
 /* Dark mode specific overrides for better legibility */

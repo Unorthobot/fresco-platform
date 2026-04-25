@@ -89,11 +89,13 @@ export function HomeDashboard({
     return acc;
   }, {} as Record<string, number>);
 
-  const VERDICT_STYLE: Record<string, string> = {
-    'GO': 'bg-fresco-light-gray text-fresco-black border-fresco-border',
-    'PIVOT': 'bg-fresco-light-gray text-fresco-black border-fresco-border',
-    'STOP': 'bg-fresco-light-gray text-fresco-black border-fresco-border',
-    'INVESTIGATE FURTHER': 'bg-fresco-light-gray text-fresco-black border-fresco-border',
+  // Verdict accent tokens — the single chromatic note in the UI. Dots only,
+  // labels stay monochrome, to keep home calm while still legible at a glance.
+  const VERDICT_ACCENT: Record<string, string> = {
+    'GO': 'var(--verdict-go-accent)',
+    'PIVOT': 'var(--verdict-pivot-accent)',
+    'STOP': 'var(--verdict-stop-accent)',
+    'INVESTIGATE FURTHER': 'var(--verdict-signal-accent)',
   };
 
   return (
@@ -542,7 +544,8 @@ export function HomeDashboard({
                           </p>
                         </div>
                         {verdict && (
-                          <span className={`flex-shrink-0 text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${VERDICT_STYLE[verdict] || 'bg-fresco-light-gray text-fresco-graphite-mid border-fresco-border'}`}>
+                          <span className="flex-shrink-0 text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-fresco-light-gray text-fresco-black border-fresco-border flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: VERDICT_ACCENT[verdict] || 'var(--verdict-signal-accent)' }} />
                             {verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}
                           </span>
                         )}
