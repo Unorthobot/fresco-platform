@@ -2571,10 +2571,18 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   };
 
   const handleReframe = async (lens: string) => {
-    if (!result || storedAgentOutputs.length === 0) return;
+    if (!result) {
+      setRunError('Run a house first before applying a lens.');
+      return;
+    }
+    if (storedAgentOutputs.length === 0) {
+      setRunError('Lens reframe needs the original agent outputs. Re-run the house and the lenses will be available afterwards.');
+      return;
+    }
     setIsReframing(true);
     setShowLensPicker(false);
     setActiveLens(lens);
+    setRunError(null);
     try {
       const res = await fetch('/api/houses/reframe', {
         method: 'POST',
@@ -2586,19 +2594,41 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           userInput: buildUserInput(),
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        // Preserve systemsOutput from original result — lens only changes
-        // verdict/issues/moves/sentenceOfTruth, not the systems intelligence
-        const merged = {
-          ...data,
-          systemsOutput: (result as any).systemsOutput,
-        };
-        setResult(merged as HouseResult);
-        await persistResult(merged as HouseResult);
+      if (!res.ok) {
+        // Surface server errors instead of failing silently. Read the body
+        // for a useful message; fall back to the status code.
+        let serverMessage = '';
+        try {
+          const errBody = await res.json();
+          serverMessage = errBody?.error || '';
+        } catch { /* ignore */ }
+        throw new Error(serverMessage || `Reframe failed (${res.status})`);
       }
-    } catch { /* silently fail — keep current result */ }
-    setIsReframing(false);
+      const data = await res.json();
+      // Preserve systemsOutput from original result — lens only changes
+      // verdict/issues/moves/sentenceOfTruth, not the systems intelligence
+      const merged = {
+        ...data,
+        systemsOutput: (result as any).systemsOutput,
+      };
+      setResult(merged as HouseResult);
+      await persistResult(merged as HouseResult);
+      // Scroll the output panel to the top so the user sees the new verdict.
+      // The reframe lives under the Analysis tab — make sure that's active.
+      setOutputTab('decision');
+      requestAnimationFrame(() => {
+        outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    } catch (err) {
+      console.error('Reframe failed:', err);
+      const msg = err instanceof Error ? err.message : 'Reframe failed';
+      setRunError(`${msg}. Try a different lens or re-run the house.`);
+      // Roll back the active lens since the change didn't actually land
+      setActiveLens(null);
+    } finally {
+      setIsReframing(false);
+    }
   };
 
   const generateExportText = () => {
