@@ -33,38 +33,76 @@ export async function POST(request: NextRequest) {
   const lensInstruction = LENS_INSTRUCTIONS[lens];
   if (!lensInstruction) return NextResponse.json({ error: `Unknown lens: ${lens}` }, { status: 400 });
 
-  const agentSummaries = agentOutputs.map((a, i) =>
-    `Agent ${i + 1} (${a.displayName}): ${a.summary} | Signal: ${a.signal} | Risks: ${a.risks.join(', ')}`
-  ).join('\n');
+  // Build agent summaries defensively — older stashed outputs may be missing
+  // fields. Coerce arrays/strings so a client format drift doesn't crash here.
+  const agentSummaries = agentOutputs.map((a, i) => {
+    const name = (a as any).displayName || (a as any).agentId || `Agent ${i + 1}`;
+    const summary = (a as any).summary || '';
+    const signal = (a as any).signal || 'unclear';
+    const risks = Array.isArray((a as any).risks) ? (a as any).risks : [];
+    const risksLine = risks.length ? risks.join('; ') : '(none stated)';
+    const findings = Array.isArray((a as any).key_findings) ? (a as any).key_findings.slice(0, 3).join(' | ') : '';
+    return `Agent ${i + 1} (${name})\n  Summary: ${summary}\n  Signal: ${signal}\n  Risks: ${risksLine}${findings ? `\n  Key findings: ${findings}` : ''}`;
+  }).join('\n\n');
 
-  const prompt = `You are FRESCO's synthesis engine. Apply a specific thinking lens to synthesise agent findings.
+  const systemPrompt = `You are FRESCO's synthesis engine. You re-synthesise three agent outputs through a specific intellectual lens. The lens shapes WHICH facts get foregrounded and HOW they connect — it does not invent new evidence.
 
-USER INPUT: ${userInput}
+Rules:
+- Strong → GO. Weak → PIVOT or STOP. Undecided → INVESTIGATE FURTHER.
+- Never combine Strong with STOP. Never combine Weak with GO.
+- Output is consumed by a UI — return ONLY valid JSON, nothing before or after, no markdown fences, no prose preamble.`;
 
-AGENT OUTPUTS:
+  const userMessage = `USER INPUT
+${userInput || '(none provided)'}
+
+AGENT OUTPUTS
 ${agentSummaries}
 
-LENS: ${lensInstruction}
+LENS INSTRUCTION
+${lensInstruction}
 
-FIT LABEL: ${HOUSE_FIT_LABELS[house]}
+FIT LABEL
+${HOUSE_FIT_LABELS[house]}
 
-Rules: Strong→GO, Weak→PIVOT/STOP, Undecided→INVESTIGATE FURTHER. Never Strong+STOP, never Weak+GO.
-
-Return ONLY valid JSON:
-{"fitStrength":"Strong|Weak|Undecided","verdict":"GO|PIVOT|INVESTIGATE FURTHER|STOP","verdictRationale":"1-2 sentences","sentenceOfTruth":"Lens-shaped insight","keyIssues":["issue 1","issue 2","issue 3"],"necessaryMoves":["move 1","move 2","move 3"]}`;
+Return ONLY this JSON shape (no other text):
+{"fitStrength":"Strong|Weak|Undecided","verdict":"GO|PIVOT|INVESTIGATE FURTHER|STOP","verdictRationale":"1-2 sentences","sentenceOfTruth":"Lens-shaped insight, single sentence","keyIssues":["issue 1","issue 2","issue 3"],"necessaryMoves":["move 1","move 2","move 3"]}`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,           // Was 800 — could truncate JSON mid-array on long lens outputs
+        system: systemPrompt,        // Was inlined into the user message — moving it to system improves compliance
+        messages: [{ role: 'user', content: userMessage }],
+      }),
     });
-    if (!res.ok) throw new Error(`${res.status}`);
+    if (!res.ok) {
+      const errBody = await res.text();
+      console.error(`[reframe] Anthropic ${res.status}:`, errBody.slice(0, 500));
+      return NextResponse.json({ error: `Anthropic ${res.status}: ${errBody.slice(0, 200)}` }, { status: 500 });
+    }
     const data = await res.json();
-    const text = data.content?.[0]?.text || '';
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('No JSON');
-    const parsed = JSON.parse(match[0]);
+    const text: string = data.content?.[0]?.text || '';
+    if (!text) {
+      console.error('[reframe] Empty response from Anthropic. Full body:', JSON.stringify(data).slice(0, 500));
+      return NextResponse.json({ error: 'Empty response from model' }, { status: 500 });
+    }
+    // Strip optional markdown fences before regex extraction
+    const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (!match) {
+      console.error('[reframe] No JSON in response. Text was:', cleaned.slice(0, 500));
+      return NextResponse.json({ error: 'Model returned no JSON' }, { status: 500 });
+    }
+    let parsed: any;
+    try {
+      parsed = JSON.parse(match[0]);
+    } catch (jsonErr) {
+      console.error('[reframe] JSON parse failed. Match was:', match[0].slice(0, 500), 'Error:', jsonErr);
+      return NextResponse.json({ error: 'Model returned malformed JSON' }, { status: 500 });
+    }
 
     // Enforce consistency
     const fitStrength = parsed.fitStrength || 'Undecided';
@@ -75,7 +113,8 @@ Return ONLY valid JSON:
 
     return NextResponse.json({ ...buildHouseResult(house, { ...parsed, fitStrength, verdict }), lens });
   } catch (err) {
-    console.error('Reframe error:', err);
-    return NextResponse.json({ error: 'Reframe failed' }, { status: 500 });
+    console.error('[reframe] Unhandled error:', err);
+    const msg = err instanceof Error ? err.message : 'Reframe failed';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
