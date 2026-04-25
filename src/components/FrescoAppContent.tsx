@@ -134,6 +134,42 @@ export default function FrescoAppContent() {
     }
   }, [activeSessionId, currentSession, activeWorkspaceId, setActiveSession, setActiveWorkspace]);
 
+  // — Blank-screen detector —
+  // After navigation, if no view branch matches what we expect to render, log
+  // it to console and sessionStorage so we can audit any blank-screen reports.
+  // Also auto-recovers by forcing currentView to home.
+  useEffect(() => {
+    if (startingHouse) return;
+    const branchHome = effectiveView === 'home';
+    const branchWorkspace = effectiveView === 'workspace' && activeWorkspaceId;
+    const branchSession = effectiveView === 'session' && activeWorkspaceId && currentSession;
+    const branchSimple = ['archive', 'settings', 'account', 'team'].includes(effectiveView);
+    const anythingMatches = branchHome || branchWorkspace || branchSession || branchSimple;
+    if (!anythingMatches) {
+      const snapshot = {
+        when: new Date().toISOString(),
+        effectiveView,
+        currentView,
+        activeWorkspaceId,
+        activeSessionId,
+        activeSection,
+        hasCurrentSession: !!currentSession,
+        hasCurrentWorkspace: !!currentWorkspace,
+      };
+      // eslint-disable-next-line no-console
+      console.warn('[Fresco] Blank-screen state detected — recovering to home:', snapshot);
+      try {
+        const breadcrumbs = JSON.parse(sessionStorage.getItem('fresco-blank-breadcrumbs') || '[]');
+        breadcrumbs.push(snapshot);
+        sessionStorage.setItem('fresco-blank-breadcrumbs', JSON.stringify(breadcrumbs.slice(-10)));
+      } catch { /* ignore */ }
+      // Recovery: clear stale IDs and go home
+      setActiveSession(null);
+      setActiveSection('home');
+      setCurrentView('home');
+    }
+  }, [effectiveView, currentView, activeWorkspaceId, activeSessionId, activeSection, currentSession, currentWorkspace, startingHouse, setActiveSession, setActiveSection]);
+
   // Handle deleted workspace — if an active workspace id points nowhere,
   // reset everything. Fires regardless of currentView so we can't get stuck.
   useEffect(() => {
@@ -339,7 +375,7 @@ export default function FrescoAppContent() {
             setCurrentView('home');
           }}
         >
-        <AnimatePresence mode="sync">
+        <AnimatePresence mode="wait">
           {startingHouse && (
             <motion.div key="starting-house" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="h-screen flex items-center justify-center fresco-grid-bg-subtle">
               <div className="flex flex-col items-center gap-4">
