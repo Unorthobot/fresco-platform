@@ -3047,6 +3047,70 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             )}
           </AnimatePresence>
 
+          {/* ── Your input — surfaces while the run is in progress so the right panel
+                doesn't feel static. Mirrors what the user just typed in a clean
+                scannable layout. Hides the moment the verdict lands. ─────────── */}
+          <AnimatePresence>
+            {isRunning && !result && (() => {
+              const houseSteps = houseId === 'investigate' ? INVESTIGATE_STEPS
+                : houseId === 'innovate' ? INNOVATE_STEPS
+                : houseId === 'validate' ? VALIDATE_STEPS
+                : evaluateMode === 'journey' ? EVALUATE_STEPS_JOURNEY
+                : evaluateMode === 'comparison' ? EVALUATE_STEPS_COMPARISON
+                : EVALUATE_STEPS_SINGLE;
+              const answered = houseSteps.filter(s => (values[s.id] || '').trim());
+              if (answered.length === 0) return null;
+              const formatValue = (step: ConversationStep, raw: string): string => {
+                if (step.inputType === 'options') {
+                  try {
+                    const cards = JSON.parse(raw).filter((c: any) => c.label?.trim());
+                    return cards.map((c: any, i: number) => `${String.fromCharCode(65 + i)}. ${c.label}${c.description ? ' — ' + c.description : ''}`).join('\n');
+                  } catch { return raw; }
+                }
+                if (step.inputType === 'metrics') {
+                  try {
+                    const rows = JSON.parse(raw).filter((r: any) => r.metric?.trim());
+                    return rows.map((r: any) => `${r.metric}: target ${r.target || '—'} · actual ${r.actual || '—'}`).join('\n');
+                  } catch { return raw; }
+                }
+                if (step.inputType === 'evaluatebrief') {
+                  try {
+                    const p = JSON.parse(raw);
+                    return [
+                      p.goal && `Goal: ${p.goal}`,
+                      p.audience && `Audience: ${p.audience}`,
+                      p.metric && `Metric: ${p.metric}`,
+                    ].filter(Boolean).join('\n');
+                  } catch { return raw; }
+                }
+                return raw;
+              };
+              return (
+                <motion.div
+                  key="your-input"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2, delay: 0.4 }}
+                  className="mb-6"
+                >
+                  <span className="fresco-label block mb-3">Your input</span>
+                  <div className="space-y-3">
+                    {answered.map((step) => {
+                      const formatted = formatValue(step, values[step.id]);
+                      return (
+                        <div key={step.id} className="border-l-2 border-fresco-border-light pl-3">
+                          <p className="text-fresco-xs text-fresco-graphite-light leading-snug mb-1">{step.question}</p>
+                          <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed whitespace-pre-wrap">{formatted}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              );
+            })()}
+          </AnimatePresence>
+
           {/* Final result */}
           <AnimatePresence mode="wait">
             {result && (
