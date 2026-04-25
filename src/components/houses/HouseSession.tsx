@@ -3213,12 +3213,18 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 {/* ── ANALYSIS TAB ─────────────────────────────────────── */}
                 {outputTab === 'analysis' && (
                   <>
-                  {/* See this from a different angle — prominent in Analysis tab */}
+                  {/* See this from a different angle — pill row with framing copy.
+                      Each lens runs the analysis again from a distinct intellectual
+                      perspective. Native tooltip on each pill exposes the focus.
+                      Compact (one row vs ~400px grid) without burying discovery. */}
                   {storedAgentOutputs.length > 0 && (
                     <div>
-                      <span className="fresco-label block mb-3">See this from a different angle</span>
+                      <p className="fresco-label mb-1">See this from a different angle</p>
+                      <p className="text-fresco-xs text-fresco-graphite-light mb-3 leading-relaxed">
+                        Run the analysis again through a distinct intellectual perspective.
+                      </p>
                       {!showLensPicker ? (
-                        <div className="grid grid-cols-2 gap-1.5">
+                        <div className="flex flex-wrap gap-1.5">
                           {[
                             { id: 'critical',   label: 'Critical',    desc: 'Assumptions & evidence' },
                             { id: 'systems',    label: 'Systems',     desc: 'Loops & root causes' },
@@ -3233,17 +3239,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                               key={lens.id}
                               onClick={() => { setShowLensPicker(false); handleReframe(lens.id); }}
                               disabled={isReframing}
+                              title={lens.desc}
                               className={cn(
-                                'flex flex-col items-start p-2.5 border text-left transition-all',
+                                'text-fresco-xs px-2.5 py-1 border transition-all whitespace-nowrap',
                                 activeLens === lens.id
                                   ? 'bg-fresco-black text-white border-fresco-black'
-                                  : 'border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray'
+                                  : 'border-fresco-border-light text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black hover:bg-fresco-light-gray',
+                                isReframing && activeLens !== lens.id && 'opacity-40 cursor-not-allowed'
                               )}
                             >
-                              <span className={cn('text-fresco-xs font-medium', activeLens === lens.id ? 'text-white' : 'text-fresco-black')}>
-                                {isReframing && activeLens === lens.id ? 'Reframing…' : lens.label}
-                              </span>
-                              <span className={cn('text-[10px] mt-0.5', activeLens === lens.id ? 'text-white/70' : 'text-fresco-graphite-light')}>{lens.desc}</span>
+                              {isReframing && activeLens === lens.id ? 'Reframing…' : lens.label}
                             </button>
                           ))}
                         </div>
@@ -3253,7 +3258,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                         </button>
                       )}
                       {activeLens && (
-                        <p className="text-fresco-xs text-fresco-graphite-light mt-2">
+                        <p className="text-fresco-xs text-fresco-graphite-light mt-3">
                           Currently viewing through the <span className="font-medium text-fresco-black capitalize">{activeLens}</span> lens
                           <button onClick={() => { setActiveLens(null); }} className="ml-2 underline underline-offset-2 hover:text-fresco-black transition-colors">clear</button>
                         </p>
