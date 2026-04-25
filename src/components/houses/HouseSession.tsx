@@ -2983,10 +2983,20 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             </div>
           )}
 
-          {/* Streaming agents */}
+          {/* Streaming agents — appears on isRunning so the space is reserved
+              from frame zero. Without this, the block popped in only after the
+              first agent event arrived, pushing everything below it down with
+              an abrupt layout shift. Now the skeleton placeholder fills the
+              space until the real content arrives. */}
           <AnimatePresence>
-            {(isRunning || (!result && agentEvents.length > 0)) && agentEvents.length > 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-6 space-y-3">
+            {(isRunning || (!result && agentEvents.length > 0)) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="mb-6 space-y-3"
+              >
                 <span className="fresco-label block mb-3">Working through it…</span>
                 {pageFetchMessage && (
                   <div className="mb-3 flex items-center gap-2 text-fresco-xs text-fresco-graphite-mid p-2 bg-fresco-light-gray">
@@ -3047,68 +3057,46 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             )}
           </AnimatePresence>
 
-          {/* ── Your input — surfaces while the run is in progress so the right panel
-                doesn't feel static. Mirrors what the user just typed in a clean
-                scannable layout. Hides the moment the verdict lands. ─────────── */}
+          {/* ── Lens primer — surfaces while the run is in progress to pre-frame
+                what's about to land. Pre-teaches the lens feature so it doesn't
+                arrive as an unexpected button cluster. Hides the moment the
+                verdict lands. ─────────────────────────────────────────────── */}
           <AnimatePresence>
-            {isRunning && !result && (() => {
-              const houseSteps = houseId === 'investigate' ? INVESTIGATE_STEPS
-                : houseId === 'innovate' ? INNOVATE_STEPS
-                : houseId === 'validate' ? VALIDATE_STEPS
-                : evaluateMode === 'journey' ? EVALUATE_STEPS_JOURNEY
-                : evaluateMode === 'comparison' ? EVALUATE_STEPS_COMPARISON
-                : EVALUATE_STEPS_SINGLE;
-              const answered = houseSteps.filter(s => (values[s.id] || '').trim());
-              if (answered.length === 0) return null;
-              const formatValue = (step: ConversationStep, raw: string): string => {
-                if (step.inputType === 'options') {
-                  try {
-                    const cards = JSON.parse(raw).filter((c: any) => c.label?.trim());
-                    return cards.map((c: any, i: number) => `${String.fromCharCode(65 + i)}. ${c.label}${c.description ? ' — ' + c.description : ''}`).join('\n');
-                  } catch { return raw; }
-                }
-                if (step.inputType === 'metrics') {
-                  try {
-                    const rows = JSON.parse(raw).filter((r: any) => r.metric?.trim());
-                    return rows.map((r: any) => `${r.metric}: target ${r.target || '—'} · actual ${r.actual || '—'}`).join('\n');
-                  } catch { return raw; }
-                }
-                if (step.inputType === 'evaluatebrief') {
-                  try {
-                    const p = JSON.parse(raw);
-                    return [
-                      p.goal && `Goal: ${p.goal}`,
-                      p.audience && `Audience: ${p.audience}`,
-                      p.metric && `Metric: ${p.metric}`,
-                    ].filter(Boolean).join('\n');
-                  } catch { return raw; }
-                }
-                return raw;
-              };
-              return (
-                <motion.div
-                  key="your-input"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, delay: 0.4 }}
-                  className="mb-6"
-                >
-                  <span className="fresco-label block mb-3">Your input</span>
-                  <div className="space-y-3">
-                    {answered.map((step) => {
-                      const formatted = formatValue(step, values[step.id]);
-                      return (
-                        <div key={step.id} className="border-l-2 border-fresco-border-light pl-3">
-                          <p className="text-fresco-xs text-fresco-graphite-light leading-snug mb-1">{step.question}</p>
-                          <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed whitespace-pre-wrap">{formatted}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              );
-            })()}
+            {isRunning && !result && (
+              <motion.div
+                key="lens-primer"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, delay: 0.5 }}
+                className="mb-6 border border-fresco-border-light p-4"
+              >
+                <p className="fresco-label mb-2">Coming next</p>
+                <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed mb-3">
+                  Once the verdict lands, you can re-run the analysis through 8 different lenses — each foregrounds a distinct way of thinking.
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { label: 'Critical',   desc: 'Assumptions & evidence' },
+                    { label: 'Systems',    desc: 'Loops & root causes' },
+                    { label: 'Design',     desc: 'Human & experience' },
+                    { label: 'Product',    desc: 'Build decisions' },
+                    { label: 'Strategic',  desc: 'Competitive direction' },
+                    { label: 'Analytical', desc: 'Data & measurement' },
+                    { label: 'Futures',    desc: 'Trajectory & signals' },
+                    { label: 'Economic',   desc: 'Incentives & value' },
+                  ].map(lens => (
+                    <span
+                      key={lens.label}
+                      title={lens.desc}
+                      className="text-fresco-xs px-2 py-0.5 border border-fresco-border-light text-fresco-graphite-light"
+                    >
+                      {lens.label}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
 
           {/* Final result */}
