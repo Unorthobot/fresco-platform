@@ -1831,8 +1831,16 @@ function ConversationFlow({
   // Advance to next step when user explicitly signals done (onBlur)
   const handleBlur = (stepId: string) => {
     const idx = steps.findIndex(s => s.id === stepId);
-    if (idx >= 0 && hasValue(stepId) && idx < steps.length - 1) {
+    if (idx < 0 || !hasValue(stepId)) return;
+    if (idx < steps.length - 1) {
+      // Not the last step — advance to the next.
       setActiveIdx(idx + 1);
+    } else {
+      // Last step Done — deactivate so the step collapses to its answered
+      // state. Without this, clicking Done on the final step appeared to do
+      // nothing because activeIdx stayed pointed at it (isActive remained
+      // true, isAnswered remained false, the input stayed expanded).
+      setActiveIdx(steps.length);
     }
   };
 
