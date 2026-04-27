@@ -192,6 +192,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
   const sentencesOfTruth = workspaceSessions.filter((s) => s.sentenceOfTruth?.content);
   
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editTitle, setEditTitle] = useState(workspace?.title || '');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [hoveredSession, setHoveredSession] = useState<string | null>(null);
@@ -303,15 +304,21 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                 <button onClick={() => setIsEditingTitle(false)} className="p-2 text-fresco-graphite-light hover:bg-fresco-light-gray rounded-fresco transition-colors"><X className="w-5 h-5" /></button>
               </div>
             ) : (
-              <div className="flex items-center gap-3 group">
+              <div className="flex items-center gap-1 group">
                 <h1
                   className="text-fresco-3xl font-medium text-fresco-black tracking-tight cursor-text"
                   onDoubleClick={() => { setEditTitle(workspace.title); setIsEditingTitle(true); }}
                   title="Double-click to rename"
                 >{workspace.title}</h1>
                 <button onClick={() => { setEditTitle(workspace.title); setIsEditingTitle(true); }}
-                  className="p-2 text-fresco-graphite-light opacity-0 group-hover:opacity-100 hover:text-fresco-black rounded-fresco transition-all">
+                  title="Rename"
+                  className="p-2 ml-2 text-fresco-graphite-light opacity-0 group-hover:opacity-100 hover:text-fresco-black rounded-fresco transition-all">
                   <Edit3 className="w-4 h-4" />
+                </button>
+                <button onClick={() => setShowDeleteConfirm(true)}
+                  title="Delete workspace"
+                  className="p-2 text-fresco-graphite-light opacity-0 group-hover:opacity-100 hover:text-red-600 rounded-fresco transition-all">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -756,6 +763,33 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+          {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]"
+          onClick={() => setShowDeleteConfirm(false)}>
+          <div onClick={e => e.stopPropagation()}
+            className="bg-white p-6 max-w-sm w-full mx-4 shadow-lg">
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-fresco-base font-medium text-fresco-black">Delete this workspace?</h3>
+              <button onClick={() => setShowDeleteConfirm(false)} className="p-1 text-fresco-graphite-light hover:text-fresco-black">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-fresco-sm text-fresco-graphite-mid mb-6">
+              This will permanently delete <span className="text-fresco-black font-medium">{workspace.title}</span> and all {workspaceSessions.length} session{workspaceSessions.length !== 1 ? 's' : ''} inside. Can&apos;t be undone.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 h-9 text-fresco-sm text-fresco-graphite-mid border border-fresco-border hover:bg-fresco-light-gray transition-colors">
+                Cancel
+              </button>
+              <button onClick={() => { setShowDeleteConfirm(false); db.deleteWorkspace(workspace.id); onBack?.(); }}
+                className="flex-1 h-9 text-fresco-sm text-white bg-red-600 hover:bg-red-700 transition-colors">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+</div>
   );
 }
