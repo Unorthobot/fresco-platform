@@ -477,21 +477,32 @@ export function ArchetypeSection({ systemsOutput }: { systemsOutput: any }) {
 }
 
 export function BehaviorOverTimeSection({ systemsOutput }: { systemsOutput: any }) {
-  if (!systemsOutput?.behaviorOverTime?.length) return null;
+  // Match the chart's actual rendering requirement: at least one series with
+  // 2+ dataPoints. Without this, the section header renders for malformed
+  // series (length>0 but each series has <2 points) while the chart renders
+  // null underneath, leaving an empty section.
+  const series = systemsOutput?.behaviorOverTime;
+  if (!Array.isArray(series) || series.length === 0) return null;
+  const hasRenderableSeries = series.some((s: any) => Array.isArray(s?.dataPoints) && s.dataPoints.length >= 2);
+  if (!hasRenderableSeries) return null;
   return (
     <div>
       <span className="fresco-label block mb-1">Behavior over time</span>
       <p className="text-fresco-xs text-fresco-graphite-light mb-3 leading-relaxed">
         How the situation has trended — and where it’s heading if nothing changes.
       </p>
-      <BehaviorOverTimeChart series={systemsOutput.behaviorOverTime} />
+      <BehaviorOverTimeChart series={series} />
     </div>
   );
 }
 
 export function CausalLoopSection({ systemsOutput }: { systemsOutput: any }) {
+  // Match the diagram's render requirement: both nodes (≥2) AND edges.
+  // Without the edges check, malformed LLM output with nodes-but-no-edges
+  // would show this section header with empty space under it.
   const cl = systemsOutput?.causalLoop;
   if (!cl?.nodes?.length || cl.nodes.length < 2) return null;
+  if (!cl?.edges?.length) return null;
   return (
     <div>
       <span className="fresco-label block mb-1">Causal loop diagram</span>
