@@ -3,8 +3,9 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Clock, Folder, ChevronDown, Sparkles } from 'lucide-react';
+import { ArrowRight, Clock, Folder, ChevronDown, Sparkles, Trash2, X } from 'lucide-react';
 import { useFrescoStore, useWorkspaces } from '@/lib/store';
+import { useDBWrite } from '@/lib/useDBSync';
 import { formatRelativeTime } from '@/lib/utils';
 import type { ToolkitType } from '@/types';
 import type { HouseId } from '@/lib/agents';
@@ -27,6 +28,7 @@ export function HomeDashboard({
 }: HomeDashboardProps) {
   const { user, sessions, getRecentSessions } = useFrescoStore();
   const workspaces = useWorkspaces();
+  const db = useDBWrite();
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
 
@@ -46,6 +48,7 @@ export function HomeDashboard({
   const [recommendedHouse, setRecommendedHouse] = useState<HouseId | null>(null);
   const [diagnosticExplanation, setDiagnosticExplanation] = useState('');
   const [exampleOpen, setExampleOpen] = useState<HouseId | null>(null);
+  const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   useEffect(() => {
     try { setGuestHasRun(!!localStorage.getItem('fresco-has-run')); } catch {}
   }, []);
@@ -531,9 +534,11 @@ export function HomeDashboard({
                       : houseName || 'Session';
 
                     return (
-                      <button key={s.id}
+                      <div key={s.id}
+                        role="button" tabIndex={0}
                         onClick={() => onNavigateToSession?.(s.id, s.workspaceId)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-fresco-light-gray transition-colors text-left group">
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateToSession?.(s.id, s.workspaceId); } }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-fresco-light-gray transition-colors text-left group cursor-pointer">
                         <Clock className="w-3.5 h-3.5 text-fresco-graphite-light flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-fresco-sm text-fresco-graphite-soft truncate leading-snug">{label}</p>
@@ -549,7 +554,17 @@ export function HomeDashboard({
                             {verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : verdict}
                           </span>
                         )}
-                      </button>
+                        {/* Delete trash — hover-revealed, stops propagation so the row
+                            click doesn't fire when the user is targeting the icon. */}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setDeleteSessionId(s.id); }}
+                          title="Delete session"
+                          className="p-1.5 text-fresco-graphite-light opacity-0 group-hover:opacity-100 hover:text-red-600 transition-all flex-shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -588,6 +603,43 @@ export function HomeDashboard({
     </div>
 
     <PricingModal isOpen={showPricingModal} onClose={() => setShowPricingModal(false)} />
+
+      {/* Delete-session confirm modal — same pattern as the workspace and
+          sidebar deletes for consistency. */}
+      {deleteSessionId && (() => {
+        const target = sessions.find(s => s.id === deleteSessionId);
+        if (!target) { setDeleteSessionId(null); return null; }
+        const targetLabel = target.sentenceOfTruth?.content
+          ? `"${target.sentenceOfTruth.content.slice(0, 60)}${target.sentenceOfTruth.content.length > 60 ? '…' : ''}"`
+          : ((target as any).houseType ? HOUSE_META[(target as any).houseType as HouseId]?.name : 'this session') || 'this session';
+        return (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]"
+            onClick={() => setDeleteSessionId(null)}>
+            <div onClick={e => e.stopPropagation()}
+              className="bg-white p-6 max-w-sm w-full mx-4 shadow-lg">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-fresco-base font-medium text-fresco-black">Delete this session?</h3>
+                <button onClick={() => setDeleteSessionId(null)} className="p-1 text-fresco-graphite-light hover:text-fresco-black">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">
+                This will permanently delete <span className="text-fresco-black font-medium">{targetLabel}</span>. Can&apos;t be undone.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeleteSessionId(null)}
+                  className="flex-1 h-9 text-fresco-sm text-fresco-graphite-mid border border-fresco-border hover:bg-fresco-light-gray transition-colors">
+                  Cancel
+                </button>
+                <button onClick={() => { db.deleteSession(deleteSessionId); setDeleteSessionId(null); }}
+                  className="flex-1 h-9 text-fresco-sm text-white bg-red-600 hover:bg-red-700 transition-colors">
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
