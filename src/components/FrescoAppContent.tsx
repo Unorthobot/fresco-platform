@@ -385,7 +385,7 @@ export default function FrescoAppContent() {
             </motion.div>
           )}
           {!startingHouse && effectiveView === 'home' && (
-            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
               <HomeDashboard
                 onNavigateToWorkspace={handleNavigateToWorkspace}
                 onNavigateToSession={handleNavigateToSession}
@@ -396,7 +396,7 @@ onStartToolkit={handleStartToolkit}
           )}
 
           {!startingHouse && effectiveView === 'workspace' && activeWorkspaceId && (
-            <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
               <WorkspaceOverview
                 workspaceId={activeWorkspaceId}
                 onBack={handleBackToHome}
@@ -408,7 +408,7 @@ onStartToolkit={handleStartToolkit}
           )}
 
           {!startingHouse && effectiveView === 'session' && activeWorkspaceId && currentSession && (
-            <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="h-screen">
+            <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }} className="h-screen">
               <ToolkitRouter
                 sessionId={currentSession.id}
                 workspaceId={activeWorkspaceId}
@@ -420,25 +420,25 @@ onStartToolkit={handleStartToolkit}
           )}
 
           {!startingHouse && effectiveView === 'archive' && (
-            <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
               <ArchivePage onOpenSession={(sessionId, workspaceId) => handleNavigateToSession(sessionId, workspaceId)} />
             </motion.div>
           )}
 
           {!startingHouse && effectiveView === 'settings' && (
-            <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
               <SettingsPage />
             </motion.div>
           )}
 
           {!startingHouse && effectiveView === 'account' && (
-            <motion.div key="account" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <motion.div key="account" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
               <AccountPage />
             </motion.div>
           )}
 
           {!startingHouse && effectiveView === 'team' && (
-            <motion.div key="team" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <motion.div key="team" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
               <TeamPage
                 userId={user?.id || ''}
                 userSubscription={user?.subscription || 'free'}

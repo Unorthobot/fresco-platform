@@ -354,7 +354,7 @@ ${synthesis.recommendedNextSteps.map(s => `- ${s}`).join('\n')}
       {/* Pre-synthesis: Show raw insights grouped by toolkit */}
       {!synthesis && workspaceData.insights.length > 0 && (
         <div>
-          <h4 className="text-fresco-sm font-medium text-fresco-black mb-3">Insights by Toolkit</h4>
+          <h4 className="text-fresco-sm font-medium text-fresco-black mb-3">Insights by agent</h4>
           <div className="space-y-4">
             {Object.entries(
               workspaceData.insights.reduce((acc, insight) => {

@@ -2627,7 +2627,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       setResult(merged as HouseResult);
       await persistResult(merged as HouseResult);
       // Scroll the output panel to the top so the user sees the new verdict.
-      // The reframe lives under the Analysis tab — make sure that's active.
+      // Lens picker now lives on the Decision tab; force-set it as the active
+      // tab in case the user happened to switch to Analysis mid-reframe.
       setOutputTab('decision');
       requestAnimationFrame(() => {
         outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3037,8 +3038,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         className="flex flex-col border-t border-fresco-border-light bg-fresco-off-white overflow-hidden md:border-t-0 md:border-l"
       >
         <div className="flex-1 overflow-y-auto" ref={outputScrollRef}>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="px-6 pt-6 pb-6">
+          <div className="sticky top-0 z-30 -mx-6 px-6 pt-2 pb-3 mb-4 bg-fresco-off-white border-b border-fresco-border-light flex items-center justify-between">
             <div className="flex-1">
               {result ? (
                 <div className="flex items-center gap-1 p-0.5 bg-fresco-light-gray w-fit">
@@ -3376,6 +3377,52 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </div>
                   )}
                 </div>
+
+                {/* SEE THIS FROM A DIFFERENT ANGLE — lens picker.
+                    Sits between the verdict and the supporting reasoning. The user
+                    can flip lenses to compare verdicts without leaving this tab. */}
+                {storedAgentOutputs.length > 0 && (
+                  <div>
+                    <p className="fresco-label mb-1">See this from a different angle</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light mb-3 leading-relaxed">
+                      Re-run the analysis through a distinct intellectual perspective.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { id: 'critical',   label: 'Critical',    desc: 'Assumptions & evidence' },
+                        { id: 'systems',    label: 'Systems',     desc: 'Loops & root causes' },
+                        { id: 'design',     label: 'Design',      desc: 'Human & experience' },
+                        { id: 'product',    label: 'Product',     desc: 'Build decisions' },
+                        { id: 'strategic',  label: 'Strategic',   desc: 'Competitive direction' },
+                        { id: 'analytical', label: 'Analytical',  desc: 'Data & measurement' },
+                        { id: 'futures',    label: 'Futures',     desc: 'Trajectory & signals' },
+                        { id: 'economic',   label: 'Economic',    desc: 'Incentives & value' },
+                      ].map(lens => (
+                        <button
+                          key={lens.id}
+                          onClick={() => { handleReframe(lens.id); }}
+                          disabled={isReframing}
+                          title={lens.desc}
+                          className={cn(
+                            'text-fresco-xs px-2.5 py-1 border transition-all whitespace-nowrap',
+                            activeLens === lens.id
+                              ? 'bg-fresco-black text-white border-fresco-black'
+                              : 'border-fresco-border-light text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black hover:bg-fresco-light-gray',
+                            isReframing && activeLens !== lens.id && 'opacity-40 cursor-not-allowed'
+                          )}
+                        >
+                          {isReframing && activeLens === lens.id ? 'Reframing…' : lens.label}
+                        </button>
+                      ))}
+                    </div>
+                    {activeLens && (
+                      <p className="text-fresco-xs text-fresco-graphite-light mt-3">
+                        Currently viewing through the <span className="font-medium text-fresco-black capitalize">{activeLens}</span> lens
+                        <button onClick={() => { setActiveLens(null); }} className="ml-2 underline underline-offset-2 hover:text-fresco-black transition-colors">clear</button>
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <span className="fresco-label block mb-3">Key issues</span>
