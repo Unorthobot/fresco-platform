@@ -33,6 +33,8 @@ import { SystemsOutput, CrossHouseSystems,
   IPOSection, SensitivitySection, ScenarioSection,
 } from '@/components/ui/SystemsOutput';
 import { generatePDFReport, generateHTMLDeck } from '@/lib/reportGenerator';
+import { useSession } from 'next-auth/react';
+import { incrementGuestRunCount } from '@/lib/guestRuns';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2165,6 +2167,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const { sessions, workspaces } = useFrescoStore();
   const db = useDBWrite();
   const { canGenerate, isLimitReached, currentUsage, limit, incrementUsage } = useAIGeneration();
+  const { status: authStatus } = useSession();
   const [showPricingModal, setShowPricingModal] = useState(false);
 
   const session = sessions.find(s => s.id === sessionId);
@@ -2521,7 +2524,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 const { type: _, ...vd } = ev;
                 setResult(vd as HouseResult);
                 await persistResult(vd as HouseResult);
-                incrementUsage();
+                // Increment the right counter for the right user type. Anonymous
+                // → localStorage guest counter (since user-quota increment is a
+                // no-op without state.user). Authenticated → store quota.
+                if (authStatus === 'authenticated') {
+                  incrementUsage();
+                } else {
+                  incrementGuestRunCount();
+                }
                 inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                 outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                 // Show tab tooltip on first ever result

@@ -1,19 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFrescoStore } from '@/lib/store';
+import { useSession } from 'next-auth/react';
 import { Folder, Zap } from 'lucide-react';
 import { PricingModal } from '@/components/ui/PricingModal';
+import { getGuestRunCount, GUEST_RUN_LIMIT } from '@/lib/guestRuns';
 
 export function UsageIndicator() {
   const { workspaces, user, getUsageLimits } = useFrescoStore();
+  const { status } = useSession();
   const limits = getUsageLimits();
   const [showPricing, setShowPricing] = useState(false);
+  const [guestCountTick, setGuestCountTick] = useState(0);
+
+  const isAnonymous = status !== 'authenticated';
+
+  // Re-read guest count on storage events (e.g., if another tab incremented)
+  // and on auth state changes.
+  useEffect(() => {
+    if (!isAnonymous) return;
+    // Cross-tab updates (storage event fires only in OTHER tabs)
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'fresco-guest-runs') setGuestCountTick(t => t + 1);
+    };
+    // Same-tab updates (dispatched by guestRuns.ts on every increment)
+    const onCustom = () => setGuestCountTick(t => t + 1);
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('fresco:guest-runs-changed', onCustom);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('fresco:guest-runs-changed', onCustom);
+    };
+  }, [isAnonymous]);
+
+  // Re-read guest count on every render — cheap, and the counter is bumped
+  // by HouseSession when a verdict lands. The state.workspaces dependency
+  // (changing on workspace create) plus authStatus naturally re-render this.
+  // guestCountTick suppresses lint about unused var.
+  void guestCountTick;
 
   const workspaceCount = workspaces.length;
   const workspaceLimit = limits.workspaces;
-  const aiCount = user?.aiGenerationsThisMonth || 0;
-  const aiLimit = limits.aiGenerationsPerMonth;
+  const aiCount = isAnonymous ? getGuestRunCount() : (user?.aiGenerationsThisMonth || 0);
+  const aiLimit = isAnonymous ? GUEST_RUN_LIMIT : limits.aiGenerationsPerMonth;
 
   if (workspaceLimit === -1) return null;
 

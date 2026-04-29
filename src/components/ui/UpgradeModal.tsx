@@ -8,7 +8,7 @@ import { PricingModal } from '@/components/ui/PricingModal';
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  reason: 'workspaces' | 'ai_generations' | 'toolkits';
+  reason: 'workspaces' | 'ai_generations' | 'toolkits' | 'guest_limit';
   currentUsage: number;
   limit: number;
 }
@@ -17,6 +17,11 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
   const [showPricing, setShowPricing] = useState(false);
 
   const content = {
+    guest_limit: {
+      icon: Sparkles,
+      title: "You've used your free runs",
+      description: `You've completed ${currentUsage} of ${limit} free runs. Sign up to continue thinking with Fresco — your existing workspaces and sessions carry over.`,
+    },
     toolkits: {
       icon: Crown,
       title: 'This is Pro only',
@@ -85,12 +90,25 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => { onClose(); setShowPricing(true); }}
-                    className="w-full py-2.5 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors"
-                  >
-                    See plans
-                  </button>
+                  {reason === 'guest_limit' ? (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        // Land on the sign-in screen. NextAuth handles the rest.
+                        window.location.href = '/api/auth/signin';
+                      }}
+                      className="w-full py-2.5 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors"
+                    >
+                      Sign up to continue
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { onClose(); setShowPricing(true); }}
+                      className="w-full py-2.5 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors"
+                    >
+                      See plans
+                    </button>
+                  )}
                   <button
                     onClick={onClose}
                     className="w-full py-2 text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors"

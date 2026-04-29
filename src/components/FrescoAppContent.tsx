@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useSession } from 'next-auth/react';
+import { canGuestRun, getGuestRunCount, GUEST_RUN_LIMIT, resetGuestRunCount } from '@/lib/guestRuns';
 import { useDBSync, useDBWrite, useDBSyncComplete } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
@@ -29,6 +30,7 @@ export default function FrescoAppContent() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [startingHouse, setStartingHouse] = useState<HouseId | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'workspaces' | 'guest_limit'>('workspaces');
   const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
@@ -58,6 +60,9 @@ export default function FrescoAppContent() {
     if (status === 'loading') return;
 
     if (status === 'authenticated' && session?.user) {
+      // User just signed in — clear the anonymous quota so the account quota
+      // takes over. (Has no effect if no guest runs were recorded.)
+      resetGuestRunCount();
       const s = session.user as any;
       setUser({
         id: s.id || 'authenticated-user',
@@ -239,7 +244,14 @@ export default function FrescoAppContent() {
   };
 
   const handleCreateWorkspace = async () => {
+    const isAnonymous = status !== 'authenticated';
+    if (isAnonymous && !canGuestRun()) {
+      setUpgradeReason('guest_limit');
+      setShowUpgradeModal(true);
+      return;
+    }
     if (!canCreateWorkspace()) {
+      setUpgradeReason('workspaces');
       setShowUpgradeModal(true);
       return;
     }
@@ -255,9 +267,17 @@ export default function FrescoAppContent() {
   };
 
   const handleStartToolkit = async (toolkitType: string) => {
+    // Same anonymous gate as house starts — 3 lifetime runs then sign-up.
+    const isAnonymous = status !== 'authenticated';
+    if (isAnonymous && !canGuestRun()) {
+      setUpgradeReason('guest_limit');
+      setShowUpgradeModal(true);
+      return;
+    }
     let workspaceId = activeWorkspaceId;
     if (!workspaceId) {
       if (!canCreateWorkspace()) {
+        setUpgradeReason('workspaces');
         setShowUpgradeModal(true);
         return;
       }
@@ -269,8 +289,19 @@ export default function FrescoAppContent() {
   };
 
   const handleStartHouse = async (houseId: HouseId, fromSessionId?: string, initialInput?: string) => {
+    // Anonymous users get 3 lifetime house runs. Counter is incremented when
+    // a verdict lands (HouseSession), and persisted in localStorage. After
+    // 3 runs, they must sign up — the upgrade modal's 'guest_limit' branch
+    // pivots to a sign-up CTA rather than a Pro upgrade.
+    const isAnonymous = status !== 'authenticated';
+    if (isAnonymous && !canGuestRun()) {
+      setUpgradeReason('guest_limit');
+      setShowUpgradeModal(true);
+      return;
+    }
     let workspaceId = activeWorkspaceId;
     if (!workspaceId && !canCreateWorkspace()) {
+      setUpgradeReason('workspaces');
       setShowUpgradeModal(true);
       return;
     }
@@ -494,9 +525,9 @@ onStartToolkit={handleStartToolkit}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        reason="workspaces"
-        currentUsage={workspaces.length}
-        limit={getUsageLimits().workspaces}
+        reason={upgradeReason}
+        currentUsage={upgradeReason === 'guest_limit' ? getGuestRunCount() : workspaces.length}
+        limit={upgradeReason === 'guest_limit' ? GUEST_RUN_LIMIT : getUsageLimits().workspaces}
       />
 
       <NewWorkspaceModal
