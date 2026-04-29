@@ -3371,7 +3371,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     const so = (result as any).systemsOutput;
                     const bmEvent = agentEvents.find(e => e.displayName === 'Belief Mapper');
                     const hasCoreAssumption = houseId === 'investigate' && bmEvent?.structured_artifact;
-                    const hasPov = !!(result as any).povStatement;
+                    const hasPov = houseId === 'investigate' && !!(result as any).povStatement;
 
                     // — Beat 1: What's actually happening (the surface read)
                     const beat1Items: React.ReactNode[] = [];
@@ -3403,6 +3403,78 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     if (houseId === 'innovate' && so?.leverageMap?.length) beat1Items.push(<LeverageMapSection key="leverage" systemsOutput={so} />);
                     // Validate's predicted outcome lives in beat 1
                     if (houseId === 'validate' && so?.funnelSimulation) beat1Items.push(<PredictedOutcomeSection key="outcome" systemsOutput={so} />);
+                    // Evaluate has no POV/iceberg artefact — its surface read is the subject of evaluation itself
+                    // (the page/flow being evaluated, or the two versions being compared).
+                    if (houseId === 'evaluate') {
+                      const subjectVal = values['subject']?.trim();
+                      const versionA = values['version_a']?.trim();
+                      const versionB = values['version_b']?.trim();
+                      if (evaluateMode === 'comparison' && (versionA || versionB)) {
+                        beat1Items.push(
+                          <div key="eval-subject">
+                            <span className="fresco-label block mb-3">What you&apos;re evaluating</span>
+                            <div className="space-y-2">
+                              {versionA && (
+                                <div className="p-4 border border-fresco-border bg-fresco-white">
+                                  <p className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light mb-1">Version A</p>
+                                  <p className="text-fresco-sm text-fresco-black leading-relaxed whitespace-pre-wrap">{versionA}</p>
+                                </div>
+                              )}
+                              {versionB && (
+                                <div className="p-4 border border-fresco-border bg-fresco-white">
+                                  <p className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light mb-1">Version B</p>
+                                  <p className="text-fresco-sm text-fresco-black leading-relaxed whitespace-pre-wrap">{versionB}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      } else if (subjectVal) {
+                        // Single-page or journey mode — surface the subject brief as plain prose.
+                        // For 'single' mode the subject is JSON (evaluatebrief) — try to parse and render
+                        // the goal/audience/metric structure; fall back to raw on parse failure.
+                        let rendered: React.ReactNode;
+                        try {
+                          const parsed = JSON.parse(subjectVal);
+                          if (parsed && typeof parsed === 'object' && (parsed.goal || parsed.audience || parsed.metric)) {
+                            rendered = (
+                              <div className="p-4 border border-fresco-border bg-fresco-white space-y-2">
+                                {parsed.goal && (
+                                  <div className="flex items-start gap-3">
+                                    <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light w-20 flex-shrink-0 mt-0.5">Goal</span>
+                                    <p className="text-fresco-sm text-fresco-black">{parsed.goal}</p>
+                                  </div>
+                                )}
+                                {parsed.audience && (
+                                  <div className="flex items-start gap-3">
+                                    <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light w-20 flex-shrink-0 mt-0.5">Audience</span>
+                                    <p className="text-fresco-sm text-fresco-black">{parsed.audience}</p>
+                                  </div>
+                                )}
+                                {parsed.metric && (
+                                  <div className="flex items-start gap-3">
+                                    <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light w-20 flex-shrink-0 mt-0.5">Metric</span>
+                                    <p className="text-fresco-sm text-fresco-black">{parsed.metric}</p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          } else { throw new Error('not a brief'); }
+                        } catch {
+                          rendered = (
+                            <div className="p-4 border border-fresco-border bg-fresco-white">
+                              <p className="text-fresco-sm text-fresco-black leading-relaxed whitespace-pre-wrap">{subjectVal}</p>
+                            </div>
+                          );
+                        }
+                        beat1Items.push(
+                          <div key="eval-subject">
+                            <span className="fresco-label block mb-3">What you&apos;re evaluating</span>
+                            {rendered}
+                          </div>
+                        );
+                      }
+                    }
 
                     // — Beat 2: Why it persists (the structural read)
                     const beat2Items: React.ReactNode[] = [];
