@@ -49,6 +49,7 @@ export function HomeDashboard({
   const [diagnosticExplanation, setDiagnosticExplanation] = useState('');
   const [exampleOpen, setExampleOpen] = useState<HouseId | null>(null);
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
+  const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<string | null>(null);
   useEffect(() => {
     try { setGuestHasRun(!!localStorage.getItem('fresco-has-run')); } catch {}
   }, []);
@@ -582,13 +583,23 @@ export function HomeDashboard({
                   {workspaces.slice(0, 6).map(w => {
                     const wSessions = sessions.filter(s => s.workspaceId === w.id);
                     return (
-                      <button key={w.id}
+                      <div key={w.id}
+                        role="button" tabIndex={0}
                         onClick={() => onNavigateToWorkspace?.(w.id)}
-                        className="flex items-center gap-2 px-3 py-2 border border-fresco-border hover:border-fresco-black text-fresco-sm text-fresco-graphite-soft hover:text-fresco-black transition-colors">
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateToWorkspace?.(w.id); } }}
+                        className="group flex items-center gap-2 px-3 py-2 border border-fresco-border hover:border-fresco-black text-fresco-sm text-fresco-graphite-soft hover:text-fresco-black transition-colors cursor-pointer">
                         <Folder className="w-3.5 h-3.5 text-fresco-graphite-light" />
                         <span>{w.title}</span>
                         <span className="text-fresco-graphite-light text-fresco-xs">{wSessions.length}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setDeleteWorkspaceId(w.id); }}
+                          title="Delete workspace"
+                          className="-mr-1 ml-0.5 p-0.5 text-fresco-graphite-light opacity-0 group-hover:opacity-100 hover:text-red-600 transition-all"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     );
                   })}
 
@@ -603,6 +614,42 @@ export function HomeDashboard({
     </div>
 
     <PricingModal isOpen={showPricingModal} onClose={() => setShowPricingModal(false)} />
+
+      {/* Delete-workspace confirm modal — same pattern as elsewhere.
+          Uses db.deleteWorkspace which atomically removes workspace +
+          sessions and nulls active IDs. */}
+      {deleteWorkspaceId && (() => {
+        const target = workspaces.find(w => w.id === deleteWorkspaceId);
+        if (!target) { setDeleteWorkspaceId(null); return null; }
+        const targetSessions = sessions.filter(s => s.workspaceId === deleteWorkspaceId);
+        return (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]"
+            onClick={() => setDeleteWorkspaceId(null)}>
+            <div onClick={e => e.stopPropagation()}
+              className="bg-white p-6 max-w-sm w-full mx-4 shadow-lg">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-fresco-base font-medium text-fresco-black">Delete this workspace?</h3>
+                <button onClick={() => setDeleteWorkspaceId(null)} className="p-1 text-fresco-graphite-light hover:text-fresco-black">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-6">
+                This will permanently delete <span className="text-fresco-black font-medium">{target.title}</span> and all {targetSessions.length} session{targetSessions.length !== 1 ? 's' : ''} inside. Can&apos;t be undone.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeleteWorkspaceId(null)}
+                  className="flex-1 h-9 text-fresco-sm text-fresco-graphite-mid border border-fresco-border hover:bg-fresco-light-gray transition-colors">
+                  Cancel
+                </button>
+                <button onClick={() => { db.deleteWorkspace(deleteWorkspaceId); setDeleteWorkspaceId(null); }}
+                  className="flex-1 h-9 text-fresco-sm text-white bg-red-600 hover:bg-red-700 transition-colors">
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Delete-session confirm modal — same pattern as the workspace and
           sidebar deletes for consistency. */}
