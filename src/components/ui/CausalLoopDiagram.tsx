@@ -20,8 +20,8 @@ export function CausalLoopDiagram({ nodes, edges, dominantLoop, loopType }: Caus
   if (!nodes?.length || !edges?.length) return null;
 
   // Layout nodes in a circle
-  const W = 320, H = 240, cx = W / 2, cy = H / 2;
-  const r = Math.min(cx, cy) - 48;
+  const W = 420, H = 320, cx = W / 2, cy = H / 2;
+  const r = Math.min(cx, cy) - 64;
   const n = nodes.length;
 
   const positions: Record<string, { x: number; y: number }> = {};
@@ -41,7 +41,7 @@ export function CausalLoopDiagram({ nodes, edges, dominantLoop, loopType }: Caus
     // Offset endpoints toward center to avoid overlapping nodes
     const dx = to.x - from.x, dy = to.y - from.y;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const nodeR = 22;
+    const nodeR = 38;
     const sx = from.x + (dx / dist) * nodeR;
     const sy = from.y + (dy / dist) * nodeR;
     const ex = to.x - (dx / dist) * nodeR;
@@ -100,16 +100,45 @@ export function CausalLoopDiagram({ nodes, edges, dominantLoop, loopType }: Caus
           const words = node.label.split(' ');
           return (
             <g key={node.id}>
-              <circle cx={pos.x} cy={pos.y} r="22"
+              <circle cx={pos.x} cy={pos.y} r="38"
                 fill="white" stroke="#000000" strokeWidth="1.5" />
-              {words.slice(0, 2).map((word, wi) => (
-                <text key={wi} x={pos.x} y={pos.y + (wi - (Math.min(words.length, 2) - 1) / 2) * 10}
-                  textAnchor="middle" dominantBaseline="middle"
-                  fontSize="8" fontFamily="Inter, sans-serif"
-                  fill="#000000" fontWeight="500">
-                  {word.length > 8 ? word.slice(0, 7) + '…' : word}
-                </text>
-              ))}
+              {(() => {
+                // Label fitting — wrap into up to 3 lines. Each line targets
+                // ~12 chars to fit in a 76px-wide circle at 9px font.
+                const maxCharsPerLine = 12;
+                const lines: string[] = [];
+                let current = '';
+                for (const word of words) {
+                  const candidate = current ? current + ' ' + word : word;
+                  if (candidate.length <= maxCharsPerLine) {
+                    current = candidate;
+                  } else {
+                    if (current) lines.push(current);
+                    // If a single word is itself too long, soft-truncate it
+                    current = word.length > maxCharsPerLine ? word.slice(0, maxCharsPerLine - 1) + '…' : word;
+                  }
+                  if (lines.length >= 2 && current) {
+                    // Cap at 3 lines total
+                    const remaining = words.slice(words.indexOf(word) + 1).join(' ');
+                    if (remaining) {
+                      const combined = current + ' ' + remaining;
+                      current = combined.length > maxCharsPerLine ? combined.slice(0, maxCharsPerLine - 1) + '…' : combined;
+                    }
+                    break;
+                  }
+                }
+                if (current) lines.push(current);
+                const lineHeight = 11;
+                const totalHeight = (lines.length - 1) * lineHeight;
+                return lines.map((line, li) => (
+                  <text key={li} x={pos.x} y={pos.y - totalHeight / 2 + li * lineHeight}
+                    textAnchor="middle" dominantBaseline="middle"
+                    fontSize="9" fontFamily="Inter, sans-serif"
+                    fill="#000000" fontWeight="500">
+                    {line}
+                  </text>
+                ));
+              })()}
             </g>
           );
         })}

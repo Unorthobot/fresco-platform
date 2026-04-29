@@ -361,3 +361,212 @@ export function CrossHouseSystems({ systemsOutput }: { systemsOutput: any }) {
     </>
   );
 }
+
+
+// ──────────────────────────────────────────────────────────────────────────
+// Granular section atoms — each exports one analytical artefact.
+// Used by the Analysis tab to interleave sections into narrative beats
+// (What's actually happening / Why it persists / Where the leverage is).
+// SystemsOutput + CrossHouseSystems above remain for any other consumer.
+// ──────────────────────────────────────────────────────────────────────────
+
+export function IcebergSection({ systemsOutput }: { systemsOutput: any }) {
+  if (!systemsOutput?.icebergLevels) return null;
+  return (
+    <Section label="Iceberg analysis">
+      <IcebergView levels={systemsOutput.icebergLevels} />
+    </Section>
+  );
+}
+
+export function IfNothingChangesSection({ systemsOutput }: { systemsOutput: any }) {
+  if (!systemsOutput?.currentStateSimulation) return null;
+  return (
+    <Section label="If nothing changes">
+      <div className="p-4 border border-fresco-border bg-fresco-light-gray">
+        <p className="text-fresco-sm text-fresco-graphite-soft italic leading-relaxed">
+          {systemsOutput.currentStateSimulation}
+        </p>
+      </div>
+    </Section>
+  );
+}
+
+export function LeverageMapSection({ systemsOutput }: { systemsOutput: any }) {
+  if (!systemsOutput?.leverageMap?.length) return null;
+  return (
+    <Section label="Leverage map">
+      <LeverageMap options={systemsOutput.leverageMap} />
+    </Section>
+  );
+}
+
+export function InterventionForecastSection({ systemsOutput }: { systemsOutput: any }) {
+  if (!systemsOutput?.interventionForecast) return null;
+  return (
+    <Section label="Intervention forecast">
+      <div className="space-y-2">
+        {[
+          { label: 'Immediate effect', value: systemsOutput.interventionForecast.immediate },
+          { label: 'Over time', value: systemsOutput.interventionForecast.delayed },
+          { label: 'Watch for', value: systemsOutput.interventionForecast.risk },
+        ].filter(r => r.value).map((row, i) => (
+          <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light w-24 flex-shrink-0 mt-0.5">{row.label}</span>
+            <p className="text-fresco-xs text-fresco-graphite-soft">{row.value}</p>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+export function PredictedOutcomeSection({ systemsOutput }: { systemsOutput: any }) {
+  if (!systemsOutput?.funnelSimulation) return null;
+  return (
+    <Section label="Predicted outcome range">
+      <FunnelSimulation sim={systemsOutput.funnelSimulation} />
+    </Section>
+  );
+}
+
+export function InfluenceMapSection({ systemsOutput }: { systemsOutput: any }) {
+  if (!systemsOutput?.influenceMap) return null;
+  return (
+    <Section label="Influence map">
+      <div className="space-y-2">
+        {[
+          { label: 'Real barrier', value: systemsOutput.influenceMap.barrier },
+          { label: 'What overcomes it', value: systemsOutput.influenceMap.lever },
+          { label: 'Proof required', value: systemsOutput.influenceMap.proofRequired },
+        ].filter(r => r.value).map((row, i) => (
+          <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light w-28 flex-shrink-0 mt-0.5">{row.label}</span>
+            <p className="text-fresco-xs text-fresco-graphite-soft">{row.value}</p>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+export function SystemProjectionSection({ systemsOutput }: { systemsOutput: any }) {
+  if (!systemsOutput?.evolutionProjection && !systemsOutput?.doublLoopLearning && !systemsOutput?.kpiSystemMap) return null;
+  return (
+    <Section label="System projection">
+      <EvolutionProjection
+        projection={systemsOutput.evolutionProjection}
+        learning={systemsOutput.doublLoopLearning}
+        kpiMap={systemsOutput.kpiSystemMap}
+      />
+    </Section>
+  );
+}
+
+export function ArchetypeSection({ systemsOutput }: { systemsOutput: any }) {
+  const a = systemsOutput?.archetype;
+  if (!a?.name || a.name === 'null') return null;
+  return (
+    <ArchetypeCard
+      name={a.name}
+      description={a.description || ''}
+      loop={a.loop || ''}
+      escape={a.escape || ''}
+    />
+  );
+}
+
+export function BehaviorOverTimeSection({ systemsOutput }: { systemsOutput: any }) {
+  if (!systemsOutput?.behaviorOverTime?.length) return null;
+  return (
+    <div>
+      <span className="fresco-label block mb-1">Behavior over time</span>
+      <p className="text-fresco-xs text-fresco-graphite-light mb-3 leading-relaxed">
+        How the situation has trended — and where it’s heading if nothing changes.
+      </p>
+      <BehaviorOverTimeChart series={systemsOutput.behaviorOverTime} />
+    </div>
+  );
+}
+
+export function CausalLoopSection({ systemsOutput }: { systemsOutput: any }) {
+  const cl = systemsOutput?.causalLoop;
+  if (!cl?.nodes?.length || cl.nodes.length < 2) return null;
+  return (
+    <div>
+      <span className="fresco-label block mb-1">Causal loop diagram</span>
+      <p className="text-fresco-xs text-fresco-graphite-light mb-3 leading-relaxed">
+        How variables feed back on each other. Reinforcing loops compound over time; balancing loops push back.
+      </p>
+      <CausalLoopDiagram
+        nodes={cl.nodes}
+        edges={cl.edges || []}
+        dominantLoop={cl.dominantLoop || ''}
+        loopType={cl.loopType || 'both'}
+      />
+    </div>
+  );
+}
+
+export function StockFlowSection({ systemsOutput }: { systemsOutput: any }) {
+  const sf = systemsOutput?.stockFlow;
+  if (!sf?.stocks?.length) return null;
+  return (
+    <Section label="Stock & flow">
+      <StockFlowDiagram
+        stocks={sf.stocks}
+        inflows={sf.inflows || []}
+        outflows={sf.outflows || []}
+        keyConstraint={sf.keyConstraint || ''}
+      />
+    </Section>
+  );
+}
+
+export function IPOSection({ systemsOutput }: { systemsOutput: any }) {
+  const ipo = systemsOutput?.ipoMap;
+  if (!ipo || (!ipo.inputs?.length && !ipo.processes?.length)) return null;
+  return (
+    <Section label="Input → Process → Output">
+      <IPOMap
+        inputs={ipo.inputs || []}
+        processes={ipo.processes || []}
+        outputs={ipo.outputs || []}
+        bottleneck={ipo.bottleneck}
+      />
+    </Section>
+  );
+}
+
+export function SensitivitySection({ systemsOutput }: { systemsOutput: any }) {
+  const sa = systemsOutput?.sensitivityAnalysis;
+  if (!sa?.variables?.length) return null;
+  return (
+    <div>
+      <span className="fresco-label block mb-1">Sensitivity analysis</span>
+      <p className="text-fresco-xs text-fresco-graphite-light mb-3 leading-relaxed">
+        If you could only change one thing, what would move the needle most?
+      </p>
+      <SensitivityChart
+        outcomeVariable={sa.outcomeVariable || 'outcome'}
+        variables={sa.variables}
+      />
+    </div>
+  );
+}
+
+export function ScenarioSection({ systemsOutput }: { systemsOutput: any }) {
+  const sc = systemsOutput?.scenarioModel;
+  if (!sc?.variables?.length) return null;
+  return (
+    <Section label="Scenario simulation">
+      <ScenarioSimulation
+        outcomeVariable={sc.outcomeVariable || 'outcome'}
+        outcomeUnit={sc.outcomeUnit || ''}
+        baselineValue={sc.baselineValue || 0}
+        variables={sc.variables}
+      />
+    </Section>
+  );
+}
+

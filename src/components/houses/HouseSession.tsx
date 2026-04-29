@@ -26,7 +26,12 @@ import { VerdictVisual } from '@/components/ui/VerdictVisual';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { MetricsBar } from '@/components/ui/MetricsBar';
 import { JourneyFunnel } from '@/components/ui/JourneyFunnel';
-import { SystemsOutput, CrossHouseSystems } from '@/components/ui/SystemsOutput';
+import { SystemsOutput, CrossHouseSystems,
+  IcebergSection, IfNothingChangesSection, LeverageMapSection, InterventionForecastSection,
+  PredictedOutcomeSection, InfluenceMapSection, SystemProjectionSection,
+  ArchetypeSection, BehaviorOverTimeSection, CausalLoopSection, StockFlowSection,
+  IPOSection, SensitivitySection, ScenarioSection,
+} from '@/components/ui/SystemsOutput';
 import { generatePDFReport, generateHTMLDeck } from '@/lib/reportGenerator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -3356,45 +3361,80 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </div>
                   )}
 
-                  {/* POV Statement — Investigate only */}
-                  {(result as any).povStatement && (
-                    <div>
-                      <span className="fresco-label block mb-3">Your point of view</span>
-                      <div className="p-4 border-l-4 border-fresco-black bg-fresco-light-gray">
-                        <p className="text-fresco-base font-medium text-fresco-black leading-relaxed">
-                          {(result as any).povStatement}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Core assumption — Investigate only */}
-                  {houseId === 'investigate' && (() => {
+                  {(() => {
+                    const so = (result as any).systemsOutput;
                     const bmEvent = agentEvents.find(e => e.displayName === 'Belief Mapper');
-                    if (!bmEvent?.structured_artifact) return null;
-                    return (
-                      <div>
+                    const hasCoreAssumption = houseId === 'investigate' && bmEvent?.structured_artifact;
+                    const hasPov = !!(result as any).povStatement;
+
+                    // — Beat 1: What's actually happening (the surface read)
+                    const beat1Items: React.ReactNode[] = [];
+                    if (hasPov) beat1Items.push(
+                      <div key="pov">
+                        <span className="fresco-label block mb-3">Your point of view</span>
+                        <div className="p-4 border-l-4 border-fresco-black bg-fresco-light-gray">
+                          <p className="text-fresco-base font-medium text-fresco-black leading-relaxed">
+                            {(result as any).povStatement}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                    if (hasCoreAssumption) beat1Items.push(
+                      <div key="core-assumption">
                         <span className="fresco-label block mb-3">Core assumption</span>
                         <div className="p-4 border border-fresco-border bg-fresco-white flex items-start gap-3">
                           <div className="w-1.5 h-1.5 bg-fresco-black rounded-full flex-shrink-0 mt-1.5" />
-                          <p className="text-fresco-sm text-fresco-black font-medium">{bmEvent.structured_artifact}</p>
+                          <p className="text-fresco-sm text-fresco-black font-medium">{bmEvent!.structured_artifact}</p>
                         </div>
                         <p className="text-fresco-xs text-fresco-graphite-light mt-2">
                           This is the belief being treated as fact. Challenge it before committing to a direction.
                         </p>
                       </div>
                     );
+                    // Iceberg lives in beat 1 for Investigate — it's the surface→depth read
+                    if (houseId === 'investigate' && so?.icebergLevels) beat1Items.push(<IcebergSection key="iceberg" systemsOutput={so} />);
+                    // Innovate's leverage map lives in beat 1 — it's the option scan
+                    if (houseId === 'innovate' && so?.leverageMap?.length) beat1Items.push(<LeverageMapSection key="leverage" systemsOutput={so} />);
+                    // Validate's predicted outcome lives in beat 1
+                    if (houseId === 'validate' && so?.funnelSimulation) beat1Items.push(<PredictedOutcomeSection key="outcome" systemsOutput={so} />);
+
+                    // — Beat 2: Why it persists (the structural read)
+                    const beat2Items: React.ReactNode[] = [];
+                    if (so?.currentStateSimulation) beat2Items.push(<IfNothingChangesSection key="if-nothing" systemsOutput={so} />);
+                    if (so?.archetype?.name && so.archetype.name !== 'null') beat2Items.push(<ArchetypeSection key="archetype" systemsOutput={so} />);
+                    if (so?.behaviorOverTime?.length) beat2Items.push(<BehaviorOverTimeSection key="bot" systemsOutput={so} />);
+                    if (so?.causalLoop?.nodes?.length > 1) beat2Items.push(<CausalLoopSection key="causal" systemsOutput={so} />);
+                    if (so?.stockFlow?.stocks?.length) beat2Items.push(<StockFlowSection key="stockflow" systemsOutput={so} />);
+                    if (houseId === 'innovate' && so?.interventionForecast) beat2Items.push(<InterventionForecastSection key="intervention" systemsOutput={so} />);
+                    if (houseId === 'validate' && so?.influenceMap) beat2Items.push(<InfluenceMapSection key="influence" systemsOutput={so} />);
+                    if (houseId === 'evaluate' && (so?.evolutionProjection || so?.doublLoopLearning || so?.kpiSystemMap)) beat2Items.push(<SystemProjectionSection key="projection" systemsOutput={so} />);
+
+                    // — Beat 3: Where the leverage is (the actionable read)
+                    const beat3Items: React.ReactNode[] = [];
+                    const hasIPO = so?.ipoMap && (so.ipoMap.inputs?.length > 0 || so.ipoMap.processes?.length > 0);
+                    if (hasIPO) beat3Items.push(<IPOSection key="ipo" systemsOutput={so} />);
+                    if (so?.sensitivityAnalysis?.variables?.length) beat3Items.push(<SensitivitySection key="sensitivity" systemsOutput={so} />);
+                    if (so?.scenarioModel?.variables?.length) beat3Items.push(<ScenarioSection key="scenario" systemsOutput={so} />);
+
+                    const beats: { title: string; subtitle: string; items: React.ReactNode[] }[] = [
+                      { title: "What's actually happening", subtitle: 'The surface read — what the situation looks like and what belief sits underneath it.', items: beat1Items },
+                      { title: 'Why it persists', subtitle: 'The structural read — why this pattern keeps showing up if nothing changes.', items: beat2Items },
+                      { title: 'Where the leverage is', subtitle: 'The actionable read — which variables actually move the outcome.', items: beat3Items },
+                    ];
+
+                    return beats.filter(b => b.items.length > 0).map((beat, i) => (
+                      <div key={i} className="pt-2">
+                        <div className="mb-5">
+                          <p className="text-fresco-xs font-medium uppercase tracking-wider text-fresco-graphite-light mb-1">Part {i + 1}</p>
+                          <h3 className="text-fresco-base font-medium text-fresco-black mb-1">{beat.title}</h3>
+                          <p className="text-fresco-xs text-fresco-graphite-light leading-relaxed">{beat.subtitle}</p>
+                        </div>
+                        <div className="space-y-5">
+                          {beat.items}
+                        </div>
+                      </div>
+                    ));
                   })()}
-
-                  {/* Systems thinking outputs — house-specific */}
-                  {(result as any).systemsOutput && (
-                    <SystemsOutput house={houseId} systemsOutput={(result as any).systemsOutput} />
-                  )}
-
-                  {/* Cross-house: Archetype + Behavior Over Time + all others */}
-                  {(result as any).systemsOutput && (
-                    <CrossHouseSystems systemsOutput={(result as any).systemsOutput} />
-                  )}
 
                   {/* Data visualisations — house-specific */}
                   {houseId === 'validate' && values['scores'] && (() => {
