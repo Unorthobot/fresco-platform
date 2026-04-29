@@ -261,8 +261,14 @@ export async function POST(
   // Single page → Page Scorecard leads, Journey Trace light
   // Multiple pages/flow → all three, Journey Trace gets full context
   // Comparison (two versions) → Variant Lens leads
-  let evaluateMode: 'single' | 'journey' | 'comparison' = 'single';
-  if (house === 'evaluate') {
+  // Prefer explicit mode from client (set in EvaluateInputs); fall back to
+  // regex inference for legacy clients or when mode is missing.
+  const explicitMode = body.evaluateMode;
+  let evaluateMode: 'single' | 'journey' | 'comparison' =
+    explicitMode === 'single' || explicitMode === 'journey' || explicitMode === 'comparison'
+      ? explicitMode
+      : 'single';
+  if (house === 'evaluate' && !explicitMode) {
     const combined = userInput.toLowerCase();
     const hasComparison = /version [ab]|variant|vs\.|versus|option [ab]|current.*test|control.*treatment/.test(combined);
     const hasMultiplePages = /step \d|→|->|page \d|flow|journey|sequence|funnel|after.*before|first.*then/.test(combined);

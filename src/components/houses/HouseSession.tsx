@@ -2151,8 +2151,8 @@ function EvaluateFlow({
       <UrlTagInput
         urls={url ? url.split('\n').map(u => u.trim()).filter(Boolean) : []}
         onChange={urls => onUrlChange(urls.join('\n'))}
-        maxUrls={mode === 'journey' ? 5 : 1}
-        label={mode === 'journey' ? 'Page URLs (optional)' : 'URL (optional)'}
+        maxUrls={mode === 'journey' ? 5 : mode === 'comparison' ? 2 : 1}
+        label={mode === 'journey' ? 'Page URLs (optional)' : mode === 'comparison' ? 'Version URLs (optional)' : 'URL (optional)'}
       />
 
       {/* Mode-specific questions */}
@@ -2472,6 +2472,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       const body: Record<string, string> = { userInput };
       if (context) body.context = context;
       if (url.trim()) body.url = url.trim();
+      if (houseId === 'evaluate') body.evaluateMode = evaluateMode;
 
       const response = await fetch(`/api/houses/${houseId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
