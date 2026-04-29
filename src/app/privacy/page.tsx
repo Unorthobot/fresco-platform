@@ -46,7 +46,7 @@ export default function PrivacyPage() {
               <p>When you sign up, we collect your name, email address, and authentication credentials. If you sign in with Google, we receive your name, email, and profile picture from Google's OAuth service.</p>
             </Subsection>
             <Subsection title="Content you create">
-              <p>We store the content you create within Fresco — workspaces, toolkit sessions, notes, and AI-generated outputs — in order to provide the Service. This content is yours.</p>
+              <p>We store the content you create within Fresco — workspaces, sessions, notes, and AI-generated outputs — in order to provide the Service. This content is yours.</p>
             </Subsection>
             <Subsection title="Usage data">
               <p>We may collect information about how you use the Service, including pages visited, features used, and actions taken. This helps us improve Fresco.</p>

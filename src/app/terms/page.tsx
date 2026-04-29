@@ -42,7 +42,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="Description of service">
-            <p>Fresco is a thinking and strategy platform that provides structured toolkits, AI-assisted analysis, and workspace tools to help individuals and teams develop clearer thinking and better decisions.</p>
+            <p>Fresco is a thinking and strategy platform that provides structured houses with specialist agents, AI-assisted analysis, and workspace tools to help individuals and teams develop clearer thinking and better decisions.</p>
             <p>The Service is provided on a subscription basis. A free tier may be available with limited functionality. Paid plans unlock additional features as described on the pricing page.</p>
           </Section>
 

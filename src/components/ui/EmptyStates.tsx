@@ -29,11 +29,11 @@ const CONTENT = {
   session: {
     icon: Lightbulb,
     title: "Ready to think?",
-    description: "Start a session with any toolkit to begin extracting insights from your thoughts.",
+    description: "Start a session with any house to begin investigating, innovating, validating, or evaluating.",
     illustration: "💡",
     tips: [
       "Begin with Insight Stack to gather initial thoughts",
-      "Each toolkit builds on the previous one",
+      "Each house builds on the previous one",
       "There's no wrong place to start"
     ]
   },

@@ -19,8 +19,8 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
   const content = {
     toolkits: {
       icon: Crown,
-      title: 'This toolkit is Pro only',
-      description: 'Upgrade to unlock all 9 thinking toolkits and every thinking mode.',
+      title: 'This is Pro only',
+      description: 'Upgrade to unlock unlimited workspaces and house runs.',
     },
     workspaces: {
       icon: Sparkles,
