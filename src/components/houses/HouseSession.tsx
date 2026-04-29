@@ -2646,15 +2646,165 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
   const generateExportText = () => {
     if (!result) return '';
-    return [
-      `# ${meta.name} — ${result.outputLabel}`,
-      `Workspace: ${workspace?.title || 'Unknown'} · ${new Date().toLocaleDateString()}`,
-      '', '## Input', buildUserInput(),
-      '', `## Verdict: ${result.verdict === 'INVESTIGATE FURTHER' ? 'Needs more signal' : result.verdict}`, result.verdictRationale,
-      '', '## Sentence of Truth', result.sentenceOfTruth,
-      '', "## What's going wrong", ...result.keyIssues.map((x, i) => `${i + 1}. ${x}`),
-      '', '## What to do now', ...result.necessaryMoves.map((x, i) => `${i + 1}. ${x}`),
-    ].join('\n');
+    const so = (result as any).systemsOutput;
+    const beliefMapper = agentEvents.find(e => e.displayName === 'Belief Mapper');
+    const lines: string[] = [];
+
+    // Header
+    lines.push(`# ${meta.name} — ${result.outputLabel}`);
+    lines.push(`Workspace: ${workspace?.title || 'Unknown'} · ${new Date().toLocaleDateString()}`);
+
+    // Input
+    lines.push('', '## Input', buildUserInput());
+
+    // Decision
+    lines.push('', `## Verdict: ${result.verdict === 'INVESTIGATE FURTHER' ? 'Needs more signal' : result.verdict}`, result.verdictRationale);
+    lines.push('', '## Sentence of Truth', result.sentenceOfTruth);
+    lines.push('', "## What's going wrong", ...result.keyIssues.map((x, i) => `${i + 1}. ${x}`));
+    lines.push('', '## What to do now', ...result.necessaryMoves.map((x, i) => `${i + 1}. ${x}`));
+
+    // Run this next
+    if ((result as any).suggestedNextHouse) {
+      lines.push('', '## Run this next', `**${(result as any).suggestedNextHouse.charAt(0).toUpperCase() + (result as any).suggestedNextHouse.slice(1)}** — ${(result as any).suggestedNextHouseReason || ''}`);
+    }
+
+    // — Beat 1: What's actually happening —
+    const beat1: string[] = [];
+    if (houseId === 'investigate' && (result as any).povStatement) {
+      beat1.push('### Your point of view', (result as any).povStatement, '');
+    }
+    if (houseId === 'investigate' && beliefMapper?.structured_artifact) {
+      beat1.push('### Core assumption', beliefMapper.structured_artifact, '_This is the belief being treated as fact. Challenge it before committing to a direction._', '');
+    }
+    if (houseId === 'investigate' && so?.icebergLevels) {
+      beat1.push('### Iceberg analysis');
+      const il = so.icebergLevels;
+      if (il.event)       beat1.push(`- **Event** (visible): ${il.event}`);
+      if (il.pattern)     beat1.push(`- **Pattern** (recurring): ${il.pattern}`);
+      if (il.structure)   beat1.push(`- **Structure** (producing): ${il.structure}`);
+      if (il.mentalModel) beat1.push(`- **Mental model** (belief): ${il.mentalModel}`);
+      beat1.push('');
+    }
+    if (houseId === 'innovate' && so?.leverageMap?.length) {
+      beat1.push('### Leverage map');
+      so.leverageMap.forEach((m: any) => {
+        beat1.push(`- **${m.option || ''}** (${m.leverageLevel || 'unknown leverage'}): ${m.impact || ''}`);
+      });
+      beat1.push('');
+    }
+    if (houseId === 'validate' && so?.funnelSimulation) {
+      beat1.push('### Predicted outcome');
+      const fs = so.funnelSimulation;
+      if (fs.expected)  beat1.push(`- **Expected**: ${fs.expected}`);
+      if (fs.bestCase)  beat1.push(`- **Best case**: ${fs.bestCase}`);
+      if (fs.worstCase) beat1.push(`- **Worst case**: ${fs.worstCase}`);
+      beat1.push('');
+    }
+    if (beat1.length) {
+      lines.push('', "## What's actually happening", "_The surface read — what the situation looks like and what belief sits underneath it._", '', ...beat1);
+    }
+
+    // — Beat 2: Why it persists —
+    const beat2: string[] = [];
+    if (so?.currentStateSimulation) {
+      beat2.push('### If nothing changes', `> ${so.currentStateSimulation}`, '');
+    }
+    if (so?.archetype?.name && so.archetype.name !== 'null') {
+      beat2.push(`### System archetype: ${so.archetype.name}`);
+      if (so.archetype.description) beat2.push(so.archetype.description);
+      if (so.archetype.loop)        beat2.push(`**How it shows up here**: ${so.archetype.loop}`);
+      if (so.archetype.escape)      beat2.push(`**How to break out**: ${so.archetype.escape}`);
+      beat2.push('');
+    }
+    if (so?.behaviorOverTime?.length && so.behaviorOverTime.some((s: any) => s?.dataPoints?.length >= 2)) {
+      beat2.push('### Behavior over time');
+      so.behaviorOverTime.forEach((s: any) => {
+        if (!s?.dataPoints?.length) return;
+        beat2.push(`**${s.variable || 'Variable'}** (${s.unit || ''}) — trending ${s.trend || 'unknown'}`);
+        s.dataPoints.forEach((p: any) => beat2.push(`- ${p.label}: ${p.value}`));
+        if (s.projection?.length) {
+          beat2.push('Projected:');
+          s.projection.forEach((p: any) => beat2.push(`- ${p.label}: ${p.value}`));
+        }
+      });
+      beat2.push('');
+    }
+    if (so?.causalLoop?.nodes?.length >= 2 && so?.causalLoop?.edges?.length) {
+      beat2.push('### Causal loop diagram', '_How variables feed back on each other. Reinforcing loops compound over time; balancing loops push back._', '');
+      beat2.push(`**Type**: ${so.causalLoop.loopType === 'reinforcing' ? 'Reinforcing — compounds over time' : so.causalLoop.loopType === 'balancing' ? 'Balancing — self-corrects' : 'Mixed'}`);
+      so.causalLoop.edges.forEach((e: any) => {
+        const sign = e.polarity === '+' ? '↑' : '↓';
+        beat2.push(`- ${e.from || '?'} ${sign} ${e.to || '?'}${e.note ? ` (${e.note})` : ''}`);
+      });
+      if (so.causalLoop.dominantLoop) beat2.push('', `**Dominant loop**: ${so.causalLoop.dominantLoop}`);
+      beat2.push('');
+    }
+    if (so?.stockFlow?.stocks?.length) {
+      beat2.push('### Stock & flow');
+      if (so.stockFlow.stocks?.length)   beat2.push('**Stocks**: ' + so.stockFlow.stocks.map((s: any) => s.name).filter(Boolean).join(', '));
+      if (so.stockFlow.inflows?.length)  beat2.push('**Inflows**: ' + so.stockFlow.inflows.map((s: any) => s.name).filter(Boolean).join(', '));
+      if (so.stockFlow.outflows?.length) beat2.push('**Outflows**: ' + so.stockFlow.outflows.map((s: any) => s.name).filter(Boolean).join(', '));
+      if (so.stockFlow.keyConstraint)    beat2.push(`**Key constraint**: ${so.stockFlow.keyConstraint}`);
+      beat2.push('');
+    }
+    if (houseId === 'innovate' && so?.interventionForecast) {
+      beat2.push('### Intervention forecast');
+      if (so.interventionForecast.immediate) beat2.push(`- **Immediate effect**: ${so.interventionForecast.immediate}`);
+      if (so.interventionForecast.delayed)   beat2.push(`- **Over time**: ${so.interventionForecast.delayed}`);
+      if (so.interventionForecast.risk)      beat2.push(`- **Watch for**: ${so.interventionForecast.risk}`);
+      beat2.push('');
+    }
+    if (houseId === 'validate' && so?.influenceMap) {
+      beat2.push('### Influence map');
+      if (so.influenceMap.barrier)       beat2.push(`- **Real barrier**: ${so.influenceMap.barrier}`);
+      if (so.influenceMap.lever)         beat2.push(`- **What overcomes it**: ${so.influenceMap.lever}`);
+      if (so.influenceMap.proofRequired) beat2.push(`- **Proof required**: ${so.influenceMap.proofRequired}`);
+      beat2.push('');
+    }
+    if (houseId === 'evaluate' && (so?.evolutionProjection || so?.doublLoopLearning || so?.kpiSystemMap)) {
+      beat2.push('### System projection');
+      if (so.evolutionProjection) beat2.push(`- **Evolution projection**: ${so.evolutionProjection}`);
+      if (so.doublLoopLearning)   beat2.push(`- **Double-loop learning**: ${so.doublLoopLearning}`);
+      if (so.kpiSystemMap)        beat2.push(`- **KPI system map**: ${so.kpiSystemMap}`);
+      beat2.push('');
+    }
+    if (beat2.length) {
+      lines.push('', '## Why it persists', '_The structural read — why this pattern keeps showing up if nothing changes._', '', ...beat2);
+    }
+
+    // — Beat 3: Where the leverage is —
+    const beat3: string[] = [];
+    if (so?.ipoMap && (so.ipoMap.inputs?.length || so.ipoMap.processes?.length || so.ipoMap.outputs?.length)) {
+      beat3.push('### Input → Process → Output');
+      if (so.ipoMap.inputs?.length)    beat3.push('**Inputs**: ' + so.ipoMap.inputs.map((i: any) => i.label).filter(Boolean).join('; '));
+      if (so.ipoMap.processes?.length) beat3.push('**Processes**: ' + so.ipoMap.processes.map((i: any) => i.label).filter(Boolean).join('; '));
+      if (so.ipoMap.outputs?.length)   beat3.push('**Outputs**: ' + so.ipoMap.outputs.map((i: any) => i.label).filter(Boolean).join('; '));
+      if (so.ipoMap.bottleneck)        beat3.push(`**Bottleneck**: ${so.ipoMap.bottleneck}`);
+      beat3.push('');
+    }
+    if (so?.sensitivityAnalysis?.variables?.length) {
+      beat3.push('### Sensitivity analysis', '_If you could only change one thing, what would move the needle most?_', '');
+      beat3.push(`**Outcome**: ${so.sensitivityAnalysis.outcomeVariable || 'outcome'}`);
+      so.sensitivityAnalysis.variables.forEach((v: any) => {
+        const dir = v.direction === 'helps' ? '↑ HELPS' : v.direction === 'hurts' ? '↓ HURTS' : '';
+        beat3.push(`- **${v.name}** ${dir} (${v.impact ?? ''}/10)${v.note ? ` — ${v.note}` : ''}`);
+      });
+      beat3.push('');
+    }
+    if (so?.scenarioModel?.variables?.length) {
+      beat3.push('### Scenario simulation');
+      beat3.push(`**Outcome**: ${so.scenarioModel.outcomeVariable || 'outcome'}${so.scenarioModel.outcomeUnit ? ` (${so.scenarioModel.outcomeUnit})` : ''}`);
+      if (so.scenarioModel.baselineValue !== undefined) beat3.push(`**Baseline**: ${so.scenarioModel.baselineValue}`);
+      so.scenarioModel.variables.forEach((v: any) => {
+        beat3.push(`- **${v.name}**: ${v.note || ''}`);
+      });
+      beat3.push('');
+    }
+    if (beat3.length) {
+      lines.push('', '## Where the leverage is', '_The actionable read — which variables actually move the outcome._', '', ...beat3);
+    }
+
+    return lines.join('\n');
   };
 
   const handleCopy = async () => {

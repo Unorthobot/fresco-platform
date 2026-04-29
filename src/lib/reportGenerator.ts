@@ -186,6 +186,79 @@ export function generatePDFReport(data: ReportData): void {
         </div>`).join('')}
     </div>`) : '';
 
+  // ── New sections added for full-parity export — match the three-beat structure ──
+  // Beat 1: surface read
+  const povHTML = data.result.povStatement ? section('Your Point of View', `
+    <blockquote class="sim-quote">${esc(data.result.povStatement)}</blockquote>`) : '';
+
+  const beliefMapper = data.agentEvents?.find(e => e.displayName === 'Belief Mapper');
+  const coreAssumptionHTML = beliefMapper?.structured_artifact ? section('Core Assumption', `
+    <p style="font-size: 15px; line-height: 1.6; color: var(--text);">${esc(beliefMapper.structured_artifact)}</p>
+    <p style="font-size: 12px; color: var(--mid); margin-top: 8px;">This is the belief being treated as fact. Challenge it before committing to a direction.</p>`) : '';
+
+  const predictedOutcomeHTML = so?.funnelSimulation ? section('Predicted Outcome', `
+    <div class="sim-grid">
+      ${[
+        { l: 'Expected', v: so.funnelSimulation.expected },
+        { l: 'Best case', v: so.funnelSimulation.bestCase },
+        { l: 'Worst case', v: so.funnelSimulation.worstCase },
+      ].filter(r => r.v).map(r => `
+        <div class="sim-cell">
+          <div class="sim-cell-label">${esc(r.l)}</div>
+          <div class="sim-cell-value">${esc(r.v)}</div>
+        </div>`).join('')}
+    </div>`) : '';
+
+  // Beat 2: structural read
+  const interventionForecastHTML = so?.interventionForecast ? section('Intervention Forecast', `
+    ${[
+      { l: 'Immediate effect', v: so.interventionForecast.immediate },
+      { l: 'Over time', v: so.interventionForecast.delayed },
+      { l: 'Watch for', v: so.interventionForecast.risk },
+    ].filter(r => r.v).map(r => `
+      <div class="intervention-row">
+        <div class="intervention-label">${esc(r.l)}</div>
+        <p>${esc(r.v)}</p>
+      </div>`).join('')}`) : '';
+
+  const influenceMapHTML = so?.influenceMap ? section('Influence Map', `
+    ${[
+      { l: 'Real barrier', v: so.influenceMap.barrier },
+      { l: 'What overcomes it', v: so.influenceMap.lever },
+      { l: 'Proof required', v: so.influenceMap.proofRequired },
+    ].filter(r => r.v).map(r => `
+      <div class="intervention-row">
+        <div class="intervention-label">${esc(r.l)}</div>
+        <p>${esc(r.v)}</p>
+      </div>`).join('')}`) : '';
+
+  const systemProjectionHTML = (so?.evolutionProjection || so?.doublLoopLearning || so?.kpiSystemMap) ? section('System Projection', `
+    ${so.evolutionProjection ? `<div class="intervention-row"><div class="intervention-label">Evolution projection</div><p>${esc(so.evolutionProjection)}</p></div>` : ''}
+    ${so.doublLoopLearning ? `<div class="intervention-row"><div class="intervention-label">Double-loop learning</div><p>${esc(so.doublLoopLearning)}</p></div>` : ''}
+    ${so.kpiSystemMap ? `<div class="intervention-row"><div class="intervention-label">KPI system map</div><p>${esc(so.kpiSystemMap)}</p></div>` : ''}`) : '';
+
+  const stockFlowHTML = so?.stockFlow?.stocks?.length ? section('Stock & Flow', `
+    <div class="sf-grid">
+      <div class="sf-col"><div class="sf-col-label">Stocks</div>${(so.stockFlow.stocks || []).map((s: any) => `<div class="sf-row"><span class="sf-name">${esc(s.name || '')}</span>${s.note ? `<p class="sf-note">${esc(s.note)}</p>` : ''}</div>`).join('')}</div>
+      <div class="sf-col"><div class="sf-col-label">Inflows</div>${(so.stockFlow.inflows || []).map((s: any) => `<div class="sf-row"><span class="sf-name">${esc(s.name || '')}</span>${s.note ? `<p class="sf-note">${esc(s.note)}</p>` : ''}</div>`).join('')}</div>
+      <div class="sf-col"><div class="sf-col-label">Outflows</div>${(so.stockFlow.outflows || []).map((s: any) => `<div class="sf-row"><span class="sf-name">${esc(s.name || '')}</span>${s.note ? `<p class="sf-note">${esc(s.note)}</p>` : ''}</div>`).join('')}</div>
+    </div>
+    ${so.stockFlow.keyConstraint ? `<p class="sf-constraint">Key constraint: ${esc(so.stockFlow.keyConstraint)}</p>` : ''}`) : '';
+
+  // Beat 3: actionable read
+  const sensitivityHTML = so?.sensitivityAnalysis?.variables?.length ? section('Sensitivity Analysis', `
+    <p style="font-size: 12px; color: var(--mid); margin-bottom: 12px;">If you could only change one thing, what would move the needle most?</p>
+    <p style="font-size: 13px; color: var(--text); margin-bottom: 16px;">Which variables have the most impact on <strong>${esc(so.sensitivityAnalysis.outcomeVariable || 'outcome')}</strong></p>
+    ${(so.sensitivityAnalysis.variables || []).map((v: any) => `
+      <div class="sens-row">
+        <div class="sens-head">
+          <span class="sens-name">${esc(v.name || '')}</span>
+          <span class="sens-impact">${v.direction === 'helps' ? '↑ HELPS' : v.direction === 'hurts' ? '↓ HURTS' : ''}</span>
+          <span class="sens-score">${v.impact ?? ''}/10</span>
+        </div>
+        ${v.note ? `<p class="sens-note">${esc(v.note)}</p>` : ''}
+      </div>`).join('')}`) : '';
+
   const simHTML = so?.currentStateSimulation ? section('If Nothing Changes', `
     <blockquote class="sim-quote">${esc(so.currentStateSimulation)}</blockquote>`) : '';
 
@@ -593,6 +666,29 @@ export function generatePDFReport(data: ReportData): void {
     /* Let content flow naturally — no forced page breaks */
     .cover { break-after: auto; }
   }
+
+  /* New sections — full-parity export */
+  .intervention-row { padding: 12px 0; border-bottom: 1px solid var(--border-light); }
+  .intervention-row:last-child { border-bottom: none; }
+  .intervention-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mid); margin-bottom: 4px; }
+  .intervention-row p { font-size: 13px; color: var(--text); line-height: 1.55; }
+  .sim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  .sim-cell { background: var(--white); padding: 16px; }
+  .sim-cell-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mid); margin-bottom: 6px; }
+  .sim-cell-value { font-size: 14px; color: var(--text); line-height: 1.5; }
+  .sf-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .sf-col-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mid); margin-bottom: 8px; }
+  .sf-row { padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+  .sf-name { font-size: 13px; color: var(--text); font-weight: 500; }
+  .sf-note { font-size: 12px; color: var(--mid); margin-top: 2px; }
+  .sf-constraint { margin-top: 16px; padding: 12px; background: var(--off); border-left: 3px solid var(--black); font-size: 13px; }
+  .sens-row { padding: 12px 0; border-bottom: 1px solid var(--border-light); }
+  .sens-row:last-child { border-bottom: none; }
+  .sens-head { display: flex; align-items: baseline; gap: 12px; }
+  .sens-name { flex: 1; font-size: 13px; color: var(--text); font-weight: 500; }
+  .sens-impact { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--mid); }
+  .sens-score { font-size: 12px; color: var(--mid); }
+  .sens-note { font-size: 12px; color: var(--mid); margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -658,15 +754,29 @@ export function generatePDFReport(data: ReportData): void {
   <!-- ── INPUTS ─────────────────────────────────────────────────────── -->
   ${inputsHTML}
 
-  <!-- ── SYSTEMS ANALYSIS ───────────────────────────────────────────── -->
+  <!-- ── BEAT 1: WHAT'S ACTUALLY HAPPENING ─────────────────────────── -->
+  ${povHTML}
+  ${coreAssumptionHTML}
   ${icebergHTML}
   ${leverageHTML}
+  ${predictedOutcomeHTML}
+
+  <!-- ── BEAT 2: WHY IT PERSISTS ───────────────────────────────────── -->
+  ${simHTML}
+  ${archetypeHTML}
   ${botgHTML}
   ${causalHTML}
-  ${scenarioHTML}
+  ${stockFlowHTML}
+  ${interventionForecastHTML}
+  ${influenceMapHTML}
+  ${systemProjectionHTML}
+
+  <!-- ── BEAT 3: WHERE THE LEVERAGE IS ─────────────────────────────── -->
   ${ipoHTML}
-  ${archetypeHTML}
-  ${simHTML}
+  ${sensitivityHTML}
+  ${scenarioHTML}
+
+  <!-- ── AGENT ANALYSIS ─────────────────────────────────────────────── -->
   ${agentHTML}
 
   <!-- ── FOOTER ─────────────────────────────────────────────────────── -->
@@ -790,7 +900,152 @@ export function generateHTMLDeck(data: ReportData): void {
     `});
   }
 
-  // Slide 7 — Next step + closing
+  // ── Beat 1 additions ────────────────────────────────────
+  // Core Assumption (Investigate)
+  const beliefMapper = data.agentEvents?.find(e => e.displayName === 'Belief Mapper');
+  if (beliefMapper?.structured_artifact) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">Core Assumption</div>
+      <div class="s-pov">${beliefMapper.structured_artifact}</div>
+      <p class="s-rationale" style="margin-top:24px">This is the belief being treated as fact. Challenge it before committing to a direction.</p>
+    `});
+  }
+
+  // Predicted Outcome (Validate)
+  if (so?.funnelSimulation && (so.funnelSimulation.expected || so.funnelSimulation.bestCase || so.funnelSimulation.worstCase)) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">Predicted Outcome</div>
+      <div class="s-three-col">
+        ${so.funnelSimulation.expected  ? `<div><div class="s-col-label">Expected</div><p class="s-col-text">${so.funnelSimulation.expected}</p></div>` : ''}
+        ${so.funnelSimulation.bestCase  ? `<div><div class="s-col-label">Best case</div><p class="s-col-text">${so.funnelSimulation.bestCase}</p></div>` : ''}
+        ${so.funnelSimulation.worstCase ? `<div><div class="s-col-label">Worst case</div><p class="s-col-text">${so.funnelSimulation.worstCase}</p></div>` : ''}
+      </div>
+    `});
+  }
+
+  // ── Beat 2 additions ────────────────────────────────────
+  // If Nothing Changes
+  if (so?.currentStateSimulation) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">If Nothing Changes</div>
+      <div class="s-pov" style="font-style:italic">${so.currentStateSimulation}</div>
+    `});
+  }
+
+  // Behaviour Over Time — only if at least one valid series
+  if (so?.behaviorOverTime?.length && so.behaviorOverTime.some((s: any) => s?.dataPoints?.length >= 2)) {
+    const valid = so.behaviorOverTime.filter((s: any) => s?.dataPoints?.length >= 2);
+    slides.push({ dark: false, content: `
+      <div class="s-label">Behaviour Over Time</div>
+      ${valid.map((s: any) => `
+        <div class="s-bot-row">
+          <div class="s-bot-head">
+            <span class="s-bot-var">${s.variable || 'Variable'}</span>
+            ${s.unit ? `<span class="s-bot-unit">${s.unit}</span>` : ''}
+            ${s.trend ? `<span class="s-bot-trend">${s.trend}</span>` : ''}
+          </div>
+          <div class="s-bot-points">${s.dataPoints.map((p: any) => `<span class="s-bot-point">${p.label}: <strong>${p.value}</strong></span>`).join('')}</div>
+        </div>
+      `).join('')}
+    `});
+  }
+
+  // Causal Loop summary — text-only since we can't render the SVG diagram in slides
+  if (so?.causalLoop?.nodes?.length >= 2 && so?.causalLoop?.edges?.length) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">Causal Loop</div>
+      <p class="s-rationale" style="margin-bottom:16px">How variables feed back on each other. Reinforcing loops compound; balancing loops push back.</p>
+      ${so.causalLoop.dominantLoop ? `<div class="s-pov" style="font-size:18px">${so.causalLoop.dominantLoop}</div>` : ''}
+    `});
+  }
+
+  // Stock & Flow
+  if (so?.stockFlow?.stocks?.length) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">Stock &amp; Flow</div>
+      <div class="s-three-col">
+        <div><div class="s-col-label">Stocks</div>${(so.stockFlow.stocks || []).map((s: any) => `<p class="s-col-text">${s.name || ''}</p>`).join('')}</div>
+        <div><div class="s-col-label">Inflows</div>${(so.stockFlow.inflows || []).map((s: any) => `<p class="s-col-text">${s.name || ''}</p>`).join('')}</div>
+        <div><div class="s-col-label">Outflows</div>${(so.stockFlow.outflows || []).map((s: any) => `<p class="s-col-text">${s.name || ''}</p>`).join('')}</div>
+      </div>
+      ${so.stockFlow.keyConstraint ? `<p class="s-rationale" style="margin-top:24px"><strong>Key constraint:</strong> ${so.stockFlow.keyConstraint}</p>` : ''}
+    `});
+  }
+
+  // Intervention Forecast (Innovate)
+  if (so?.interventionForecast && (so.interventionForecast.immediate || so.interventionForecast.delayed || so.interventionForecast.risk)) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">Intervention Forecast</div>
+      <div class="s-three-col">
+        ${so.interventionForecast.immediate ? `<div><div class="s-col-label">Immediate effect</div><p class="s-col-text">${so.interventionForecast.immediate}</p></div>` : ''}
+        ${so.interventionForecast.delayed   ? `<div><div class="s-col-label">Over time</div><p class="s-col-text">${so.interventionForecast.delayed}</p></div>` : ''}
+        ${so.interventionForecast.risk      ? `<div><div class="s-col-label">Watch for</div><p class="s-col-text">${so.interventionForecast.risk}</p></div>` : ''}
+      </div>
+    `});
+  }
+
+  // Influence Map (Validate)
+  if (so?.influenceMap && (so.influenceMap.barrier || so.influenceMap.lever || so.influenceMap.proofRequired)) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">Influence Map</div>
+      <div class="s-three-col">
+        ${so.influenceMap.barrier       ? `<div><div class="s-col-label">Real barrier</div><p class="s-col-text">${so.influenceMap.barrier}</p></div>` : ''}
+        ${so.influenceMap.lever         ? `<div><div class="s-col-label">What overcomes it</div><p class="s-col-text">${so.influenceMap.lever}</p></div>` : ''}
+        ${so.influenceMap.proofRequired ? `<div><div class="s-col-label">Proof required</div><p class="s-col-text">${so.influenceMap.proofRequired}</p></div>` : ''}
+      </div>
+    `});
+  }
+
+  // System Projection (Evaluate)
+  if (so?.evolutionProjection || so?.doublLoopLearning || so?.kpiSystemMap) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">System Projection</div>
+      ${so.evolutionProjection ? `<div class="s-row"><div class="s-row-label">Evolution projection</div><p>${so.evolutionProjection}</p></div>` : ''}
+      ${so.doublLoopLearning   ? `<div class="s-row"><div class="s-row-label">Double-loop learning</div><p>${so.doublLoopLearning}</p></div>` : ''}
+      ${so.kpiSystemMap        ? `<div class="s-row"><div class="s-row-label">KPI system map</div><p>${so.kpiSystemMap}</p></div>` : ''}
+    `});
+  }
+
+  // ── Beat 3 additions ────────────────────────────────────
+  // IPO Map
+  if (so?.ipoMap && (so.ipoMap.inputs?.length || so.ipoMap.processes?.length || so.ipoMap.outputs?.length)) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">Input → Process → Output</div>
+      <div class="s-three-col">
+        <div><div class="s-col-label">Inputs</div>${(so.ipoMap.inputs || []).map((i: any) => `<p class="s-col-text">${i.label || ''}</p>`).join('')}</div>
+        <div><div class="s-col-label">Processes</div>${(so.ipoMap.processes || []).map((i: any) => `<p class="s-col-text">${i.label || ''}</p>`).join('')}</div>
+        <div><div class="s-col-label">Outputs</div>${(so.ipoMap.outputs || []).map((i: any) => `<p class="s-col-text">${i.label || ''}</p>`).join('')}</div>
+      </div>
+      ${so.ipoMap.bottleneck ? `<p class="s-rationale" style="margin-top:24px"><strong>Bottleneck:</strong> ${so.ipoMap.bottleneck}</p>` : ''}
+    `});
+  }
+
+  // Sensitivity Analysis
+  if (so?.sensitivityAnalysis?.variables?.length) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">Sensitivity Analysis</div>
+      <p class="s-rationale" style="margin-bottom:16px">If you could only change one thing, what would move the needle most? <strong>Outcome:</strong> ${so.sensitivityAnalysis.outcomeVariable || 'outcome'}</p>
+      ${so.sensitivityAnalysis.variables.map((v: any) => `
+        <div class="s-list-row">
+          <span class="s-num">${v.impact ?? '–'}</span>
+          <p><strong>${v.name || ''}</strong>${v.direction === 'helps' ? ' ↑' : v.direction === 'hurts' ? ' ↓' : ''}${v.note ? ' — ' + v.note : ''}</p>
+        </div>`).join('')}
+    `});
+  }
+
+  // Scenario Simulation
+  if (so?.scenarioModel?.variables?.length) {
+    slides.push({ dark: false, content: `
+      <div class="s-label">Scenario Simulation</div>
+      <p class="s-rationale" style="margin-bottom:16px"><strong>Outcome:</strong> ${so.scenarioModel.outcomeVariable || 'outcome'}${so.scenarioModel.outcomeUnit ? ' (' + so.scenarioModel.outcomeUnit + ')' : ''}${so.scenarioModel.baselineValue !== undefined ? ' · <strong>Baseline:</strong> ' + so.scenarioModel.baselineValue : ''}</p>
+      ${so.scenarioModel.variables.map((v: any) => `
+        <div class="s-list-row">
+          <p><strong>${v.name || ''}</strong>${v.note ? ' — ' + v.note : ''}</p>
+        </div>`).join('')}
+    `});
+  }
+
+    // Slide 7 — Next step + closing
   slides.push({ dark: true, content: `
     ${data.result.suggestedNextHouse ? `
       <div class="s-label" style="color:rgba(255,255,255,0.35)">Suggested Next Step</div>
@@ -941,6 +1196,23 @@ export function generateHTMLDeck(data: ReportData): void {
     font-size: 10px; color: rgba(255,255,255,0.25);
     letter-spacing: 0.1em; font-family: 'Inter', sans-serif;
   }
+
+  /* Full-parity slides */
+  .s-three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 32px; }
+  .s-col-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 12px; }
+  .s-col-text { font-size: 15px; line-height: 1.55; color: var(--text); margin-bottom: 8px; }
+  .s-bot-row { padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .s-bot-row:last-child { border-bottom: none; }
+  .s-bot-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .s-bot-var { font-size: 16px; font-weight: 500; color: var(--text); }
+  .s-bot-unit { font-size: 12px; color: var(--muted); }
+  .s-bot-trend { font-size: 11px; color: var(--muted); margin-left: auto; text-transform: lowercase; }
+  .s-bot-points { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); }
+  .s-bot-point strong { color: var(--text); font-weight: 500; }
+  .s-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .s-row:last-child { border-bottom: none; }
+  .s-row-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; }
+  .s-row p { font-size: 15px; line-height: 1.55; color: var(--text); }
 </style>
 </head>
 <body>
