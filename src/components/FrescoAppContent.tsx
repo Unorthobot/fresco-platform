@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useSession } from 'next-auth/react';
-import { canGuestRun, getGuestRunCount, GUEST_RUN_LIMIT, resetGuestRunCount } from '@/lib/guestRuns';
+import { canGuestRun, getGuestRunCount, GUEST_RUN_LIMIT, resetGuestRunCount, backfillGuestRunCount } from '@/lib/guestRuns';
 import { useDBSync, useDBWrite, useDBSyncComplete } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
@@ -199,6 +199,19 @@ export default function FrescoAppContent() {
   }, []);
 
 
+
+  // Backfill the guest run counter for anonymous users with existing
+  // sessions (e.g., users who ran sessions before the counter was wired).
+  // Runs once per browser thanks to a sentinel key in localStorage.
+  useEffect(() => {
+    if (status === 'authenticated') return;  // not anonymous — skip
+    if (status === 'loading') return;        // wait for auth to resolve
+    backfillGuestRunCount(sessions.length);
+    // Intentionally narrow deps — we only want this to run when auth status
+    // resolves the first time. The function itself is idempotent via the
+    // sentinel key, so re-running on session changes is safe but redundant.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   const handleNavigate = (section: string) => {
     if (section === 'home') {

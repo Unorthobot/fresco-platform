@@ -59,3 +59,49 @@ export function resetGuestRunCount(): void {
     /* ignore */
   }
 }
+
+/**
+ * Backfill the guest counter from existing session data.
+ *
+ * Called once at app boot for anonymous users. If the counter is 0 but the
+ * user has existing sessions in their store (i.e., they ran them before the
+ * counter was wired), set the counter to min(sessions, limit). Without this,
+ * users who ran sessions before this fix shipped get a fresh-looking 0/3
+ * counter and can keep running indefinitely.
+ *
+ * Conservative direction: if backfill is ambiguous, err toward enforcement
+ * (more counted runs, not fewer). The honest tradeoff is users who ran
+ * sessions long ago and forgot will hit the limit immediately. That's
+ * acceptable — the gate is meant to push them toward signup anyway.
+ */
+const BACKFILL_KEY = 'fresco-guest-runs-backfilled';
+export function backfillGuestRunCount(sessionCount: number): void {
+  if (typeof window === 'undefined') return;
+  // Only run once per browser. If we've already backfilled, the counter is
+  // the source of truth from then on.
+  try {
+    if (localStorage.getItem(BACKFILL_KEY)) return;
+  } catch {
+    return;
+  }
+  // If there's already a counter value, respect it — it's been writing
+  // correctly since the fix shipped.
+  if (getGuestRunCount() > 0) {
+    try { localStorage.setItem(BACKFILL_KEY, '1'); } catch { /* ignore */ }
+    return;
+  }
+  // Backfill from session count, capped at the limit.
+  if (sessionCount > 0) {
+    const value = Math.min(sessionCount, GUEST_RUN_LIMIT);
+    try {
+      localStorage.setItem(KEY, String(value));
+      localStorage.setItem(BACKFILL_KEY, '1');
+      window.dispatchEvent(new CustomEvent('fresco:guest-runs-changed', { detail: { count: value } }));
+    } catch {
+      /* ignore */
+    }
+  } else {
+    // No sessions, no backfill needed. Mark as done so we don't keep checking.
+    try { localStorage.setItem(BACKFILL_KEY, '1'); } catch { /* ignore */ }
+  }
+}
