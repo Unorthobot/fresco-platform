@@ -58,14 +58,14 @@
   --fresco-grid-color: rgba(255, 255, 255, 0.03);
 
   /* Verdict colours — dark mode variants, lifted for contrast on dark bg */
-  --verdict-go-accent:     #5ea37a;
-  --verdict-go-tint:       #1c2a23;
-  --verdict-pivot-accent:  #d4a360;
-  --verdict-pivot-tint:    #2c251a;
-  --verdict-stop-accent:   #d06a6a;
-  --verdict-stop-tint:     #2c1c1c;
-  --verdict-signal-accent: #7892b8;
-  --verdict-signal-tint:   #1d232c;
+  --verdict-go-accent:     #5ec48a;  /* brighter on dark — emerald reads as green */
+  --verdict-go-tint:       #1a2f24;
+  --verdict-pivot-accent:  #e0ad65;  /* warmer amber — clearer on dark */
+  --verdict-pivot-tint:    #2e2619;
+  --verdict-stop-accent:   #e07878;  /* warmer red — readable on dark */
+  --verdict-stop-tint:     #2e1d1d;
+  --verdict-signal-accent: #88a4d4;  /* brighter blue — clearer on dark */
+  --verdict-signal-tint:   #1f2530;
 }
 
 /* Dark mode specific overrides for better legibility */

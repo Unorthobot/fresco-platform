@@ -3139,12 +3139,18 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     )}
                   </div>
                   {/* System verdict — plain English + spectrum + rationale.
-                      The ONLY chromatic moment in the whole product: a 3px
-                      coloured left border keyed to the verdict. Card body
-                      stays monochrome. */}
+                      The chromatic anchor for the whole result: a 4px coloured
+                      left border keyed to the verdict, AND a faint tint
+                      background so the colour reads as a colour rather than
+                      a barely-visible accent. The tints are light enough that
+                      the card still feels considered, not alarming. */}
                   <div
                     className="border border-fresco-border p-4"
-                    style={{ borderLeftWidth: 3, borderLeftColor: verdictColour(result.verdict).accent }}
+                    style={{
+                      borderLeftWidth: 4,
+                      borderLeftColor: verdictColour(result.verdict).accent,
+                      background: verdictColour(result.verdict).tint,
+                    }}
                   >
                     {/* Plain English verdict headline */}
                     <div className="mb-4">
@@ -3502,10 +3508,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <button onClick={() => setShowExportModal(false)}><X className="w-4 h-4 text-fresco-graphite-light" /></button>
               </div>
 
-              {/* Verdict summary — verdict colour on the left border + label */}
+              {/* Verdict summary — accent left border + tint background so the
+                  verdict reads as a coloured card, not a generic gray rectangle. */}
               <div
-                className="mb-5 p-3 bg-fresco-light-gray"
-                style={{ borderLeft: `2px solid ${verdictColour(result.verdict).accent}` }}
+                className="mb-5 p-3"
+                style={{
+                  borderLeft: `4px solid ${verdictColour(result.verdict).accent}`,
+                  background: verdictColour(result.verdict).tint,
+                }}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light">{meta.name}</span>
