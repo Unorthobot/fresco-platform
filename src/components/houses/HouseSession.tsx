@@ -1672,11 +1672,11 @@ const EVALUATE_STEPS_SINGLE: ConversationStep[] = [
   },
   {
     id: 'concerns',
-    question: "What would a 50% improvement look like — and what's the highest-leverage change to get there?",
-    hint: "The one change most likely to move the metric.",
-    placeholder: "e.g. A 50% improvement gets us to ~3.2% conversion. I think the highest-leverage change is replacing 'Book a demo' with a lower-commitment CTA — 'See it in action' or 'Start free'. The current CTA asks for too much before we've earned it.",
+    question: "What's the one assumption baked into this page that — if wrong — would explain the gap?",
+    hint: "And: what result would prove that assumption wrong?",
+    placeholder: "e.g. We assume mid-market buyers want a demo before pricing details. If we showed pricing transparently and conversion went UP, that assumption is dead. If conversion stayed flat or dropped, the demo-first instinct was right and the headline is the real problem.",
     minHeight: 140,
-    agent: 'Variant Lens',
+    agent: 'Page Scorecard',
   },
 ];
 
@@ -1691,18 +1691,18 @@ const EVALUATE_STEPS_JOURNEY: ConversationStep[] = [
   },
   {
     id: 'trust_drops',
-    question: 'Where does the user arrive at each step with an unanswered question?',
-    hint: "Where the flow fails to answer the user's next question.",
-    placeholder: "e.g. User arrives at signup still unsure if this is worth their time — pricing page didn't answer 'why should I trust this'. Onboarding asks them to invite their team before they've seen any value themselves — wrong sequence.",
+    question: "At each step, what's the question the user is asking that the page doesn't answer?",
+    hint: "The unanswered question at each stage that creates the drop-off.",
+    placeholder: "e.g. Landing page: 'is this for someone like me?' — answered weakly. Pricing: 'is this worth it?' — answered, but no proof. Signup: 'why do you need my company size before I've signed up?' — not answered at all. Onboarding: 'why am I inviting my team before I've seen value?' — wrong question asked first.",
     minHeight: 160,
     agent: 'Journey Trace',
   },
   {
     id: 'transitions',
-    question: 'What is the one break in the sequence that, if fixed, would most improve the whole flow?',
-    hint: "The single highest-leverage fix.",
-    placeholder: "e.g. The biggest break is between pricing and signup. Users click the CTA having decided to try it, then hit a form that asks for company info — it feels like being sold to, not signed up. A frictionless signup that asks nothing upfront would change the whole trajectory.",
-    minHeight: 140,
+    question: "What's the one break in the sequence that, if fixed, would most improve the whole flow — and what would prove you wrong?",
+    hint: "The single highest-leverage fix, plus the result that says it wasn't.",
+    placeholder: "e.g. The biggest break is between pricing and signup — users decide to try, then hit a form that feels like being sold to. A frictionless signup would change the whole trajectory. I'd be wrong if simplifying the form left activation unchanged — that'd mean the real drop-off is post-signup, not at the form itself.",
+    minHeight: 160,
     agent: 'Journey Trace',
   },
 ];

@@ -269,13 +269,13 @@ export async function POST(
     });
   }
 
-  const agents = HOUSE_AGENTS[house];
+  const baseAgents = HOUSE_AGENTS[house];
   const encoder = new TextEncoder();
 
   // ── Evaluate: classify input type to determine agent emphasis ─────────────
-  // Single page → Page Scorecard leads, Journey Trace light
-  // Multiple pages/flow → all three, Journey Trace gets full context
-  // Comparison (two versions) → Variant Lens leads
+  // Single → Page Scorecard only (Variant Lens has no B; Journey Trace has no journey)
+  // Journey → Journey Trace leads, Page Scorecard supports
+  // Comparison → Variant Lens leads, Page Scorecard supports
   // Prefer explicit mode from client (set in EvaluateInputs); fall back to
   // regex inference for legacy clients or when mode is missing.
   const explicitMode = body.evaluateMode;
@@ -290,6 +290,23 @@ export async function POST(
     if (hasComparison) evaluateMode = 'comparison';
     else if (hasMultiplePages) evaluateMode = 'journey';
   }
+
+  // Reorder + filter agents based on evaluate mode so the streaming order
+  // matches the primary lens. Comment in HOUSE_AGENTS map is canonical;
+  // this is the runtime expression of "X leads".
+  const agents = (() => {
+    if (house !== 'evaluate') return baseAgents;
+    const byId = Object.fromEntries(baseAgents.map(a => [a.id, a]));
+    if (evaluateMode === 'single') {
+      // Only Page Scorecard runs — single page has no comparison and no journey.
+      return [byId.PageScorecardAgent].filter(Boolean);
+    }
+    if (evaluateMode === 'comparison') {
+      return [byId.VariantLensAgent, byId.PageScorecardAgent, byId.JourneyTraceAgent].filter(Boolean);
+    }
+    // journey
+    return [byId.JourneyTraceAgent, byId.PageScorecardAgent, byId.VariantLensAgent].filter(Boolean);
+  })();
 
   const stream = new ReadableStream({
     async start(controller) {
