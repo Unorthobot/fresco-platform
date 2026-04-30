@@ -128,21 +128,23 @@ export default function FrescoAppContent() {
   // Handle deleted session - navigate back to workspace or home
   useEffect(() => {
     if (activeSessionId && !currentSession) {
-      if (activeWorkspaceId) {
+      if (activeWorkspaceId && currentWorkspace) {
         setActiveSession(null);
+        setActiveSection('workspaces');
         setCurrentView('workspace');
       } else {
         setActiveSession(null);
         setActiveWorkspace(null);
+        setActiveSection('home');
         setCurrentView('home');
       }
     }
-  }, [activeSessionId, currentSession, activeWorkspaceId, setActiveSession, setActiveWorkspace]);
+  }, [activeSessionId, currentSession, activeWorkspaceId, currentWorkspace, setActiveSession, setActiveWorkspace, setActiveSection]);
 
   // — Blank-screen detector —
   // After navigation, if no view branch matches what we expect to render, log
-  // it to console and sessionStorage so we can audit any blank-screen reports.
-  // Also auto-recovers by forcing currentView to home.
+  // it to localStorage so we can audit any blank-screen reports across tab
+  // closes. Also auto-recovers by forcing currentView to home.
   useEffect(() => {
     if (startingHouse) return;
     const branchHome = effectiveView === 'home';
@@ -164,21 +166,26 @@ export default function FrescoAppContent() {
       // eslint-disable-next-line no-console
       console.warn('[Fresco] Blank-screen state detected — recovering to home:', snapshot);
       try {
-        const breadcrumbs = JSON.parse(sessionStorage.getItem('fresco-blank-breadcrumbs') || '[]');
+        const breadcrumbs = JSON.parse(localStorage.getItem('fresco-blank-breadcrumbs') || '[]');
         breadcrumbs.push(snapshot);
-        sessionStorage.setItem('fresco-blank-breadcrumbs', JSON.stringify(breadcrumbs.slice(-10)));
+        localStorage.setItem('fresco-blank-breadcrumbs', JSON.stringify(breadcrumbs.slice(-20)));
       } catch { /* ignore */ }
       // Recovery: clear stale IDs and go home
       setActiveSession(null);
+      setActiveWorkspace(null);
       setActiveSection('home');
       setCurrentView('home');
     }
-  }, [effectiveView, currentView, activeWorkspaceId, activeSessionId, activeSection, currentSession, currentWorkspace, startingHouse, setActiveSession, setActiveSection]);
+  }, [effectiveView, currentView, activeWorkspaceId, activeSessionId, activeSection, currentSession, currentWorkspace, startingHouse, setActiveSession, setActiveWorkspace, setActiveSection]);
 
   // Handle deleted workspace — if an active workspace id points nowhere,
   // reset everything. Fires regardless of currentView so we can't get stuck.
+  // Also clears any active session id, since the session may have belonged
+  // to that workspace and not yet been cleaned up.
   useEffect(() => {
     if (activeWorkspaceId && !currentWorkspace) {
+      // eslint-disable-next-line no-console
+      console.warn('[Fresco] activeWorkspaceId points to nothing — recovering to home', { activeWorkspaceId });
       setActiveSession(null);
       setActiveWorkspace(null);
       setActiveSection('home');
