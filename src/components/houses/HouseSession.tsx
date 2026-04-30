@@ -3356,17 +3356,15 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     )}
                   </div>
                   {/* System verdict — plain English + spectrum + rationale.
-                      The chromatic anchor for the whole result: a 4px coloured
-                      left border keyed to the verdict, AND a faint tint
-                      background so the colour reads as a colour rather than
-                      a barely-visible accent. The tints are light enough that
-                      the card still feels considered, not alarming. */}
+                      The chromatic anchor is the 4px coloured left border and
+                      the verdict pill in the top-right. The card body sits on
+                      a neutral surface so the supporting reasoning reads
+                      cleanly — colour as accent, not as background. */}
                   <div
-                    className="border border-fresco-border p-4"
+                    className="border border-fresco-border bg-fresco-light-gray p-4"
                     style={{
                       borderLeftWidth: 4,
                       borderLeftColor: verdictColour(result.verdict).accent,
-                      background: verdictColour(result.verdict).tint,
                     }}
                   >
                     {/* Plain English verdict headline */}
@@ -3376,8 +3374,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                           {verdictPlain?.headline}
                         </p>
                         <span
-                          className="text-[10px] font-medium uppercase tracking-wider bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5"
-                          style={{ color: verdictColour(result.verdict).accent }}
+                          className="text-[10px] font-medium uppercase tracking-wider bg-white border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5"
+                          style={{
+                            color: verdictColour(result.verdict).accent,
+                            borderColor: verdictColour(result.verdict).accent,
+                          }}
                         >
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: verdictColour(result.verdict).accent }} />
                           {result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict}
@@ -3851,13 +3852,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <button onClick={() => setShowExportModal(false)}><X className="w-4 h-4 text-fresco-graphite-light" /></button>
               </div>
 
-              {/* Verdict summary — accent left border + tint background so the
-                  verdict reads as a coloured card, not a generic gray rectangle. */}
+              {/* Verdict summary — accent left border on a neutral surface.
+                  The pill on the verdict card carries the colour; this
+                  summary just gets the chromatic stripe. */}
               <div
-                className="mb-5 p-3"
+                className="mb-5 p-3 bg-fresco-light-gray"
                 style={{
                   borderLeft: `4px solid ${verdictColour(result.verdict).accent}`,
-                  background: verdictColour(result.verdict).tint,
                 }}
               >
                 <div className="flex items-center gap-2 mb-1">
