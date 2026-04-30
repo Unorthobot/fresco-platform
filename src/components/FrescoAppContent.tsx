@@ -427,115 +427,116 @@ export default function FrescoAppContent() {
           }}
         >
         <AnimatePresence mode="wait">
-          {startingHouse && (
-            <motion.div key="starting-house" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="h-screen flex items-center justify-center fresco-grid-bg-subtle">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-8 h-8 border-2 border-fresco-border border-t-fresco-black rounded-full animate-spin" />
-                <p className="fresco-label">Starting {startingHouse}…</p>
-              </div>
-            </motion.div>
-          )}
-          {!startingHouse && effectiveView === 'home' && (
-            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
-              <HomeDashboard
-                onNavigateToWorkspace={handleNavigateToWorkspace}
-                onNavigateToSession={handleNavigateToSession}
-onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
-              />
-            </motion.div>
-          )}
+          {(() => {
+            // SINGLE SWITCH RENDER — one child under AnimatePresence at any time.
+            // Previous structure had 7+ sibling conditional motion.divs which
+            // could leave AnimatePresence stuck in mode='wait' when an exiting
+            // child had no exit animation (no completion signal → no enter).
+            // That was the blank-screen bug across multiple sessions of fixes.
+            //
+            // Now: one render, one key, one motion.div. Whatever effectiveView
+            // resolves to maps to exactly one component. If the resolution
+            // produces something invalid (no matching case, missing data),
+            // we fall through to home unconditionally — never blank.
 
-          {!startingHouse && effectiveView === 'workspace' && activeWorkspaceId && (
-            <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
-              <WorkspaceOverview
-                workspaceId={activeWorkspaceId}
-                onBack={handleBackToHome}
-                onOpenSession={(sessionId) => handleNavigateToSession(sessionId, activeWorkspaceId)}
-                onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
-              />
-            </motion.div>
-          )}
+            if (startingHouse) {
+              return (
+                <motion.div key="starting-house" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="h-screen flex items-center justify-center fresco-grid-bg-subtle">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-8 h-8 border-2 border-fresco-border border-t-fresco-black rounded-full animate-spin" />
+                    <p className="fresco-label">Starting {startingHouse}…</p>
+                  </div>
+                </motion.div>
+              );
+            }
 
-          {!startingHouse && effectiveView === 'session' && activeWorkspaceId && currentSession && (
-            <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }} className="h-screen">
-              <ToolkitRouter
-                sessionId={currentSession.id}
-                workspaceId={activeWorkspaceId}
-                onBack={handleBackToWorkspace}
-                onStartToolkit={handleStartToolkit}
-                onNavigateToHouse={(houseId, fromSessionId) => handleStartHouse(houseId, fromSessionId)}
-              />
-            </motion.div>
-          )}
+            // Render the home dashboard. Used both as the explicit home view
+            // AND as the unconditional fallback for any other inconsistent state.
+            const renderHome = (key: string) => (
+              <motion.div key={key} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+                <HomeDashboard
+                  onNavigateToWorkspace={handleNavigateToWorkspace}
+                  onNavigateToSession={handleNavigateToSession}
+                  onStartToolkit={handleStartToolkit}
+                  onStartHouse={handleStartHouse}
+                />
+              </motion.div>
+            );
 
-          {!startingHouse && effectiveView === 'archive' && (
-            <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
-              <ArchivePage onOpenSession={(sessionId, workspaceId) => handleNavigateToSession(sessionId, workspaceId)} />
-            </motion.div>
-          )}
+            // Workspace view requires a valid workspace; otherwise fall through.
+            if (effectiveView === 'workspace') {
+              if (!activeWorkspaceId) return renderHome('home-from-workspace-fallback');
+              return (
+                <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+                  <WorkspaceOverview
+                    workspaceId={activeWorkspaceId}
+                    onBack={handleBackToHome}
+                    onOpenSession={(sessionId) => handleNavigateToSession(sessionId, activeWorkspaceId)}
+                    onStartToolkit={handleStartToolkit}
+                    onStartHouse={handleStartHouse}
+                  />
+                </motion.div>
+              );
+            }
 
-          {!startingHouse && effectiveView === 'settings' && (
-            <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
-              <SettingsPage />
-            </motion.div>
-          )}
+            // Session view requires both a valid workspace AND a valid session;
+            // otherwise fall through.
+            if (effectiveView === 'session') {
+              if (!activeWorkspaceId || !currentSession) return renderHome('home-from-session-fallback');
+              return (
+                <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }} className="h-screen">
+                  <ToolkitRouter
+                    sessionId={currentSession.id}
+                    workspaceId={activeWorkspaceId}
+                    onBack={handleBackToWorkspace}
+                    onStartToolkit={handleStartToolkit}
+                    onNavigateToHouse={(houseId, fromSessionId) => handleStartHouse(houseId, fromSessionId)}
+                  />
+                </motion.div>
+              );
+            }
 
-          {!startingHouse && effectiveView === 'account' && (
-            <motion.div key="account" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
-              <AccountPage />
-            </motion.div>
-          )}
+            if (effectiveView === 'archive') {
+              return (
+                <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+                  <ArchivePage onOpenSession={(sessionId, workspaceId) => handleNavigateToSession(sessionId, workspaceId)} />
+                </motion.div>
+              );
+            }
 
-          {!startingHouse && effectiveView === 'team' && (
-            <motion.div key="team" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
-              <TeamPage
-                userId={user?.id || ''}
-                userSubscription={user?.subscription || 'free'}
-                onUpgrade={() => setShowUpgradeModal(true)}
-              />
-            </motion.div>
-          )}
-          {/* Safety net — if no branch above matched (e.g. a race during delete
-              where state is briefly inconsistent), render home rather than
-              show a blank screen. */}
-          {!startingHouse && ![
-            'home', 'workspace', 'session', 'archive', 'settings', 'account', 'team'
-          ].includes(effectiveView) && (
-            <motion.div key="fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <HomeDashboard
-                onNavigateToWorkspace={handleNavigateToWorkspace}
-                onNavigateToSession={handleNavigateToSession}
-                onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
-              />
-            </motion.div>
-          )}
-          {/* Additional guard: the 'session' branch requires both currentSession
-              AND activeWorkspaceId. If effectiveView got stuck on 'session' but
-              those are missing, render home. */}
-          {!startingHouse && effectiveView === 'session' && (!activeWorkspaceId || !currentSession) && (
-            <motion.div key="session-fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <HomeDashboard
-                onNavigateToWorkspace={handleNavigateToWorkspace}
-                onNavigateToSession={handleNavigateToSession}
-                onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
-              />
-            </motion.div>
-          )}
-          {/* Same guard for workspace. */}
-          {!startingHouse && effectiveView === 'workspace' && !activeWorkspaceId && (
-            <motion.div key="workspace-fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <HomeDashboard
-                onNavigateToWorkspace={handleNavigateToWorkspace}
-                onNavigateToSession={handleNavigateToSession}
-                onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
-              />
-            </motion.div>
-          )}
+            if (effectiveView === 'settings') {
+              return (
+                <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+                  <SettingsPage />
+                </motion.div>
+              );
+            }
+
+            if (effectiveView === 'account') {
+              return (
+                <motion.div key="account" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+                  <AccountPage />
+                </motion.div>
+              );
+            }
+
+            if (effectiveView === 'team') {
+              return (
+                <motion.div key="team" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+                  <TeamPage
+                    userId={user?.id || ''}
+                    userSubscription={user?.subscription || 'free'}
+                    onUpgrade={() => setShowUpgradeModal(true)}
+                  />
+                </motion.div>
+              );
+            }
+
+            // Default — explicit home view, or any unknown effectiveView value.
+            // This is the unconditional safety net: anything not handled above
+            // falls through to here and renders home. Never blank.
+            return renderHome('home');
+          })()}
         </AnimatePresence>
         </ErrorBoundary>
       </main>

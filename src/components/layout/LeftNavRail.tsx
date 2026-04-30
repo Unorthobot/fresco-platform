@@ -71,12 +71,12 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
 
   const handleDeleteWorkspace = (workspaceId: string) => {
     setDeleteConfirm(null);
-    // store.deleteWorkspace atomically: removes workspace, removes its
-    // sessions, nulls activeWorkspaceId/activeSessionId if they matched,
-    // sets activeSection to 'home'. Doing it in one synchronous call avoids
-    // the brittle 'null state, wait 50ms, delete' dance that kept regressing.
-    db.deleteWorkspace(workspaceId);
+    // Navigate FIRST, then delete. The reverse order means we briefly try to
+    // render against state that's mid-mutation, which used to manifest as a
+    // blank screen during the render-cycle gap. store.deleteWorkspace itself
+    // is atomic — workspace, sessions, and active IDs all clear in one set().
     onNavigate?.('home');
+    db.deleteWorkspace(workspaceId);
   };
 
   const handleNavClick = (section: string) => {
