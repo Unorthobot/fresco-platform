@@ -2360,7 +2360,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (target === 'investigate') return 'situation';
     if (target === 'innovate') return 'start';
     if (target === 'validate') return 'subject';
-    if (target === 'evaluate') return 'subject';
+    // Evaluate is special: it has a 'goal' field rendered above the mode-
+    // specific steps. The diagnostic input semantically matches 'goal'
+    // ("What are you trying to understand?") — and unlike 'subject', it's
+    // present in all three modes (single/journey/comparison). Seeding
+    // 'subject' meant comparison mode silently dropped the seed entirely
+    // because comparison's field order skips 'subject'.
+    if (target === 'evaluate') return 'goal';
     return '';
   };
 
