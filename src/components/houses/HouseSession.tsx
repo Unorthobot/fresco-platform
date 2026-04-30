@@ -3463,12 +3463,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     )}
                   </div>
                   {/* System verdict — plain English + spectrum + rationale.
-                      The chromatic anchor is the 4px coloured left border and
-                      the verdict pill in the top-right. The card body sits on
-                      a neutral surface so the supporting reasoning reads
-                      cleanly — colour as accent, not as background. */}
+                      Matches the recent-sessions pattern on the dashboard:
+                      white card body, neutral grey pill, coloured dot inside
+                      the pill, 4px coloured left border carrying the verdict
+                      signal. Body copy reads cleanly on white. */}
                   <div
-                    className="border border-fresco-border bg-fresco-light-gray p-4"
+                    className="border border-fresco-border bg-white p-4"
                     style={{
                       borderLeftWidth: 4,
                       borderLeftColor: verdictColour(result.verdict).accent,
@@ -3481,11 +3481,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                           {verdictPlain?.headline}
                         </p>
                         <span
-                          className="text-[10px] font-medium uppercase tracking-wider bg-white border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5"
-                          style={{
-                            color: verdictColour(result.verdict).accent,
-                            borderColor: verdictColour(result.verdict).accent,
-                          }}
+                          className="text-[10px] font-medium uppercase tracking-wider bg-fresco-light-gray border border-fresco-border text-fresco-black px-2.5 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5"
                         >
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: verdictColour(result.verdict).accent }} />
                           {result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict}
@@ -3959,11 +3955,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <button onClick={() => setShowExportModal(false)}><X className="w-4 h-4 text-fresco-graphite-light" /></button>
               </div>
 
-              {/* Verdict summary — accent left border on a neutral surface.
-                  The pill on the verdict card carries the colour; this
-                  summary just gets the chromatic stripe. */}
+              {/* Verdict summary — accent left border on a white surface.
+                  Matches the dashboard pattern. */}
               <div
-                className="mb-5 p-3 bg-fresco-light-gray"
+                className="mb-5 p-3 bg-white border border-fresco-border"
                 style={{
                   borderLeft: `4px solid ${verdictColour(result.verdict).accent}`,
                 }}
