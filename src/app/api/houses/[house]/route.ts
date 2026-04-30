@@ -5,6 +5,7 @@
 //
 // SSE event types:
 //   { type: 'pageFetch', status, message }                      — page fetch result
+//   { type: 'run_start', agentNames }                           — list of agents that will run, in order
 //   { type: 'agent_narration', displayName, text }              — one-line context, sent before each agent runs
 //   { type: 'agent', displayName, signal, summary, confidence } — one per agent
 //   { type: 'verdict', ...HouseResult }                          — final merged output
@@ -374,6 +375,14 @@ export async function POST(
               : null,
           });
         }
+
+        // Tell the client which agents will run in this session, in order.
+        // Lets the progress UI compute "step N of M" and percentage without
+        // having to wait for the first narration.
+        send({
+          type: 'run_start',
+          agentNames: agents.map(a => a.displayName),
+        });
 
         // ── Sequential execution ─────────────────────────────────────────────
         for (const agent of agents) {

@@ -142,6 +142,82 @@ const STARTER_PHRASES: Record<string, string[]> = {
 };
 
 
+// ─── Run progress — step counter + interpolated percentage + bar ─────────────
+// Sits above the narration card during a run. Step counter is honest
+// (completed/total agents). Percentage interpolates within the in-flight
+// agent's slot using elapsed-vs-estimated time, so the bar moves smoothly
+// during the 6-12s wait between agent completions instead of jumping in
+// chunks. The estimate is a soft 9s — if the agent runs longer, the bar
+// asymptotes toward 95% instead of pinning at 100%.
+
+const ESTIMATED_AGENT_MS = 9000;
+const MAX_INFLIGHT_FRACTION = 0.95;
+
+function RunProgress({
+  plannedAgents,
+  completedNames,
+  inflightAgent,
+  inflightStartedAt,
+}: {
+  plannedAgents: string[];
+  completedNames: Set<string>;
+  inflightAgent: string | null;
+  inflightStartedAt: number | null;
+}) {
+  // Re-render every 200ms while an agent is in flight so the bar moves.
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!inflightAgent || !inflightStartedAt) return;
+    const t = setInterval(() => force(n => n + 1), 200);
+    return () => clearInterval(t);
+  }, [inflightAgent, inflightStartedAt]);
+
+  if (plannedAgents.length === 0) return null;
+
+  const total = plannedAgents.length;
+  const completed = plannedAgents.filter(n => completedNames.has(n)).length;
+  const stepNum = completed + (inflightAgent ? 1 : 0);
+  const stepLabel = inflightAgent || (completed === total ? 'Synthesising…' : 'Starting…');
+
+  // Each agent owns 1/total of the bar. Completed agents fill their slot.
+  // The in-flight agent fills its slot up to MAX_INFLIGHT_FRACTION based on
+  // elapsed-vs-estimated time (asymptotic — never quite reaches the boundary
+  // until the agent event lands).
+  const slotSize = 1 / total;
+  let progress = completed * slotSize;
+  if (inflightAgent && inflightStartedAt) {
+    const elapsed = Date.now() - inflightStartedAt;
+    const inflightFraction = Math.min(elapsed / ESTIMATED_AGENT_MS, MAX_INFLIGHT_FRACTION);
+    progress += inflightFraction * slotSize;
+  }
+  // After all agents are complete but verdict hasn't landed: ride the last
+  // 5% slowly so it doesn't sit at 100% while the synthesis call runs.
+  if (completed === total && !inflightAgent) {
+    progress = MAX_INFLIGHT_FRACTION;
+  }
+  const pct = Math.round(progress * 100);
+
+  return (
+    <div className="mb-3">
+      <div className="flex items-center justify-between gap-3 text-fresco-xs">
+        <div className="flex items-center gap-2 text-fresco-graphite-light min-w-0">
+          <span className="flex-shrink-0">Step {Math.min(stepNum, total)} of {total}</span>
+          <span className="text-fresco-graphite-light/40 flex-shrink-0">·</span>
+          <span className="text-fresco-black font-medium truncate">{stepLabel}</span>
+        </div>
+        <span className="text-fresco-graphite-light tabular-nums flex-shrink-0">{pct}%</span>
+      </div>
+      <div className="mt-2 h-[2px] bg-fresco-border overflow-hidden">
+        <div
+          className="h-full bg-fresco-black transition-all duration-[400ms] ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+
 // ─── Typewriter ──────────────────────────────────────────────────────────────
 // Animates text in character-by-character. Used for agent narrations during
 // the wait so the screen reads as "thinking happening" rather than "frozen".
@@ -2325,6 +2401,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
   const [agentNarrations, setAgentNarrations] = useState<Record<string, string>>({});
+  // Total agents the backend told us will run (via run_start event).
+  // Drives the step counter and percentage.
+  const [plannedAgents, setPlannedAgents] = useState<string[]>([]);
+  // When each narration arrived. Lets the progress bar interpolate within
+  // an in-flight agent's slot using elapsed-vs-estimated time.
+  const [narrationStartedAt, setNarrationStartedAt] = useState<Record<string, number>>({});
   const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem(`fresco-agent-outputs-${sessionId}`);
@@ -2446,7 +2528,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (!canGenerate) { setShowPricingModal(true); return; }
     const abort = new AbortController();
     abortRef.current = abort;
-    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setAgentNarrations({}); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
+    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setAgentNarrations({}); setPlannedAgents([]); setNarrationStartedAt({}); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
     // Once the run starts, clear the handoff + seed markers so a refresh
     // doesn't re-seed. The values are already persisted to localStorage.
     try {
@@ -2548,8 +2630,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               const ev = JSON.parse(line.slice(6));
               if (ev.type === 'pageFetch') {
                 if (ev.message) setPageFetchMessage(ev.message);
+              } else if (ev.type === 'run_start') {
+                setPlannedAgents(Array.isArray(ev.agentNames) ? ev.agentNames : []);
               } else if (ev.type === 'agent_narration') {
                 setAgentNarrations(prev => ({ ...prev, [ev.displayName]: ev.text }));
+                setNarrationStartedAt(prev => ({ ...prev, [ev.displayName]: Date.now() }));
               } else if (ev.type === 'agent') {
                 setAgentEvents(prev => {
                   const next = [...prev, {
@@ -2620,6 +2705,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     setIsRunning(false);
     setAgentEvents([]);
     setAgentNarrations({});
+    setPlannedAgents([]);
+    setNarrationStartedAt({});
     setPageFetchMessage(null);
     setRunError(null);
   }, []);
@@ -2934,7 +3021,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     <button onClick={() => {
                       Object.keys(values).forEach(k => setValue(k, ''));
                       try { localStorage.removeItem(`fresco-inputs-${sessionId}`); } catch {}
-                      setResult(null); setAgentEvents([]); setAgentNarrations({}); setChallengeQuestions([]);
+                      setResult(null); setAgentEvents([]); setAgentNarrations({}); setPlannedAgents([]); setNarrationStartedAt({}); setChallengeQuestions([]);
                       setChallengeResponses({}); setChallengeDismissed(false);
                       setStoredAgentOutputs([]); setActiveLens(null);
                       try { localStorage.removeItem(`fresco-agent-outputs-${sessionId}`); } catch {}
@@ -3284,42 +3371,62 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   const completedNames = new Set(agentEvents.map(e => e.displayName));
                   const pendingNarration = Object.entries(agentNarrations)
                     .find(([name]) => !completedNames.has(name));
+                  const inflightAgent = pendingNarration ? pendingNarration[0] : null;
+                  const inflightStartedAt = inflightAgent ? (narrationStartedAt[inflightAgent] || null) : null;
+
+                  const progressBlock = (
+                    <RunProgress
+                      plannedAgents={plannedAgents}
+                      completedNames={completedNames}
+                      inflightAgent={inflightAgent}
+                      inflightStartedAt={inflightStartedAt}
+                    />
+                  );
 
                   if (pendingNarration) {
                     const [name, text] = pendingNarration;
                     return (
-                      <motion.div
-                        key={name}
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-3 bg-fresco-light-gray border-l-2 border-fresco-graphite-light/40"
-                      >
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-fresco-graphite-mid animate-pulse" />
-                          <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">{name}</span>
-                        </div>
-                        <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed italic">
-                          <Typewriter text={text} />
-                        </p>
-                      </motion.div>
+                      <>
+                        {progressBlock}
+                        <motion.div
+                          key={name}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-3 bg-fresco-light-gray border-l-2 border-fresco-graphite-light/40"
+                        >
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-fresco-graphite-mid animate-pulse" />
+                            <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">{name}</span>
+                          </div>
+                          <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed italic">
+                            <Typewriter text={text} />
+                          </p>
+                        </motion.div>
+                      </>
                     );
                   }
 
                   // No pending narration — only show the soft indicator before
                   // the first agent has produced anything. Once at least one
                   // agent has completed and we're waiting for the verdict (no
-                  // further narrations), stay silent — the verdict will land.
+                  // further narrations), still show the progress bar so the
+                  // user knows the synthesis step is running.
                   if (agentEvents.length === 0) {
                     return (
-                      <div className="p-3 bg-fresco-light-gray border-l-2 border-fresco-border">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-fresco-graphite-light animate-pulse" />
-                          <span className="text-fresco-xs text-fresco-graphite-light italic">Thinking…</span>
+                      <>
+                        {progressBlock}
+                        <div className="p-3 bg-fresco-light-gray border-l-2 border-fresco-border">
+                          <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-fresco-graphite-light animate-pulse" />
+                            <span className="text-fresco-xs text-fresco-graphite-light italic">Thinking…</span>
+                          </div>
                         </div>
-                      </div>
+                      </>
                     );
                   }
-                  return null;
+                  // All agents done, waiting for verdict — keep progress bar
+                  // visible so the user sees the synthesis step.
+                  return progressBlock;
                 })()}
               </motion.div>
             )}
