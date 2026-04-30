@@ -142,6 +142,47 @@ const STARTER_PHRASES: Record<string, string[]> = {
 };
 
 
+// ─── Typewriter ──────────────────────────────────────────────────────────────
+// Animates text in character-by-character. Used for agent narrations during
+// the wait so the screen reads as "thinking happening" rather than "frozen".
+// Target: ~30ms/char, with a faster catch-up if the text is long. Skips
+// animation if user prefers reduced motion.
+
+function Typewriter({ text, speedMs = 28, className }: { text: string; speedMs?: number; className?: string }) {
+  const [shown, setShown] = useState(0);
+  const reduce = useRef(false);
+
+  useEffect(() => {
+    reduce.current = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
+  useEffect(() => {
+    if (!text) { setShown(0); return; }
+    if (reduce.current) { setShown(text.length); return; }
+    setShown(0);
+    // Adaptive speed: longer text types slightly faster so total time stays sane.
+    const adaptive = text.length > 80 ? Math.max(14, speedMs - 8) : speedMs;
+    let i = 0;
+    const tick = () => {
+      i += 1;
+      setShown(i);
+      if (i < text.length) timer = setTimeout(tick, adaptive);
+    };
+    let timer = setTimeout(tick, adaptive);
+    return () => clearTimeout(timer);
+  }, [text, speedMs]);
+
+  return (
+    <span className={className}>
+      {text.slice(0, shown)}
+      {shown < text.length && (
+        <span className="inline-block w-[1px] h-[0.9em] -mb-[0.1em] ml-[1px] bg-fresco-graphite-mid animate-pulse" aria-hidden />
+      )}
+    </span>
+  );
+}
+
+
 // ─── Chip / tag input ────────────────────────────────────────────────────────
 // For discrete items: assumptions, patterns, signals
 
@@ -2283,6 +2324,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const inputScrollRef = useRef<HTMLDivElement>(null);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
+  const [agentNarrations, setAgentNarrations] = useState<Record<string, string>>({});
   const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem(`fresco-agent-outputs-${sessionId}`);
@@ -2404,7 +2446,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (!canGenerate) { setShowPricingModal(true); return; }
     const abort = new AbortController();
     abortRef.current = abort;
-    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
+    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setAgentNarrations({}); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
     // Once the run starts, clear the handoff + seed markers so a refresh
     // doesn't re-seed. The values are already persisted to localStorage.
     try {
@@ -2506,6 +2548,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               const ev = JSON.parse(line.slice(6));
               if (ev.type === 'pageFetch') {
                 if (ev.message) setPageFetchMessage(ev.message);
+              } else if (ev.type === 'agent_narration') {
+                setAgentNarrations(prev => ({ ...prev, [ev.displayName]: ev.text }));
               } else if (ev.type === 'agent') {
                 setAgentEvents(prev => {
                   const next = [...prev, {
@@ -2575,6 +2619,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     abortRef.current = null;
     setIsRunning(false);
     setAgentEvents([]);
+    setAgentNarrations({});
     setPageFetchMessage(null);
     setRunError(null);
   }, []);
@@ -2889,7 +2934,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     <button onClick={() => {
                       Object.keys(values).forEach(k => setValue(k, ''));
                       try { localStorage.removeItem(`fresco-inputs-${sessionId}`); } catch {}
-                      setResult(null); setAgentEvents([]); setChallengeQuestions([]);
+                      setResult(null); setAgentEvents([]); setAgentNarrations({}); setChallengeQuestions([]);
                       setChallengeResponses({}); setChallengeDismissed(false);
                       setStoredAgentOutputs([]); setActiveLens(null);
                       try { localStorage.removeItem(`fresco-agent-outputs-${sessionId}`); } catch {}
@@ -3231,12 +3276,51 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </motion.div>
                   );
                 })()}
-                {isRunning && agentEvents.length < 3 && (
-                  <div className="p-3 bg-fresco-light-gray border-l-2 border-fresco-border">
-                    <div className="h-2 w-20 bg-fresco-border rounded mb-2 animate-pulse" />
-                    <div className="h-2 w-full bg-fresco-border rounded animate-pulse" />
-                  </div>
-                )}
+                {isRunning && (() => {
+                  // Find the narration whose agent event hasn't arrived yet.
+                  // The narration is sent first; the heavy agent call follows.
+                  // When the agent event lands it gets pushed to agentEvents and
+                  // the upstream "current agent" block above replaces this.
+                  const completedNames = new Set(agentEvents.map(e => e.displayName));
+                  const pendingNarration = Object.entries(agentNarrations)
+                    .find(([name]) => !completedNames.has(name));
+
+                  if (pendingNarration) {
+                    const [name, text] = pendingNarration;
+                    return (
+                      <motion.div
+                        key={name}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-3 bg-fresco-light-gray border-l-2 border-fresco-graphite-light/40"
+                      >
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-fresco-graphite-mid animate-pulse" />
+                          <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">{name}</span>
+                        </div>
+                        <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed italic">
+                          <Typewriter text={text} />
+                        </p>
+                      </motion.div>
+                    );
+                  }
+
+                  // No pending narration — only show the soft indicator before
+                  // the first agent has produced anything. Once at least one
+                  // agent has completed and we're waiting for the verdict (no
+                  // further narrations), stay silent — the verdict will land.
+                  if (agentEvents.length === 0) {
+                    return (
+                      <div className="p-3 bg-fresco-light-gray border-l-2 border-fresco-border">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-fresco-graphite-light animate-pulse" />
+                          <span className="text-fresco-xs text-fresco-graphite-light italic">Thinking…</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </motion.div>
             )}
           </AnimatePresence>
@@ -3298,7 +3382,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 />
 
                 {/* VERDICT */}
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
                   <div className="flex items-center justify-between mb-3">
                     <span className="fresco-label">Verdict</span>
                     {!showVerdictOverride && (
@@ -3396,7 +3484,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       />
                     </div>
                   )}
-                </div>
+                </motion.div>
 
                 {/* SEE THIS FROM A DIFFERENT ANGLE — lens picker.
                     Sits between the verdict and the supporting reasoning. The user
@@ -3444,7 +3532,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 )}
 
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeOut', delay: 0.35 }}
+                >
                   <span className="fresco-label block mb-3">Key issues</span>
                   <div className="space-y-2">
                     {result.keyIssues.map((issue, i) => (
@@ -3456,9 +3548,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
 
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeOut', delay: 0.7 }}
+                >
                   <span className="fresco-label block mb-3">Recommended moves</span>
                   <div className="space-y-2">
                     {result.necessaryMoves.map((move, i) => (
@@ -3470,7 +3566,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Next house suggestion */}
                 {result.suggestedNextHouse && (
