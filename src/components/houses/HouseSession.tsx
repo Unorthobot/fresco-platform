@@ -3325,48 +3325,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             )}
           </AnimatePresence>
 
-          {/* ── Lens primer — surfaces while the run is in progress to pre-frame
-                what's about to land. Pre-teaches the lens feature so it doesn't
-                arrive as an unexpected button cluster. Hides the moment the
-                verdict lands. ─────────────────────────────────────────────── */}
-          <AnimatePresence>
-            {isRunning && !result && (
-              <motion.div
-                key="lens-primer"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25, delay: 0.5 }}
-                className="mb-6 border border-fresco-border-light p-4"
-              >
-                <p className="fresco-label mb-2">Coming next</p>
-                <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed mb-3">
-                  Once the verdict lands, you can re-run the analysis through 8 different lenses — each foregrounds a distinct way of thinking.
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {[
-                    { label: 'Critical',   desc: 'Assumptions & evidence' },
-                    { label: 'Systems',    desc: 'Loops & root causes' },
-                    { label: 'Design',     desc: 'Human & experience' },
-                    { label: 'Product',    desc: 'Build decisions' },
-                    { label: 'Strategic',  desc: 'Competitive direction' },
-                    { label: 'Analytical', desc: 'Data & measurement' },
-                    { label: 'Futures',    desc: 'Trajectory & signals' },
-                    { label: 'Economic',   desc: 'Incentives & value' },
-                  ].map(lens => (
-                    <span
-                      key={lens.label}
-                      title={lens.desc}
-                      className="text-fresco-xs px-2 py-0.5 border border-fresco-border-light text-fresco-graphite-light"
-                    >
-                      {lens.label}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* Final result */}
           <AnimatePresence mode="wait">
             {result && (
@@ -3434,7 +3392,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       fitLabel={(result as any).fitLabel}
                     />
                     {/* Rationale */}
-                    <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed mt-4 pt-4 border-t border-fresco-border-light">
+                    <p className="text-fresco-sm text-fresco-graphite-mid leading-relaxed mt-4 pt-4 border-t border-fresco-border-light">
                       {result.verdictRationale}
                     </p>
                   </div>
