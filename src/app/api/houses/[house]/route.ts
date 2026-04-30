@@ -217,6 +217,11 @@ export async function POST(
   let pageContent: string | undefined;
   let pageFetchStatus: 'fetched' | 'failed' | 'none' = 'none';
 
+  // Peek at the explicit mode to label pages meaningfully when fetching.
+  // (The full evaluateMode resolution with regex fallback happens further
+  // below — we just need the explicit hint here for chip labelling.)
+  const isComparison = house === 'evaluate' && body.evaluateMode === 'comparison';
+
   const normaliseUrl = (u: string) => u.startsWith('http') ? u : `https://${u}`;
   if (url && url.trim()) {
     const urls = url.split('\n').map(u => normaliseUrl(u.trim())).filter(u => u.length > 8);
@@ -224,9 +229,19 @@ export async function POST(
       const results = await Promise.all(urls.slice(0, 3).map(u => fetchPageContent(u)));
       const fetched = results.filter(r => r.fetched);
       if (fetched.length > 0) {
-        pageContent = urls.length === 1
-          ? fetched[0].content
-          : fetched.map((r, i) => `=== Page ${i + 1}: ${urls[i]} ===\n${r.content}`).join('\n\n');
+        if (urls.length === 1) {
+          // Single URL: in comparison mode, label it Version A and note B is missing.
+          pageContent = isComparison
+            ? `=== Version A: ${urls[0]} ===\n${fetched[0].content}\n\n(Version B URL not provided — analyse Version A and note any comparison limits.)`
+            : fetched[0].content;
+        } else {
+          // Multiple URLs: label by Version A/B for comparison, Page N otherwise.
+          const labelFor = (i: number) =>
+            isComparison ? `Version ${String.fromCharCode(65 + i)}` : `Page ${i + 1}`;
+          pageContent = fetched
+            .map((r, i) => `=== ${labelFor(i)}: ${urls[i]} ===\n${r.content}`)
+            .join('\n\n');
+        }
         pageFetchStatus = 'fetched';
       } else {
         pageFetchStatus = 'failed';

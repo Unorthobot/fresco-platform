@@ -1960,11 +1960,12 @@ function ConversationFlow({
 
 // ─── URL tag input ────────────────────────────────────────────────────────────
 
-function UrlTagInput({ urls, onChange, maxUrls, label }: {
+function UrlTagInput({ urls, onChange, maxUrls, label, chipPrefixes }: {
   urls: string[];
   onChange: (urls: string[]) => void;
   maxUrls: number;
   label: string;
+  chipPrefixes?: string[];
 }) {
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -2004,6 +2005,9 @@ function UrlTagInput({ urls, onChange, maxUrls, label }: {
                 'flex items-center gap-1.5 px-2.5 py-1.5 text-fresco-xs border max-w-full',
                 warning ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-fresco-border bg-fresco-light-gray text-fresco-black'
               )}>
+                {chipPrefixes?.[i] && (
+                  <span className="font-semibold text-fresco-graphite-mid flex-shrink-0">{chipPrefixes[i]} —</span>
+                )}
                 <span className="truncate max-w-[220px] font-mono" title={u}>{u.replace(/^https?:\/\//, '')}</span>
                 {warning && <span className="text-amber-500 flex-shrink-0" title={warning}>⚠</span>}
                 <button type="button" onClick={() => remove(i)} className="flex-shrink-0 hover:text-red-500 transition-colors ml-0.5">
@@ -2040,7 +2044,11 @@ function UrlTagInput({ urls, onChange, maxUrls, label }: {
                 if (toAdd.length > 0) onChange([...urls, ...toAdd]);
               }
             }}
-            placeholder={urls.length === 0 ? 'https://yoursite.com/page' : 'Add another URL…'}
+            placeholder={
+              chipPrefixes?.[urls.length]
+                ? `${chipPrefixes[urls.length]}: https://yoursite.com/...`
+                : urls.length === 0 ? 'https://yoursite.com/page' : 'Add another URL…'
+            }
             className="flex-1 h-9 px-3 text-fresco-xs text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black font-mono"
           />
           <button
@@ -2153,6 +2161,7 @@ function EvaluateFlow({
         onChange={urls => onUrlChange(urls.join('\n'))}
         maxUrls={mode === 'journey' ? 5 : mode === 'comparison' ? 2 : 1}
         label={mode === 'journey' ? 'Page URLs (optional)' : mode === 'comparison' ? 'Version URLs (optional)' : 'URL (optional)'}
+        chipPrefixes={mode === 'comparison' ? ['Version A', 'Version B'] : undefined}
       />
 
       {/* Mode-specific questions */}
