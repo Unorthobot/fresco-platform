@@ -2438,7 +2438,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [pageFetchMessage, setPageFetchMessage] = useState<string | null>(null);
   const [activeLens, setActiveLens] = useState<string | null>(null);
   const [isReframing, setIsReframing] = useState(false);
-  const [showLensPicker, setShowLensPicker] = useState(false);
   const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
   const [runError, setRunError] = useState<string | null>(null);
   const [userVerdict, setUserVerdict] = useState<string | null>(null);
@@ -2767,7 +2766,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       return;
     }
     setIsReframing(true);
-    setShowLensPicker(false);
     setActiveLens(lens);
     setRunError(null);
     try {
@@ -3711,59 +3709,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 {/* ── ANALYSIS TAB ─────────────────────────────────────── */}
                 {outputTab === 'analysis' && (
                   <>
-                  {/* See this from a different angle — pill row with framing copy.
-                      Each lens runs the analysis again from a distinct intellectual
-                      perspective. Native tooltip on each pill exposes the focus.
-                      Compact (one row vs ~400px grid) without burying discovery. */}
-                  {storedAgentOutputs.length > 0 && (
-                    <div>
-                      <p className="fresco-label mb-1">See this from a different angle</p>
-                      <p className="text-fresco-xs text-fresco-graphite-light mb-3 leading-relaxed">
-                        Run the analysis again through a distinct intellectual perspective.
-                      </p>
-                      {!showLensPicker ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {[
-                            { id: 'critical',   label: 'Critical',    desc: 'Assumptions & evidence' },
-                            { id: 'systems',    label: 'Systems',     desc: 'Loops & root causes' },
-                            { id: 'design',     label: 'Design',      desc: 'Human & experience' },
-                            { id: 'product',    label: 'Product',     desc: 'Build decisions' },
-                            { id: 'strategic',  label: 'Strategic',   desc: 'Competitive direction' },
-                            { id: 'analytical', label: 'Analytical',  desc: 'Data & measurement' },
-                            { id: 'futures',    label: 'Futures',     desc: 'Trajectory & signals' },
-                            { id: 'economic',   label: 'Economic',    desc: 'Incentives & value' },
-                          ].map(lens => (
-                            <button
-                              key={lens.id}
-                              onClick={() => { setShowLensPicker(false); handleReframe(lens.id); }}
-                              disabled={isReframing}
-                              title={lens.desc}
-                              className={cn(
-                                'text-fresco-xs px-2.5 py-1 border transition-all whitespace-nowrap',
-                                activeLens === lens.id
-                                  ? 'bg-fresco-black text-white border-fresco-black'
-                                  : 'border-fresco-border-light text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black hover:bg-fresco-light-gray',
-                                isReframing && activeLens !== lens.id && 'opacity-40 cursor-not-allowed'
-                              )}
-                            >
-                              {isReframing && activeLens === lens.id ? 'Reframing…' : lens.label}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <button onClick={() => setShowLensPicker(false)} className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
-                          ← Back to lenses
-                        </button>
-                      )}
-                      {activeLens && (
-                        <p className="text-fresco-xs text-fresco-graphite-light mt-3">
-                          Currently viewing through the <span className="font-medium text-fresco-black capitalize">{activeLens}</span> lens
-                          <button onClick={() => { setActiveLens(null); }} className="ml-2 underline underline-offset-2 hover:text-fresco-black transition-colors">clear</button>
-                        </p>
-                      )}
-                    </div>
-                  )}
-
                   {(() => {
                     const so = (result as any).systemsOutput;
                     const bmEvent = agentEvents.find(e => e.displayName === 'Belief Mapper');
