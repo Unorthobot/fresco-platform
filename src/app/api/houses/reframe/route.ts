@@ -72,7 +72,7 @@ Return ONLY this JSON shape (no other text):
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1200,           // Was 800 — could truncate JSON mid-array on long lens outputs
         system: systemPrompt,        // Was inlined into the user message — moving it to system improves compliance
         messages: [{ role: 'user', content: userMessage }],

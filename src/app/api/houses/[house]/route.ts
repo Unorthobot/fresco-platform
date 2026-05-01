@@ -188,7 +188,7 @@ async function runAgent(
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1200,
       system: agent.systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
@@ -226,7 +226,7 @@ async function runMerge(house: HouseId, agentOutputs: AgentOutput[], userInput: 
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 2000,
       messages: [{ role: 'user', content: mergePrompt }],
     }),
