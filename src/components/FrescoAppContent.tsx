@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ErrorBoundary } from './ErrorBoundary';
+import { RecoveryPanel } from './RecoveryPanel';
 import { useSession } from 'next-auth/react';
 import { canGuestRun, getGuestRunCount, GUEST_RUN_LIMIT, resetGuestRunCount, backfillGuestRunCount } from '@/lib/guestRuns';
 import { useDBSync, useDBWrite, useDBSyncComplete } from '@/lib/useDBSync';
@@ -411,10 +412,14 @@ export default function FrescoAppContent() {
       <a href="#main-content" className="skip-link">Skip to main content</a>
 
       <div className="hidden md:block">
-        <LeftNavRail onNavigate={handleNavigate} onStartHouse={handleStartHouse} />
+        <ErrorBoundary fallback={<div className="hidden md:block fixed left-0 top-0 w-[220px] h-screen border-r border-fresco-border bg-fresco-white" />}>
+          <LeftNavRail onNavigate={handleNavigate} onStartHouse={handleStartHouse} />
+        </ErrorBoundary>
       </div>
 
-      <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} onStartHouse={handleStartHouse} />
+      <ErrorBoundary fallback={null}>
+        <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} onStartHouse={handleStartHouse} />
+      </ErrorBoundary>
 
       <main id="main-content" className="md:ml-[220px] min-h-screen relative">
         <ErrorBoundary
@@ -562,6 +567,11 @@ export default function FrescoAppContent() {
         isOpen={showPricingModal}
         onClose={() => setShowPricingModal(false)}
       />
+
+      {/* Always-mounted recovery escape hatch. Lives outside both
+          ErrorBoundaries so it survives any subtree crash. Lets the user
+          recover and copy diagnostics without DevTools. */}
+      <RecoveryPanel />
     </div>
   );
 }
