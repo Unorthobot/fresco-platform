@@ -151,7 +151,9 @@ const STARTER_PHRASES: Record<string, string[]> = {
 // asymptotes toward 95% instead of pinning at 100%.
 
 const ESTIMATED_AGENT_MS = 9000;
+const ESTIMATED_SYNTHESIS_MS = 6000;
 const MAX_INFLIGHT_FRACTION = 0.95;
+const MAX_SYNTHESIS_FRACTION = 0.99;
 
 function RunProgress({
   plannedAgents,
@@ -164,20 +166,35 @@ function RunProgress({
   inflightAgent: string | null;
   inflightStartedAt: number | null;
 }) {
-  // Re-render every 200ms while an agent is in flight so the bar moves.
+  const total = plannedAgents.length;
+  const completed = plannedAgents.filter(n => completedNames.has(n)).length;
+  const isSynthesising = total > 0 && completed === total && !inflightAgent;
+
+  // Capture the moment we entered the synthesis phase so we can interpolate
+  // 95% → 99% across the estimated synthesis window. Reset whenever we leave
+  // synthesis (e.g. user starts a new run).
+  const synthesisStartRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (isSynthesising && synthesisStartRef.current === null) {
+      synthesisStartRef.current = Date.now();
+    } else if (!isSynthesising) {
+      synthesisStartRef.current = null;
+    }
+  }, [isSynthesising]);
+
+  // Re-render every 200ms while either an agent OR the synthesis call is
+  // in flight, so the bar keeps moving.
   const [, force] = useState(0);
   useEffect(() => {
-    if (!inflightAgent || !inflightStartedAt) return;
+    if (!inflightAgent && !isSynthesising) return;
     const t = setInterval(() => force(n => n + 1), 200);
     return () => clearInterval(t);
-  }, [inflightAgent, inflightStartedAt]);
+  }, [inflightAgent, inflightStartedAt, isSynthesising]);
 
   if (plannedAgents.length === 0) return null;
 
-  const total = plannedAgents.length;
-  const completed = plannedAgents.filter(n => completedNames.has(n)).length;
   const stepNum = completed + (inflightAgent ? 1 : 0);
-  const stepLabel = inflightAgent || (completed === total ? 'Synthesising…' : 'Starting…');
+  const stepLabel = inflightAgent || (isSynthesising ? 'Merging the analyses…' : 'Starting…');
 
   // Each agent owns 1/total of the bar. Completed agents fill their slot.
   // The in-flight agent fills its slot up to MAX_INFLIGHT_FRACTION based on
@@ -190,10 +207,16 @@ function RunProgress({
     const inflightFraction = Math.min(elapsed / ESTIMATED_AGENT_MS, MAX_INFLIGHT_FRACTION);
     progress += inflightFraction * slotSize;
   }
-  // After all agents are complete but verdict hasn't landed: ride the last
-  // 5% slowly so it doesn't sit at 100% while the synthesis call runs.
-  if (completed === total && !inflightAgent) {
-    progress = MAX_INFLIGHT_FRACTION;
+  // Synthesis phase: all agents done, verdict not yet landed. Interpolate
+  // from MAX_INFLIGHT_FRACTION toward MAX_SYNTHESIS_FRACTION across the
+  // estimated synthesis window so the bar keeps moving instead of freezing
+  // at 95% for several seconds.
+  if (isSynthesising) {
+    const synthStart = synthesisStartRef.current ?? Date.now();
+    const elapsed = Date.now() - synthStart;
+    const synthFraction = Math.min(elapsed / ESTIMATED_SYNTHESIS_MS, 1);
+    const range = MAX_SYNTHESIS_FRACTION - MAX_INFLIGHT_FRACTION;
+    progress = MAX_INFLIGHT_FRACTION + synthFraction * range;
   }
   const pct = Math.round(progress * 100);
 
@@ -202,10 +225,13 @@ function RunProgress({
       <div className="flex items-center justify-between gap-3 text-fresco-xs">
         <div className="flex items-center gap-2 min-w-0">
           {/* Per-agent dots: filled = done, pulsing = running, hollow = pending.
-              The dots track structure (N discrete agents); the percentage
-              tracks time within the in-flight slot. Together they read as
-              one fact, not two competing readouts. */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+              During synthesis (all agents done, verdict pending) all dots
+              pulse together to signal the run is still active rather than
+              going visually flat. */}
+          <div className={cn(
+            'flex items-center gap-1.5 flex-shrink-0',
+            isSynthesising && 'animate-pulse',
+          )}>
             {plannedAgents.map((name, i) => {
               const isDone = completedNames.has(name);
               const isRunning = name === inflightAgent;
