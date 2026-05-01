@@ -200,18 +200,34 @@ function RunProgress({
   return (
     <div className="mb-3">
       <div className="flex items-center justify-between gap-3 text-fresco-xs">
-        <div className="flex items-center gap-2 text-fresco-graphite-light min-w-0">
-          <span className="flex-shrink-0">Step {Math.min(stepNum, total)} of {total}</span>
-          <span className="text-fresco-graphite-light/40 flex-shrink-0">·</span>
-          <span className="text-fresco-black font-medium truncate">{stepLabel}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Per-agent dots: filled = done, pulsing = running, hollow = pending.
+              The dots track structure (N discrete agents); the percentage
+              tracks time within the in-flight slot. Together they read as
+              one fact, not two competing readouts. */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {plannedAgents.map((name, i) => {
+              const isDone = completedNames.has(name);
+              const isRunning = name === inflightAgent;
+              return (
+                <span
+                  key={i}
+                  className={cn(
+                    'w-1.5 h-1.5 rounded-full',
+                    isDone && 'bg-fresco-black',
+                    isRunning && 'bg-fresco-black animate-pulse',
+                    !isDone && !isRunning && 'bg-fresco-border',
+                  )}
+                  aria-hidden
+                />
+              );
+            })}
+          </div>
+          <span className="text-fresco-black font-medium truncate ml-1">{stepLabel}</span>
         </div>
-        <span className="text-fresco-graphite-light tabular-nums flex-shrink-0">{pct}%</span>
-      </div>
-      <div className="mt-2 h-[2px] bg-fresco-border overflow-hidden">
-        <div
-          className="h-full bg-fresco-black transition-all duration-[400ms] ease-out"
-          style={{ width: `${pct}%` }}
-        />
+        <span className="text-fresco-graphite-light tabular-nums flex-shrink-0">
+          {Math.min(stepNum, total)} of {total} · {pct}%
+        </span>
       </div>
     </div>
   );
