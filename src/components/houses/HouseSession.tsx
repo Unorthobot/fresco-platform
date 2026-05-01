@@ -191,6 +191,15 @@ function RunProgress({
     return () => clearInterval(t);
   }, [inflightAgent, inflightStartedAt, isSynthesising]);
 
+  // High-water mark: progress can never decrease across renders. Without this,
+  // phase transitions caused visible backward jumps — e.g. an in-flight agent
+  // hitting 98% (its slot fraction × 95% × 3 + the 2 completed slots) then
+  // dropping to 95% the instant synthesis began. Reset on new run.
+  const highWaterRef = useRef(0);
+  useEffect(() => {
+    if (plannedAgents.length === 0) highWaterRef.current = 0;
+  }, [plannedAgents]);
+
   if (plannedAgents.length === 0) return null;
 
   const stepNum = completed + (inflightAgent ? 1 : 0);
@@ -218,6 +227,11 @@ function RunProgress({
     const range = MAX_SYNTHESIS_FRACTION - MAX_INFLIGHT_FRACTION;
     progress = MAX_INFLIGHT_FRACTION + synthFraction * range;
   }
+  // Enforce monotonicity: bar can never go backward. Cap at MAX_SYNTHESIS_FRACTION
+  // until the verdict actually lands (parent unmounts this component when
+  // it does, so we never need to render 100% from here).
+  progress = Math.min(MAX_SYNTHESIS_FRACTION, Math.max(progress, highWaterRef.current));
+  highWaterRef.current = progress;
   const pct = Math.round(progress * 100);
 
   return (
