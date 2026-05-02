@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { HouseId } from '@/lib/agents';
 import type { AgentOutput } from '@/lib/orchestrator';
 import { buildHouseResult, HOUSE_FIT_LABELS } from '@/lib/orchestrator';
+import { REFRAME_TOOL_SCHEMA } from '@/lib/orchestrator/schemas';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -49,8 +50,7 @@ export async function POST(request: NextRequest) {
 
 Rules:
 - Strong → GO. Weak → PIVOT or STOP. Undecided → INVESTIGATE FURTHER.
-- Never combine Strong with STOP. Never combine Weak with GO.
-- Output is consumed by a UI — return ONLY valid JSON, nothing before or after, no markdown fences, no prose preamble.`;
+- Never combine Strong with STOP. Never combine Weak with GO.`;
 
   const userMessage = `USER INPUT
 ${userInput || '(none provided)'}
@@ -64,8 +64,7 @@ ${lensInstruction}
 FIT LABEL
 ${HOUSE_FIT_LABELS[house]}
 
-Return ONLY this JSON shape (no other text):
-{"fitStrength":"Strong|Weak|Undecided","verdict":"GO|PIVOT|INVESTIGATE FURTHER|STOP","verdictRationale":"1-2 sentences","sentenceOfTruth":"Lens-shaped insight, single sentence","keyIssues":["issue 1","issue 2","issue 3"],"necessaryMoves":["move 1","move 2","move 3"]}`;
+Call the submit_reframe tool with your lens-shaped synthesis.`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -73,9 +72,15 @@ Return ONLY this JSON shape (no other text):
       headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1200,           // Was 800 — could truncate JSON mid-array on long lens outputs
-        system: systemPrompt,        // Was inlined into the user message — moving it to system improves compliance
+        max_tokens: 1500,
+        system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
+        tools: [{
+          name: 'submit_reframe',
+          description: 'Submit the lens-shaped re-synthesis.',
+          input_schema: REFRAME_TOOL_SCHEMA,
+        }],
+        tool_choice: { type: 'tool', name: 'submit_reframe' },
       }),
     });
     if (!res.ok) {
@@ -84,34 +89,23 @@ Return ONLY this JSON shape (no other text):
       return NextResponse.json({ error: `Anthropic ${res.status}: ${errBody.slice(0, 200)}` }, { status: 500 });
     }
     const data = await res.json();
-    const text: string = data.content?.[0]?.text || '';
-    if (!text) {
-      console.error('[reframe] Empty response from Anthropic. Full body:', JSON.stringify(data).slice(0, 500));
-      return NextResponse.json({ error: 'Empty response from model' }, { status: 500 });
+    const toolUse = data.content?.find((b: { type: string }) => b.type === 'tool_use');
+    if (!toolUse?.input) {
+      console.error('[reframe] No tool_use in response. Full body:', JSON.stringify(data).slice(0, 500));
+      return NextResponse.json({ error: 'Model returned no tool_use' }, { status: 500 });
     }
-    // Strip optional markdown fences before regex extraction
-    const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (!match) {
-      console.error('[reframe] No JSON in response. Text was:', cleaned.slice(0, 500));
-      return NextResponse.json({ error: 'Model returned no JSON' }, { status: 500 });
-    }
-    let parsed: any;
-    try {
-      parsed = JSON.parse(match[0]);
-    } catch (jsonErr) {
-      console.error('[reframe] JSON parse failed. Match was:', match[0].slice(0, 500), 'Error:', jsonErr);
-      return NextResponse.json({ error: 'Model returned malformed JSON' }, { status: 500 });
-    }
+    const parsed = toolUse.input as Record<string, unknown>;
 
     // Enforce consistency
-    const fitStrength = parsed.fitStrength || 'Undecided';
-    let verdict = parsed.verdict || 'INVESTIGATE FURTHER';
+    // Tool-use schema guarantees these fields are present; cast to access.
+    const p = parsed as Record<string, any>;
+    const fitStrength = p.fitStrength || 'Undecided';
+    let verdict = p.verdict || 'INVESTIGATE FURTHER';
     if (fitStrength === 'Strong' && verdict !== 'GO') verdict = 'GO';
     if (fitStrength === 'Weak' && verdict === 'GO') verdict = 'PIVOT';
     if (fitStrength === 'Undecided' && verdict === 'GO') verdict = 'INVESTIGATE FURTHER';
 
-    return NextResponse.json({ ...buildHouseResult(house, { ...parsed, fitStrength, verdict }), lens });
+    return NextResponse.json({ ...buildHouseResult(house, { ...p, fitStrength, verdict }), lens });
   } catch (err) {
     console.error('[reframe] Unhandled error:', err);
     const msg = err instanceof Error ? err.message : 'Reframe failed';

@@ -266,18 +266,7 @@ Produce the synthesis. Rules:
 
 Also extract the SYSTEMS THINKING outputs from the agent structured_artifacts. The agents have embedded frameworks in their outputs — surface them as structured data.
 
-Respond ONLY with valid JSON:
-{
-  "fitStrength": "Strong | Shaky | Mixed",
-  "verdict": "GO | PIVOT | INVESTIGATE FURTHER | STOP",
-  "verdictRationale": "1-2 sentences directly answering whether ${houseName} fit exists",
-  "sentenceOfTruth": "The thing they sensed but hadn't articulated — the uncomfortable truth",
-  "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
-  "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
-  "systemsOutput": {
-    ${systemsOutputShape}
-  }${investigateJsonField}
-}`;
+Call the submit_synthesis tool with your synthesis. The tool's input schema defines the exact shape — populate every field that has supporting evidence, omit optional fields when the data isn't there (don't fabricate).`;
 }
 
 // ─── Build final HouseResult ──────────────────────────────────────────────────
