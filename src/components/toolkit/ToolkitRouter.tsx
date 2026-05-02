@@ -28,7 +28,7 @@ interface ToolkitRouterProps {
 }
 
 export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, onNavigateToHouse }: ToolkitRouterProps) {
-  const { sessions, workspaces, setActiveSession, setActiveWorkspace, setActiveSection } = useFrescoStore();
+  const { sessions, workspaces, activeWorkspaceId, activeSessionId, activeSection, setActiveSession, setActiveWorkspace, setActiveSection } = useFrescoStore();
   const session = sessions.find((s) => s.id === sessionId);
   const workspace = workspaces.find((w) => w.id === workspaceId);
 
@@ -36,27 +36,40 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, 
     if (!session || !workspace) {
       // Log a breadcrumb so we can audit any blank-screen reports tied to
       // workspace/session deletion races. localStorage (not sessionStorage)
-      // so it survives tab close.
+      // so it survives tab close. Includes a store snapshot at mount so we
+      // can see the parent's nav state — i.e. why it rendered ToolkitRouter
+      // with these IDs in the first place.
       try {
         const breadcrumbs = JSON.parse(localStorage.getItem('fresco-orphan-session-breadcrumbs') || '[]');
         breadcrumbs.push({
           when: new Date().toISOString(),
-          sessionId,
-          workspaceId,
+          // Props passed in (the IDs we were told to render):
+          propsSessionId: sessionId,
+          propsWorkspaceId: workspaceId,
+          // Store state at mount time (the source of truth for nav):
+          storeActiveSessionId: activeSessionId,
+          storeActiveWorkspaceId: activeWorkspaceId,
+          storeActiveSection: activeSection,
+          storeWorkspaceCount: workspaces.length,
+          storeSessionCount: sessions.length,
+          // Whether the IDs we were given exist in the current store:
           hasSession: !!session,
           hasWorkspace: !!workspace,
+          // Cross-check: do the store's active IDs at least exist?
+          storeActiveSessionExists: activeSessionId ? sessions.some(s => s.id === activeSessionId) : null,
+          storeActiveWorkspaceExists: activeWorkspaceId ? workspaces.some(w => w.id === activeWorkspaceId) : null,
         });
         localStorage.setItem('fresco-orphan-session-breadcrumbs', JSON.stringify(breadcrumbs.slice(-20)));
       } catch { /* ignore */ }
       // eslint-disable-next-line no-console
-      console.warn('[Fresco] ToolkitRouter: session or workspace missing — recovering to home', { sessionId, workspaceId, hasSession: !!session, hasWorkspace: !!workspace });
+      console.warn('[Fresco] ToolkitRouter: session or workspace missing — recovering to home', { sessionId, workspaceId, activeSessionId, activeWorkspaceId, activeSection });
       setActiveSession(null);
       setActiveWorkspace(null);
       setActiveSection('home');
       // Skip onBack — we don't know if the workspace it'd navigate back to
       // still exists. Going straight to home is the only safe target.
     }
-  }, [session, workspace, sessionId, workspaceId, setActiveSession, setActiveWorkspace, setActiveSection]);
+  }, [session, workspace, sessionId, workspaceId, sessions, workspaces, activeSessionId, activeWorkspaceId, activeSection, setActiveSession, setActiveWorkspace, setActiveSection]);
 
   // Still mounting but session/workspace not yet resolved — render nothing visible
   if (!session || !workspace) return null;

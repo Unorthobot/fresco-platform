@@ -2720,6 +2720,25 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   }];
                   return next;
                 });
+              } else if (ev.type === 'merge_status') {
+                // Log silent fallbacks to localStorage so we can audit
+                // when the live merge call fails. Only logs the fallback
+                // cases — successful merges aren't interesting.
+                if (ev.status && ev.status !== 'ok') {
+                  try {
+                    const breadcrumbs = JSON.parse(localStorage.getItem('fresco-merge-fallback-breadcrumbs') || '[]');
+                    breadcrumbs.push({
+                      when: new Date().toISOString(),
+                      sessionId,
+                      houseId,
+                      status: ev.status,
+                      reason: ev.reason || null,
+                    });
+                    localStorage.setItem('fresco-merge-fallback-breadcrumbs', JSON.stringify(breadcrumbs.slice(-30)));
+                  } catch { /* ignore */ }
+                  // eslint-disable-next-line no-console
+                  console.warn('[Fresco] Merge fell back to local synthesis:', ev.status, ev.reason || '(no reason given)');
+                }
               } else if (ev.type === 'verdict') {
                 const { type: _, ...vd } = ev;
                 setResult(vd as HouseResult);

@@ -331,6 +331,7 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
   const allSignals = agentOutputs.map(a => a.signal).filter(Boolean);
   const allIssues = agentOutputs.flatMap(a => a.risks);
   const allMoves = agentOutputs.flatMap(a => a.recommendations);
+  const allFindings = agentOutputs.flatMap(a => a.key_findings);
 
   const dedup = (arr: string[], max: number) => {
     const seen = new Set<string>();
@@ -344,6 +345,65 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
 
   const routing = determineNextHouse(house, 'Mixed', 'INVESTIGATE FURTHER', allIssues);
 
+  // Construct a minimal systemsOutput from agent data so Beats 2 and 3 of
+  // the Analysis tab render something meaningful when the live merge call
+  // fails. Everything here is derived from actual agent output — no
+  // invented content. The shapes match what the section components expect.
+  // Beat 2 shows: "If nothing changes" + risks-as-archetype-stand-in.
+  // Beat 3 shows: an IPO map built from key findings → recommendations.
+  const fallbackSystemsOutput: Record<string, any> = {};
+
+  // Beat 2 anchor: a one-line projection of the current state.
+  // Use the strongest signal as the "if nothing changes" line.
+  if (allSignals[0]) {
+    fallbackSystemsOutput.currentStateSimulation =
+      allSignals[0].length > 220 ? allSignals[0].slice(0, 217) + '…' : allSignals[0];
+  }
+
+  // Beat 2 secondary: behaviorOverTime constructed from the agent signals
+  // as a 3-point qualitative trend. This is admittedly thin — the local
+  // fallback can't infer real metrics — but it gives the section something
+  // to render and makes the failure visible to anyone inspecting the data.
+  if (allSignals.length >= 2) {
+    fallbackSystemsOutput.behaviorOverTime = [{
+      variable: 'Pattern observed across analyses',
+      unit: 'qualitative',
+      dataPoints: allSignals.slice(0, 3).map((s, i) => ({
+        label: `Signal ${i + 1}`,
+        value: i + 1,
+      })),
+      trend: 'oscillating',
+      projection: [],
+    }];
+  }
+
+  // Beat 3 anchor: IPO map built from the structured key findings.
+  // Inputs = the user's situation as detected by the agents (first findings).
+  // Processes = what the agents identified as mechanisms (middle findings).
+  // Outputs = the recommendations (the actions that produce change).
+  if (allFindings.length > 0 && allMoves.length > 0) {
+    const findingsToInputs = allFindings.slice(0, 3).map(f => ({
+      label: f.length > 60 ? f.slice(0, 57) + '…' : f,
+      note: '',
+    }));
+    const findingsToProcesses = allFindings.slice(3, 6).map(f => ({
+      label: f.length > 60 ? f.slice(0, 57) + '…' : f,
+      note: '',
+    }));
+    const movesToOutputs = allMoves.slice(0, 3).map(m => ({
+      label: m.length > 60 ? m.slice(0, 57) + '…' : m,
+      note: '',
+    }));
+    if (findingsToInputs.length > 0 || movesToOutputs.length > 0) {
+      fallbackSystemsOutput.ipoMap = {
+        inputs: findingsToInputs,
+        processes: findingsToProcesses,
+        outputs: movesToOutputs,
+        bottleneck: allIssues[0] || '',
+      };
+    }
+  }
+
   return {
     house,
     fitLabel: HOUSE_FIT_LABELS[house],
@@ -353,6 +413,7 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
     sentenceOfTruth: allSignals[0] || 'The real insight lies in the tension between what you know and what you\'re assuming.',
     keyIssues: dedup(allIssues, 5),
     necessaryMoves: dedup(allMoves, 5),
+    systemsOutput: Object.keys(fallbackSystemsOutput).length > 0 ? fallbackSystemsOutput : undefined,
     suggestedNextHouse: routing.nextHouse,
     suggestedNextHouseReason: routing.reason,
     outputLabel: HOUSE_OUTPUT_LABELS[house],

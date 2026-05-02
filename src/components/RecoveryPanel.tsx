@@ -24,6 +24,7 @@ const KEYS = [
   'fresco-error-breadcrumbs',
   'fresco-blank-breadcrumbs',
   'fresco-orphan-session-breadcrumbs',
+  'fresco-merge-fallback-breadcrumbs',
 ] as const;
 
 const STORE_KEY = 'fresco-storage';

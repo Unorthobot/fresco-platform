@@ -8,6 +8,7 @@
 //   { type: 'run_start', agentNames }                           — list of agents that will run, in order
 //   { type: 'agent_narration', displayName, text }              — one-line context, sent before each agent runs
 //   { type: 'agent', displayName, signal, summary, confidence } — one per agent
+//   { type: 'merge_status', status, reason? }                   — whether synthesis used live merge or fallback
 //   { type: 'verdict', ...HouseResult }                          — final merged output
 //   { type: 'error', message }
 
@@ -449,18 +450,27 @@ export async function POST(
         // ── Synthesis merge ──────────────────────────────────────────────────
         const hasOutput = agentOutputs.some(a => a.signal || a.key_findings.length > 0);
         let verdictData;
+        let mergeStatus: 'ok' | 'fallback_no_agent_output' | 'fallback_merge_failed' = 'ok';
+        let mergeErrorReason: string | undefined;
 
         if (hasOutput) {
           try {
             const mergeResponse = await runMerge(house, agentOutputs, userInput.trim());
             verdictData = buildHouseResult(house, mergeResponse);
           } catch (mergeErr) {
+            mergeStatus = 'fallback_merge_failed';
+            mergeErrorReason = mergeErr instanceof Error ? mergeErr.message : String(mergeErr);
             console.error('Merge failed, using local:', mergeErr);
             verdictData = mergeAgentOutputsLocally(house, agentOutputs);
           }
         } else {
+          mergeStatus = 'fallback_no_agent_output';
           verdictData = mergeAgentOutputsLocally(house, agentOutputs);
         }
+
+        // Tell the client which path produced this verdict. Lets the client
+        // log a localStorage breadcrumb so we can audit silent fallback cases.
+        send({ type: 'merge_status', status: mergeStatus, reason: mergeErrorReason });
 
         send({ type: 'verdict', ...verdictData });
 
