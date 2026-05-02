@@ -18,7 +18,7 @@
 // so requiring fewer fields gives the model room to omit data it doesn't
 // have rather than fabricating it.
 
-import type { HouseId } from './index';
+import type { HouseId } from '@/lib/agents';
 
 // ─── Reusable nested shapes ──────────────────────────────────────────────────
 
