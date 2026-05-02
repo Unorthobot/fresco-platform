@@ -31,9 +31,10 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, 
   const { sessions, workspaces, activeWorkspaceId, activeSessionId, activeSection, setActiveSession, setActiveWorkspace, setActiveSection } = useFrescoStore();
   const session = sessions.find((s) => s.id === sessionId);
   const workspace = workspaces.find((w) => w.id === workspaceId);
+  const isOrphan = !session || !workspace;
 
   useEffect(() => {
-    if (!session || !workspace) {
+    if (isOrphan) {
       // Log a breadcrumb so we can audit any blank-screen reports tied to
       // workspace/session deletion races. localStorage (not sessionStorage)
       // so it survives tab close. Includes a store snapshot at mount so we
@@ -63,15 +64,37 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, 
       } catch { /* ignore */ }
       // eslint-disable-next-line no-console
       console.warn('[Fresco] ToolkitRouter: session or workspace missing — recovering to home', { sessionId, workspaceId, activeSessionId, activeWorkspaceId, activeSection });
-      setActiveSession(null);
-      setActiveWorkspace(null);
-      setActiveSection('home');
-      // Skip onBack — we don't know if the workspace it'd navigate back to
-      // still exists. Going straight to home is the only safe target.
+      // Schedule the store reset for the next tick so we don't fire setState
+      // during a render commit. Belt-and-braces — the parent's effectiveView
+      // logic should have already prevented us mounting, but in case of any
+      // render-cycle race, this self-corrects.
+      const t = setTimeout(() => {
+        setActiveSession(null);
+        setActiveWorkspace(null);
+        setActiveSection('home');
+      }, 0);
+      return () => clearTimeout(t);
     }
-  }, [session, workspace, sessionId, workspaceId, sessions, workspaces, activeSessionId, activeWorkspaceId, activeSection, setActiveSession, setActiveWorkspace, setActiveSection]);
+  }, [isOrphan, session, workspace, sessionId, workspaceId, sessions, workspaces, activeSessionId, activeWorkspaceId, activeSection, setActiveSession, setActiveWorkspace, setActiveSection]);
+
+  // Render-time orphan guard: don't render the children at all if the
+  // session/workspace have been deleted out from under us. Show a brief
+  // "redirecting…" surface so the user doesn't see a blank frame while
+  // the store reset propagates.
+  if (isOrphan) {
+    return (
+      <div className="h-screen flex items-center justify-center fresco-grid-bg-subtle">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-fresco-border border-t-fresco-black rounded-full animate-spin" />
+          <p className="fresco-label">Returning to home…</p>
+        </div>
+      </div>
+    );
+  }
 
   // Still mounting but session/workspace not yet resolved — render nothing visible
+  // (no longer reachable: isOrphan check above covers it, but keep TS happy
+  // by narrowing session/workspace types for the rest of the function)
   if (!session || !workspace) return null;
 
   // ── House-mode session → HouseSession ─────────────────────────────────
