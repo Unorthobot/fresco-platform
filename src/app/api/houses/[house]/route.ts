@@ -6,6 +6,7 @@
 // SSE event types:
 //   { type: 'pageFetch', status, message }                      — page fetch result
 //   { type: 'run_start', agentNames }                           — list of agents that will run, in order
+//   { type: 'agent_narration', displayName, text }              — one-line context, sent before each agent runs
 //   { type: 'agent', displayName, signal, summary, confidence } — one per agent
 //   { type: 'merge_status', status, reason? }                   — whether synthesis used live merge or fallback
 //   { type: 'verdict', ...HouseResult }                          — final merged output
@@ -104,6 +105,49 @@ async function fetchPageContent(url: string): Promise<{ content: string; title: 
     return { content: '', title: '', fetched: false };
   }
 }
+
+// ── Pre-agent narration ──────────────────────────────────────────────────────
+// One-sentence context emitted BEFORE the heavy agent call, so the user sees
+// readable text typing out instead of a dead skeleton during the 6-12s wait.
+// Cheap (Haiku) and forgiving — failure is non-fatal, the narration is just
+// skipped.
+async function runAgentNarration(
+  agent: { id: string; displayName: string },
+  userInput: string,
+  pageContent?: string,
+): Promise<string | null> {
+  if (!ANTHROPIC_API_KEY) return null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const pageHint = pageContent ? `\n\nLive page content was fetched (use it for specifics):\n${pageContent.slice(0, 1500)}` : '';
+    const prompt = `You are about to run analysis as the ${agent.displayName}. In ONE sentence (max 22 words), describe what you're about to examine — anchored to specifics from the user's input. No findings, no predictions, no greetings. Start mid-thought, e.g. "Looking at how..." or "Examining the gap between...".${pageHint}\n\nUSER INPUT:\n${userInput.slice(0, 1500)}`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 80,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const text = (data.content?.[0]?.text || '').trim().replace(/^["']|["']$/g, '');
+    return text || null;
+  } catch {
+    return null;
+  }
+}
+
 
 async function runAgent(
   agent: { id: string; displayName: string; systemPrompt: string },
@@ -376,9 +420,17 @@ export async function POST(
                   : 'JOURNEY — the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
               : '';
 
-            // (Pre-agent narration removed — was an extra Haiku round-trip per
-            // agent that added ~2s × N agents to total run time. Client-side
-            // soft indicator handles the empty-state during the agent wait.)
+            // Pre-agent narration: a one-sentence "what this agent is about to look at"
+            // streamed to the client so the user has something to read during the
+            // ~6-12s wait. Best-effort — null on failure, the loop continues.
+            const narration = await runAgentNarration(agent, userInput.trim(), pageContent);
+            if (narration) {
+              send({
+                type: 'agent_narration',
+                displayName: agent.displayName,
+                text: narration,
+              });
+            }
 
             const output = await runAgent(
               agent,
