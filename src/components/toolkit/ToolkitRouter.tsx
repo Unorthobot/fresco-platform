@@ -68,12 +68,36 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, 
       // during a render commit. Belt-and-braces — the parent's effectiveView
       // logic should have already prevented us mounting, but in case of any
       // render-cycle race, this self-corrects.
-      const t = setTimeout(() => {
+      const tReset = setTimeout(() => {
         setActiveSession(null);
         setActiveWorkspace(null);
         setActiveSection('home');
       }, 0);
-      return () => clearTimeout(t);
+      // Watchdog: if the parent hasn't unmounted us within 1.5s, the React
+      // tree is stuck. Hard-reload to /. This is the brutal version of the
+      // recovery path — but a hard reload is strictly better than the user
+      // staring at a permanent spinner with no escape.
+      const tWatchdog = setTimeout(() => {
+        // eslint-disable-next-line no-console
+        console.warn('[Fresco] ToolkitRouter: stuck in orphan state for 1.5s — hard reload');
+        try {
+          const raw = localStorage.getItem('fresco-storage');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.state) {
+              parsed.state.activeWorkspaceId = null;
+              parsed.state.activeSessionId = null;
+              parsed.state.activeSection = 'home';
+              localStorage.setItem('fresco-storage', JSON.stringify(parsed));
+            }
+          }
+        } catch { /* ignore */ }
+        window.location.href = '/';
+      }, 1500);
+      return () => {
+        clearTimeout(tReset);
+        clearTimeout(tWatchdog);
+      };
     }
   }, [isOrphan, session, workspace, sessionId, workspaceId, sessions, workspaces, activeSessionId, activeWorkspaceId, activeSection, setActiveSession, setActiveWorkspace, setActiveSection]);
 
