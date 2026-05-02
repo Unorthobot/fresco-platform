@@ -349,16 +349,16 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
       allSignals[0].length > 220 ? allSignals[0].slice(0, 217) + '…' : allSignals[0];
   }
 
-  // Beat 2 secondary: behaviorOverTime constructed from the agent signals
-  // as a 3-point qualitative trend. This is admittedly thin — the local
-  // fallback can't infer real metrics — but it gives the section something
-  // to render and makes the failure visible to anyone inspecting the data.
+  // Beat 2 secondary: a qualitative trend stitched from agent signals.
+  // The fallback can't infer real metrics, so this is honestly a marker
+  // ("agents observed these in sequence") rather than a real trend. Labels
+  // are kept neutral — no framework vocabulary, no fake quantification.
   if (allSignals.length >= 2) {
     fallbackSystemsOutput.behaviorOverTime = [{
-      variable: 'Pattern observed across analyses',
-      unit: 'qualitative',
-      dataPoints: allSignals.slice(0, 3).map((s, i) => ({
-        label: `Signal ${i + 1}`,
+      variable: 'What the analyses surface',
+      unit: 'observation',
+      dataPoints: allSignals.slice(0, 3).map((_s, i) => ({
+        label: agentOutputs[i]?.displayName || `Step ${i + 1}`,
         value: i + 1,
       })),
       trend: 'oscillating',
@@ -366,31 +366,34 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
     }];
   }
 
-  // Beat 3 anchor: IPO map built from the structured key findings.
-  // Inputs = the user's situation as detected by the agents (first findings).
-  // Processes = what the agents identified as mechanisms (middle findings).
-  // Outputs = the recommendations (the actions that produce change).
-  if (allFindings.length > 0 && allMoves.length > 0) {
-    const findingsToInputs = allFindings.slice(0, 3).map(f => ({
-      label: f.length > 60 ? f.slice(0, 57) + '…' : f,
-      note: '',
-    }));
-    const findingsToProcesses = allFindings.slice(3, 6).map(f => ({
-      label: f.length > 60 ? f.slice(0, 57) + '…' : f,
-      note: '',
-    }));
-    const movesToOutputs = allMoves.slice(0, 3).map(m => ({
-      label: m.length > 60 ? m.slice(0, 57) + '…' : m,
-      note: '',
-    }));
-    if (findingsToInputs.length > 0 || movesToOutputs.length > 0) {
-      fallbackSystemsOutput.ipoMap = {
-        inputs: findingsToInputs,
-        processes: findingsToProcesses,
-        outputs: movesToOutputs,
-        bottleneck: allIssues[0] || '',
-      };
-    }
+  // Beat 3 anchor: IPO (inputs, processes, outputs) built honestly from
+  // synthesized agent material — not from raw key_findings, which can
+  // contain framework-prefixed strings like "EVENTS layer: ..." that
+  // surface internal vocabulary to the user.
+  //
+  // Mapping:
+  //   inputs    = each agent's summary — the situation as the agent reads it
+  //   processes = each agent's signal — the mechanism the agent identifies
+  //   outputs   = each agent's first recommendation — the action that follows
+  //   bottleneck = the most critical issue blocking change
+  //
+  // This produces an IPO that actually reads as IPO: what's there, what's
+  // happening to it, what to do. No framework leakage because we use
+  // synthesized fields (summary/signal/first recommendation), never raw
+  // key_findings.
+  const allSummaries = agentOutputs.map(a => a.summary).filter(Boolean);
+  const firstRecommendations = agentOutputs
+    .map(a => Array.isArray(a.recommendations) ? a.recommendations[0] : null)
+    .filter((m): m is string => Boolean(m));
+
+  if (allSummaries.length > 0 || firstRecommendations.length > 0) {
+    const truncate = (s: string, max = 110) => s.length > max ? s.slice(0, max - 1) + '…' : s;
+    fallbackSystemsOutput.ipoMap = {
+      inputs: allSummaries.slice(0, 3).map(s => ({ label: truncate(s), note: '' })),
+      processes: allSignals.slice(0, 3).map(s => ({ label: truncate(s), note: '' })),
+      outputs: firstRecommendations.slice(0, 3).map(m => ({ label: truncate(m), note: '' })),
+      bottleneck: allIssues[0] || '',
+    };
   }
 
   return {
