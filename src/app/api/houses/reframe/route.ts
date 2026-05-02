@@ -105,7 +105,12 @@ Call the submit_reframe tool with your lens-shaped synthesis.`;
     if (fitStrength === 'Weak' && verdict === 'GO') verdict = 'PIVOT';
     if (fitStrength === 'Undecided' && verdict === 'GO') verdict = 'INVESTIGATE FURTHER';
 
-    return NextResponse.json({ ...buildHouseResult(house, { ...p, fitStrength, verdict }), lens });
+    // Tool-use schema guarantees fitStrength/verdict/verdictRationale/
+    // sentenceOfTruth/keyIssues/necessaryMoves are present (REFRAME_TOOL_SCHEMA
+    // marks them required). TS can't narrow through the spread, so we cast
+    // at the call site rather than littering the file with non-null assertions.
+    const mergePayload = { ...p, fitStrength, verdict } as Parameters<typeof buildHouseResult>[1];
+    return NextResponse.json({ ...buildHouseResult(house, mergePayload), lens });
   } catch (err) {
     console.error('[reframe] Unhandled error:', err);
     const msg = err instanceof Error ? err.message : 'Reframe failed';
