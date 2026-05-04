@@ -3297,18 +3297,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </button>
                     )}
                   </div>
-                  {/* System verdict — plain English + spectrum + rationale.
-                      The chromatic anchor for the whole result: a 4px coloured
-                      left border keyed to the verdict, AND a faint tint
-                      background so the colour reads as a colour rather than
-                      a barely-visible accent. The tints are light enough that
-                      the card still feels considered, not alarming. */}
+                  {/* Verdict card: white body. Colour only on the 4px left
+                      border and the pill — keeps the verdict readable and
+                      treats colour as accent, not alarm. */}
                   <div
-                    className="border border-fresco-border p-4"
+                    className="border border-fresco-border bg-white p-4"
                     style={{
                       borderLeftWidth: 4,
                       borderLeftColor: verdictColour(result.verdict).accent,
-                      background: verdictColour(result.verdict).tint,
                     }}
                   >
                     {/* Plain English verdict headline */}
@@ -3732,13 +3728,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <button onClick={() => setShowExportModal(false)}><X className="w-4 h-4 text-fresco-graphite-light" /></button>
               </div>
 
-              {/* Verdict summary — accent left border + tint background so the
-                  verdict reads as a coloured card, not a generic gray rectangle. */}
+              {/* Verdict summary — coloured left border + neutral pill, white
+                  body. Matches the Decision tab card treatment. */}
               <div
-                className="mb-5 p-3"
+                className="mb-5 p-3 bg-white border border-fresco-border"
                 style={{
-                  borderLeft: `4px solid ${verdictColour(result.verdict).accent}`,
-                  background: verdictColour(result.verdict).tint,
+                  borderLeftWidth: 4,
+                  borderLeftColor: verdictColour(result.verdict).accent,
                 }}
               >
                 <div className="flex items-center gap-2 mb-1">
