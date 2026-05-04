@@ -3901,7 +3901,28 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       { title: 'Where the leverage is', subtitle: 'The actionable read — which variables actually move the outcome.', items: beat3Items },
                     ];
 
-                    return beats.filter(b => b.items.length > 0).map((beat, i) => (
+                    const populatedBeats = beats.filter(b => b.items.length > 0);
+
+                    // Empty state: merge succeeded but produced no systemsOutput, or the
+                    // beats filtered to nothing. Without this, the Analysis tab renders
+                    // an empty container that reads as a broken/black screen. The Decision
+                    // tab still has the full verdict — direct the user there rather than
+                    // leaving them on a blank surface.
+                    if (populatedBeats.length === 0) {
+                      return (
+                        <div className="py-8 px-4 border border-fresco-border bg-fresco-light-gray/40">
+                          <p className="fresco-label mb-2">No structural breakdown for this session</p>
+                          <p className="text-fresco-sm text-fresco-graphite-mid leading-relaxed">
+                            This run produced a verdict and key moves but no structural patterns rich enough to chart.
+                            That's not a failure — some questions are answered cleanly without needing causal loops or
+                            archetypes. The Decision tab has the full verdict, key issues, and necessary moves for
+                            this session.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return populatedBeats.map((beat, i) => (
                       <div key={i} className="pt-2">
                         <div className="mb-5">
                           <p className="text-fresco-xs font-medium uppercase tracking-wider text-fresco-graphite-light mb-1">Part {i + 1}</p>
