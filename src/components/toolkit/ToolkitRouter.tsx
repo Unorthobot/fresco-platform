@@ -42,8 +42,22 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, 
     }
   }, [session, workspace, setActiveSession, setActiveWorkspace, setActiveSection, onBack]);
 
-  // Still mounting but session/workspace not yet resolved — render nothing visible
-  if (!session || !workspace) return null;
+  // Orphan mount: session or workspace was deleted while user was viewing it.
+  // Show a visible recovery surface instead of returning null — null leaves
+  // the parent's container empty for one or more frames, which reads as a
+  // blank/black screen. The store reset above triggers parent re-render to
+  // unmount this within a frame; in the meantime the user sees what's
+  // happening.
+  if (!session || !workspace) {
+    return (
+      <div className="h-screen flex items-center justify-center fresco-grid-bg-subtle">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-fresco-border border-t-fresco-black rounded-full animate-spin" />
+          <p className="fresco-label">Returning to home…</p>
+        </div>
+      </div>
+    );
+  }
 
   // ── House-mode session → HouseSession ─────────────────────────────────
   if (session.houseType) {
