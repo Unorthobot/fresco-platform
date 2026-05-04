@@ -4,10 +4,7 @@
 // Synthesis layer merges all outputs into a single HouseResult.
 //
 // SSE event types:
-//   { type: 'pageFetch', status, message }                      — page fetch result
-//   { type: 'run_start', agentNames }                           — list of agents that will run, in order
-//   { type: 'agent_narration', displayName, text }              — one-line context, sent before each agent runs
-//   { type: 'agent', displayName, signal, summary, confidence } — one per agent
+//   { type: 'agent', displayName, signal, summary, confidence }  — one per agent
 //   { type: 'verdict', ...HouseResult }                          — final merged output
 //   { type: 'error', message }
 
@@ -104,49 +101,6 @@ async function fetchPageContent(url: string): Promise<{ content: string; title: 
   }
 }
 
-// ── Pre-agent narration ──────────────────────────────────────────────────────
-// One-sentence context emitted BEFORE the heavy agent call, so the user sees
-// readable text typing out instead of a dead skeleton during the 6-12s wait.
-// Cheap (Haiku) and forgiving — failure is non-fatal, the narration is just
-// skipped.
-async function runAgentNarration(
-  agent: { id: string; displayName: string },
-  userInput: string,
-  pageContent?: string,
-): Promise<string | null> {
-  if (!ANTHROPIC_API_KEY) return null;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-
-    const pageHint = pageContent ? `\n\nLive page content was fetched (use it for specifics):\n${pageContent.slice(0, 1500)}` : '';
-    const prompt = `You are about to run analysis as the ${agent.displayName}. In ONE sentence (max 22 words), describe what you're about to examine — anchored to specifics from the user's input. No findings, no predictions, no greetings. Start mid-thought, e.g. "Looking at how..." or "Examining the gap between...".${pageHint}\n\nUSER INPUT:\n${userInput.slice(0, 1500)}`;
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY!,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 80,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-    clearTimeout(timeout);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const text = (data.content?.[0]?.text || '').trim().replace(/^["']|["']$/g, '');
-    return text || null;
-  } catch {
-    return null;
-  }
-}
-
-
 async function runAgent(
   agent: { id: string; displayName: string; systemPrompt: string },
   userInput: string,
@@ -188,7 +142,7 @@ async function runAgent(
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1200,
       system: agent.systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
@@ -226,7 +180,7 @@ async function runMerge(house: HouseId, agentOutputs: AgentOutput[], userInput: 
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [{ role: 'user', content: mergePrompt }],
     }),
@@ -263,11 +217,6 @@ export async function POST(
   let pageContent: string | undefined;
   let pageFetchStatus: 'fetched' | 'failed' | 'none' = 'none';
 
-  // Peek at the explicit mode to label pages meaningfully when fetching.
-  // (The full evaluateMode resolution with regex fallback happens further
-  // below — we just need the explicit hint here for chip labelling.)
-  const isComparison = house === 'evaluate' && body.evaluateMode === 'comparison';
-
   const normaliseUrl = (u: string) => u.startsWith('http') ? u : `https://${u}`;
   if (url && url.trim()) {
     const urls = url.split('\n').map(u => normaliseUrl(u.trim())).filter(u => u.length > 8);
@@ -275,19 +224,9 @@ export async function POST(
       const results = await Promise.all(urls.slice(0, 3).map(u => fetchPageContent(u)));
       const fetched = results.filter(r => r.fetched);
       if (fetched.length > 0) {
-        if (urls.length === 1) {
-          // Single URL: in comparison mode, label it Version A and note B is missing.
-          pageContent = isComparison
-            ? `=== Version A: ${urls[0]} ===\n${fetched[0].content}\n\n(Version B URL not provided — analyse Version A and note any comparison limits.)`
-            : fetched[0].content;
-        } else {
-          // Multiple URLs: label by Version A/B for comparison, Page N otherwise.
-          const labelFor = (i: number) =>
-            isComparison ? `Version ${String.fromCharCode(65 + i)}` : `Page ${i + 1}`;
-          pageContent = fetched
-            .map((r, i) => `=== ${labelFor(i)}: ${urls[i]} ===\n${r.content}`)
-            .join('\n\n');
-        }
+        pageContent = urls.length === 1
+          ? fetched[0].content
+          : fetched.map((r, i) => `=== Page ${i + 1}: ${urls[i]} ===\n${r.content}`).join('\n\n');
         pageFetchStatus = 'fetched';
       } else {
         pageFetchStatus = 'failed';
@@ -315,44 +254,21 @@ export async function POST(
     });
   }
 
-  const baseAgents = HOUSE_AGENTS[house];
+  const agents = HOUSE_AGENTS[house];
   const encoder = new TextEncoder();
 
   // ── Evaluate: classify input type to determine agent emphasis ─────────────
-  // Single → Page Scorecard only (Variant Lens has no B; Journey Trace has no journey)
-  // Journey → Journey Trace leads, Page Scorecard supports
-  // Comparison → Variant Lens leads, Page Scorecard supports
-  // Prefer explicit mode from client (set in EvaluateInputs); fall back to
-  // regex inference for legacy clients or when mode is missing.
-  const explicitMode = body.evaluateMode;
-  let evaluateMode: 'single' | 'journey' | 'comparison' =
-    explicitMode === 'single' || explicitMode === 'journey' || explicitMode === 'comparison'
-      ? explicitMode
-      : 'single';
-  if (house === 'evaluate' && !explicitMode) {
+  // Single page → Page Scorecard leads, Journey Trace light
+  // Multiple pages/flow → all three, Journey Trace gets full context
+  // Comparison (two versions) → Variant Lens leads
+  let evaluateMode: 'single' | 'journey' | 'comparison' = 'single';
+  if (house === 'evaluate') {
     const combined = userInput.toLowerCase();
     const hasComparison = /version [ab]|variant|vs\.|versus|option [ab]|current.*test|control.*treatment/.test(combined);
     const hasMultiplePages = /step \d|→|->|page \d|flow|journey|sequence|funnel|after.*before|first.*then/.test(combined);
     if (hasComparison) evaluateMode = 'comparison';
     else if (hasMultiplePages) evaluateMode = 'journey';
   }
-
-  // Reorder + filter agents based on evaluate mode so the streaming order
-  // matches the primary lens. Comment in HOUSE_AGENTS map is canonical;
-  // this is the runtime expression of "X leads".
-  const agents = (() => {
-    if (house !== 'evaluate') return baseAgents;
-    const byId = Object.fromEntries(baseAgents.map(a => [a.id, a]));
-    if (evaluateMode === 'single') {
-      // Only Page Scorecard runs — single page has no comparison and no journey.
-      return [byId.PageScorecardAgent].filter(Boolean);
-    }
-    if (evaluateMode === 'comparison') {
-      return [byId.VariantLensAgent, byId.PageScorecardAgent, byId.JourneyTraceAgent].filter(Boolean);
-    }
-    // journey
-    return [byId.JourneyTraceAgent, byId.PageScorecardAgent, byId.VariantLensAgent].filter(Boolean);
-  })();
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -376,14 +292,6 @@ export async function POST(
           });
         }
 
-        // Tell the client which agents will run in this session, in order.
-        // Lets the progress UI compute "step N of M" and percentage without
-        // having to wait for the first narration.
-        send({
-          type: 'run_start',
-          agentNames: agents.map(a => a.displayName),
-        });
-
         // ── Sequential execution ─────────────────────────────────────────────
         for (const agent of agents) {
           try {
@@ -393,18 +301,6 @@ export async function POST(
                   ? 'COMPARISON — the user is comparing two versions or approaches. The Variant Lens perspective is primary.'
                   : 'JOURNEY — the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
               : '';
-
-            // Pre-agent narration: a one-sentence "what this agent is about to look at"
-            // streamed to the client so the user has something to read during the
-            // ~6-12s wait. Best-effort — null on failure, the loop continues.
-            const narration = await runAgentNarration(agent, userInput.trim(), pageContent);
-            if (narration) {
-              send({
-                type: 'agent_narration',
-                displayName: agent.displayName,
-                text: narration,
-              });
-            }
 
             const output = await runAgent(
               agent,

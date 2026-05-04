@@ -28,21 +28,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // Log to console
+    // Log to console so we can see what actually happened
     // eslint-disable-next-line no-console
     console.error('[Fresco ErrorBoundary] caught render error:', error, info);
-    // Persist a breadcrumb so we have a trail even if the fallback render
-    // itself fails. Survives reload. Capped at 20 entries.
-    try {
-      const breadcrumbs = JSON.parse(localStorage.getItem('fresco-error-breadcrumbs') || '[]');
-      breadcrumbs.push({
-        when: new Date().toISOString(),
-        message: error.message,
-        stack: error.stack?.split('\n').slice(0, 6).join('\n'),
-        componentStack: info.componentStack?.split('\n').slice(0, 8).join('\n'),
-      });
-      localStorage.setItem('fresco-error-breadcrumbs', JSON.stringify(breadcrumbs.slice(-20)));
-    } catch { /* ignore */ }
   }
 
   reset = () => {

@@ -142,179 +142,6 @@ const STARTER_PHRASES: Record<string, string[]> = {
 };
 
 
-// ─── Run progress — step counter + interpolated percentage + bar ─────────────
-// Sits above the narration card during a run. Step counter is honest
-// (completed/total agents). Percentage interpolates within the in-flight
-// agent's slot using elapsed-vs-estimated time, so the bar moves smoothly
-// during the 6-12s wait between agent completions instead of jumping in
-// chunks. The estimate is a soft 9s — if the agent runs longer, the bar
-// asymptotes toward 95% instead of pinning at 100%.
-
-const ESTIMATED_AGENT_MS = 9000;
-const ESTIMATED_SYNTHESIS_MS = 6000;
-const MAX_INFLIGHT_FRACTION = 0.95;
-const MAX_SYNTHESIS_FRACTION = 0.99;
-
-function RunProgress({
-  plannedAgents,
-  completedNames,
-  inflightAgent,
-  inflightStartedAt,
-}: {
-  plannedAgents: string[];
-  completedNames: Set<string>;
-  inflightAgent: string | null;
-  inflightStartedAt: number | null;
-}) {
-  const total = plannedAgents.length;
-  const completed = plannedAgents.filter(n => completedNames.has(n)).length;
-  const isSynthesising = total > 0 && completed === total && !inflightAgent;
-
-  // Capture the moment we entered the synthesis phase so we can interpolate
-  // 95% → 99% across the estimated synthesis window. Reset whenever we leave
-  // synthesis (e.g. user starts a new run).
-  const synthesisStartRef = useRef<number | null>(null);
-  useEffect(() => {
-    if (isSynthesising && synthesisStartRef.current === null) {
-      synthesisStartRef.current = Date.now();
-    } else if (!isSynthesising) {
-      synthesisStartRef.current = null;
-    }
-  }, [isSynthesising]);
-
-  // Re-render every 200ms while either an agent OR the synthesis call is
-  // in flight, so the bar keeps moving.
-  const [, force] = useState(0);
-  useEffect(() => {
-    if (!inflightAgent && !isSynthesising) return;
-    const t = setInterval(() => force(n => n + 1), 200);
-    return () => clearInterval(t);
-  }, [inflightAgent, inflightStartedAt, isSynthesising]);
-
-  // High-water mark: progress can never decrease across renders. Without this,
-  // phase transitions caused visible backward jumps — e.g. an in-flight agent
-  // hitting 98% (its slot fraction × 95% × 3 + the 2 completed slots) then
-  // dropping to 95% the instant synthesis began. Reset on new run.
-  const highWaterRef = useRef(0);
-  useEffect(() => {
-    if (plannedAgents.length === 0) highWaterRef.current = 0;
-  }, [plannedAgents]);
-
-  if (plannedAgents.length === 0) return null;
-
-  const stepNum = completed + (inflightAgent ? 1 : 0);
-  const stepLabel = inflightAgent || (isSynthesising ? 'Merging the analyses…' : 'Starting…');
-
-  // Each agent owns 1/total of the bar. Completed agents fill their slot.
-  // The in-flight agent fills its slot up to MAX_INFLIGHT_FRACTION based on
-  // elapsed-vs-estimated time (asymptotic — never quite reaches the boundary
-  // until the agent event lands).
-  const slotSize = 1 / total;
-  let progress = completed * slotSize;
-  if (inflightAgent && inflightStartedAt) {
-    const elapsed = Date.now() - inflightStartedAt;
-    const inflightFraction = Math.min(elapsed / ESTIMATED_AGENT_MS, MAX_INFLIGHT_FRACTION);
-    progress += inflightFraction * slotSize;
-  }
-  // Synthesis phase: all agents done, verdict not yet landed. Interpolate
-  // from MAX_INFLIGHT_FRACTION toward MAX_SYNTHESIS_FRACTION across the
-  // estimated synthesis window so the bar keeps moving instead of freezing
-  // at 95% for several seconds.
-  if (isSynthesising) {
-    const synthStart = synthesisStartRef.current ?? Date.now();
-    const elapsed = Date.now() - synthStart;
-    const synthFraction = Math.min(elapsed / ESTIMATED_SYNTHESIS_MS, 1);
-    const range = MAX_SYNTHESIS_FRACTION - MAX_INFLIGHT_FRACTION;
-    progress = MAX_INFLIGHT_FRACTION + synthFraction * range;
-  }
-  // Enforce monotonicity: bar can never go backward. Cap at MAX_SYNTHESIS_FRACTION
-  // until the verdict actually lands (parent unmounts this component when
-  // it does, so we never need to render 100% from here).
-  progress = Math.min(MAX_SYNTHESIS_FRACTION, Math.max(progress, highWaterRef.current));
-  highWaterRef.current = progress;
-  const pct = Math.round(progress * 100);
-
-  return (
-    <div className="mb-3">
-      <div className="flex items-center justify-between gap-3 text-fresco-xs">
-        <div className="flex items-center gap-2 min-w-0">
-          {/* Per-agent dots: filled = done, pulsing = running, hollow = pending.
-              During synthesis (all agents done, verdict pending) all dots
-              pulse together to signal the run is still active rather than
-              going visually flat. */}
-          <div className={cn(
-            'flex items-center gap-1.5 flex-shrink-0',
-            isSynthesising && 'animate-pulse',
-          )}>
-            {plannedAgents.map((name, i) => {
-              const isDone = completedNames.has(name);
-              const isRunning = name === inflightAgent;
-              return (
-                <span
-                  key={i}
-                  className={cn(
-                    'w-1.5 h-1.5 rounded-full',
-                    isDone && 'bg-fresco-black',
-                    isRunning && 'bg-fresco-black animate-pulse',
-                    !isDone && !isRunning && 'bg-fresco-border',
-                  )}
-                  aria-hidden
-                />
-              );
-            })}
-          </div>
-          <span className="text-fresco-black font-medium truncate ml-1">{stepLabel}</span>
-        </div>
-        <span className="text-fresco-graphite-light tabular-nums flex-shrink-0">
-          {Math.min(stepNum, total)} of {total} · {pct}%
-        </span>
-      </div>
-    </div>
-  );
-}
-
-
-// ─── Typewriter ──────────────────────────────────────────────────────────────
-// Animates text in character-by-character. Used for agent narrations during
-// the wait so the screen reads as "thinking happening" rather than "frozen".
-// Target: ~30ms/char, with a faster catch-up if the text is long. Skips
-// animation if user prefers reduced motion.
-
-function Typewriter({ text, speedMs = 28, className }: { text: string; speedMs?: number; className?: string }) {
-  const [shown, setShown] = useState(0);
-  const reduce = useRef(false);
-
-  useEffect(() => {
-    reduce.current = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  }, []);
-
-  useEffect(() => {
-    if (!text) { setShown(0); return; }
-    if (reduce.current) { setShown(text.length); return; }
-    setShown(0);
-    // Adaptive speed: longer text types slightly faster so total time stays sane.
-    const adaptive = text.length > 80 ? Math.max(14, speedMs - 8) : speedMs;
-    let i = 0;
-    const tick = () => {
-      i += 1;
-      setShown(i);
-      if (i < text.length) timer = setTimeout(tick, adaptive);
-    };
-    let timer = setTimeout(tick, adaptive);
-    return () => clearTimeout(timer);
-  }, [text, speedMs]);
-
-  return (
-    <span className={className}>
-      {text.slice(0, shown)}
-      {shown < text.length && (
-        <span className="inline-block w-[1px] h-[0.9em] -mb-[0.1em] ml-[1px] bg-fresco-graphite-mid animate-pulse" aria-hidden />
-      )}
-    </span>
-  );
-}
-
-
 // ─── Chip / tag input ────────────────────────────────────────────────────────
 // For discrete items: assumptions, patterns, signals
 
@@ -1845,11 +1672,11 @@ const EVALUATE_STEPS_SINGLE: ConversationStep[] = [
   },
   {
     id: 'concerns',
-    question: "What's the one assumption baked into this page that — if wrong — would explain the gap?",
-    hint: "And: what result would prove that assumption wrong?",
-    placeholder: "e.g. We assume mid-market buyers want a demo before pricing details. If we showed pricing transparently and conversion went UP, that assumption is dead. If conversion stayed flat or dropped, the demo-first instinct was right and the headline is the real problem.",
+    question: "What would a 50% improvement look like — and what's the highest-leverage change to get there?",
+    hint: "The one change most likely to move the metric.",
+    placeholder: "e.g. A 50% improvement gets us to ~3.2% conversion. I think the highest-leverage change is replacing 'Book a demo' with a lower-commitment CTA — 'See it in action' or 'Start free'. The current CTA asks for too much before we've earned it.",
     minHeight: 140,
-    agent: 'Page Scorecard',
+    agent: 'Variant Lens',
   },
 ];
 
@@ -1864,18 +1691,18 @@ const EVALUATE_STEPS_JOURNEY: ConversationStep[] = [
   },
   {
     id: 'trust_drops',
-    question: "At each step, what's the question the user is asking that the page doesn't answer?",
-    hint: "The unanswered question at each stage that creates the drop-off.",
-    placeholder: "e.g. Landing page: 'is this for someone like me?' — answered weakly. Pricing: 'is this worth it?' — answered, but no proof. Signup: 'why do you need my company size before I've signed up?' — not answered at all. Onboarding: 'why am I inviting my team before I've seen value?' — wrong question asked first.",
+    question: 'Where does the user arrive at each step with an unanswered question?',
+    hint: "Where the flow fails to answer the user's next question.",
+    placeholder: "e.g. User arrives at signup still unsure if this is worth their time — pricing page didn't answer 'why should I trust this'. Onboarding asks them to invite their team before they've seen any value themselves — wrong sequence.",
     minHeight: 160,
     agent: 'Journey Trace',
   },
   {
     id: 'transitions',
-    question: "What's the one break in the sequence that, if fixed, would most improve the whole flow — and what would prove you wrong?",
-    hint: "The single highest-leverage fix, plus the result that says it wasn't.",
-    placeholder: "e.g. The biggest break is between pricing and signup — users decide to try, then hit a form that feels like being sold to. A frictionless signup would change the whole trajectory. I'd be wrong if simplifying the form left activation unchanged — that'd mean the real drop-off is post-signup, not at the form itself.",
-    minHeight: 160,
+    question: 'What is the one break in the sequence that, if fixed, would most improve the whole flow?',
+    hint: "The single highest-leverage fix.",
+    placeholder: "e.g. The biggest break is between pricing and signup. Users click the CTA having decided to try it, then hit a form that asks for company info — it feels like being sold to, not signed up. A frictionless signup that asks nothing upfront would change the whole trajectory.",
+    minHeight: 140,
     agent: 'Journey Trace',
   },
 ];
@@ -2133,12 +1960,11 @@ function ConversationFlow({
 
 // ─── URL tag input ────────────────────────────────────────────────────────────
 
-function UrlTagInput({ urls, onChange, maxUrls, label, chipPrefixes }: {
+function UrlTagInput({ urls, onChange, maxUrls, label }: {
   urls: string[];
   onChange: (urls: string[]) => void;
   maxUrls: number;
   label: string;
-  chipPrefixes?: string[];
 }) {
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -2178,9 +2004,6 @@ function UrlTagInput({ urls, onChange, maxUrls, label, chipPrefixes }: {
                 'flex items-center gap-1.5 px-2.5 py-1.5 text-fresco-xs border max-w-full',
                 warning ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-fresco-border bg-fresco-light-gray text-fresco-black'
               )}>
-                {chipPrefixes?.[i] && (
-                  <span className="font-semibold text-fresco-graphite-mid flex-shrink-0">{chipPrefixes[i]} —</span>
-                )}
                 <span className="truncate max-w-[220px] font-mono" title={u}>{u.replace(/^https?:\/\//, '')}</span>
                 {warning && <span className="text-amber-500 flex-shrink-0" title={warning}>⚠</span>}
                 <button type="button" onClick={() => remove(i)} className="flex-shrink-0 hover:text-red-500 transition-colors ml-0.5">
@@ -2217,11 +2040,7 @@ function UrlTagInput({ urls, onChange, maxUrls, label, chipPrefixes }: {
                 if (toAdd.length > 0) onChange([...urls, ...toAdd]);
               }
             }}
-            placeholder={
-              chipPrefixes?.[urls.length]
-                ? `${chipPrefixes[urls.length]}: https://yoursite.com/...`
-                : urls.length === 0 ? 'https://yoursite.com/page' : 'Add another URL…'
-            }
+            placeholder={urls.length === 0 ? 'https://yoursite.com/page' : 'Add another URL…'}
             className="flex-1 h-9 px-3 text-fresco-xs text-fresco-black bg-fresco-white border border-fresco-border rounded-none focus:outline-none focus:border-fresco-black font-mono"
           />
           <button
@@ -2332,9 +2151,8 @@ function EvaluateFlow({
       <UrlTagInput
         urls={url ? url.split('\n').map(u => u.trim()).filter(Boolean) : []}
         onChange={urls => onUrlChange(urls.join('\n'))}
-        maxUrls={mode === 'journey' ? 5 : mode === 'comparison' ? 2 : 1}
-        label={mode === 'journey' ? 'Page URLs (optional)' : mode === 'comparison' ? 'Version URLs (optional)' : 'URL (optional)'}
-        chipPrefixes={mode === 'comparison' ? ['Version A', 'Version B'] : undefined}
+        maxUrls={mode === 'journey' ? 5 : 1}
+        label={mode === 'journey' ? 'Page URLs (optional)' : 'URL (optional)'}
       />
 
       {/* Mode-specific questions */}
@@ -2416,13 +2234,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (target === 'investigate') return 'situation';
     if (target === 'innovate') return 'start';
     if (target === 'validate') return 'subject';
-    // Evaluate is special: it has a 'goal' field rendered above the mode-
-    // specific steps. The diagnostic input semantically matches 'goal'
-    // ("What are you trying to understand?") — and unlike 'subject', it's
-    // present in all three modes (single/journey/comparison). Seeding
-    // 'subject' meant comparison mode silently dropped the seed entirely
-    // because comparison's field order skips 'subject'.
-    if (target === 'evaluate') return 'goal';
+    if (target === 'evaluate') return 'subject';
     return '';
   };
 
@@ -2462,13 +2274,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const inputScrollRef = useRef<HTMLDivElement>(null);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
-  const [agentNarrations, setAgentNarrations] = useState<Record<string, string>>({});
-  // Total agents the backend told us will run (via run_start event).
-  // Drives the step counter and percentage.
-  const [plannedAgents, setPlannedAgents] = useState<string[]>([]);
-  // When each narration arrived. Lets the progress bar interpolate within
-  // an in-flight agent's slot using elapsed-vs-estimated time.
-  const [narrationStartedAt, setNarrationStartedAt] = useState<Record<string, number>>({});
   const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem(`fresco-agent-outputs-${sessionId}`);
@@ -2478,6 +2283,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [pageFetchMessage, setPageFetchMessage] = useState<string | null>(null);
   const [activeLens, setActiveLens] = useState<string | null>(null);
   const [isReframing, setIsReframing] = useState(false);
+  const [showLensPicker, setShowLensPicker] = useState(false);
   const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
   const [runError, setRunError] = useState<string | null>(null);
   const [userVerdict, setUserVerdict] = useState<string | null>(null);
@@ -2589,7 +2395,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (!canGenerate) { setShowPricingModal(true); return; }
     const abort = new AbortController();
     abortRef.current = abort;
-    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setAgentNarrations({}); setPlannedAgents([]); setNarrationStartedAt({}); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
+    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
     // Once the run starts, clear the handoff + seed markers so a refresh
     // doesn't re-seed. The values are already persisted to localStorage.
     try {
@@ -2666,7 +2472,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       const body: Record<string, string> = { userInput };
       if (context) body.context = context;
       if (url.trim()) body.url = url.trim();
-      if (houseId === 'evaluate') body.evaluateMode = evaluateMode;
 
       const response = await fetch(`/api/houses/${houseId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2691,11 +2496,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               const ev = JSON.parse(line.slice(6));
               if (ev.type === 'pageFetch') {
                 if (ev.message) setPageFetchMessage(ev.message);
-              } else if (ev.type === 'run_start') {
-                setPlannedAgents(Array.isArray(ev.agentNames) ? ev.agentNames : []);
-              } else if (ev.type === 'agent_narration') {
-                setAgentNarrations(prev => ({ ...prev, [ev.displayName]: ev.text }));
-                setNarrationStartedAt(prev => ({ ...prev, [ev.displayName]: Date.now() }));
               } else if (ev.type === 'agent') {
                 setAgentEvents(prev => {
                   const next = [...prev, {
@@ -2765,9 +2565,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     abortRef.current = null;
     setIsRunning(false);
     setAgentEvents([]);
-    setAgentNarrations({});
-    setPlannedAgents([]);
-    setNarrationStartedAt({});
     setPageFetchMessage(null);
     setRunError(null);
   }, []);
@@ -2806,6 +2603,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       return;
     }
     setIsReframing(true);
+    setShowLensPicker(false);
     setActiveLens(lens);
     setRunError(null);
     try {
@@ -3081,7 +2879,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     <button onClick={() => {
                       Object.keys(values).forEach(k => setValue(k, ''));
                       try { localStorage.removeItem(`fresco-inputs-${sessionId}`); } catch {}
-                      setResult(null); setAgentEvents([]); setAgentNarrations({}); setPlannedAgents([]); setNarrationStartedAt({}); setChallengeQuestions([]);
+                      setResult(null); setAgentEvents([]); setChallengeQuestions([]);
                       setChallengeResponses({}); setChallengeDismissed(false);
                       setStoredAgentOutputs([]); setActiveLens(null);
                       try { localStorage.removeItem(`fresco-agent-outputs-${sessionId}`); } catch {}
@@ -3423,71 +3221,54 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </motion.div>
                   );
                 })()}
-                {isRunning && (() => {
-                  // Find the narration whose agent event hasn't arrived yet.
-                  // The narration is sent first; the heavy agent call follows.
-                  // When the agent event lands it gets pushed to agentEvents and
-                  // the upstream "current agent" block above replaces this.
-                  const completedNames = new Set(agentEvents.map(e => e.displayName));
-                  const pendingNarration = Object.entries(agentNarrations)
-                    .find(([name]) => !completedNames.has(name));
-                  const inflightAgent = pendingNarration ? pendingNarration[0] : null;
-                  const inflightStartedAt = inflightAgent ? (narrationStartedAt[inflightAgent] || null) : null;
+                {isRunning && agentEvents.length < 3 && (
+                  <div className="p-3 bg-fresco-light-gray border-l-2 border-fresco-border">
+                    <div className="h-2 w-20 bg-fresco-border rounded mb-2 animate-pulse" />
+                    <div className="h-2 w-full bg-fresco-border rounded animate-pulse" />
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                  const progressBlock = (
-                    <RunProgress
-                      plannedAgents={plannedAgents}
-                      completedNames={completedNames}
-                      inflightAgent={inflightAgent}
-                      inflightStartedAt={inflightStartedAt}
-                    />
-                  );
-
-                  if (pendingNarration) {
-                    const [name, text] = pendingNarration;
-                    return (
-                      <>
-                        {progressBlock}
-                        <motion.div
-                          key={name}
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="p-3 bg-fresco-light-gray border-l-2 border-fresco-graphite-light/40"
-                        >
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-fresco-graphite-mid animate-pulse" />
-                            <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">{name}</span>
-                          </div>
-                          <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed italic">
-                            <Typewriter text={text} />
-                          </p>
-                        </motion.div>
-                      </>
-                    );
-                  }
-
-                  // No pending narration — only show the soft indicator before
-                  // the first agent has produced anything. Once at least one
-                  // agent has completed and we're waiting for the verdict (no
-                  // further narrations), still show the progress bar so the
-                  // user knows the synthesis step is running.
-                  if (agentEvents.length === 0) {
-                    return (
-                      <>
-                        {progressBlock}
-                        <div className="p-3 bg-fresco-light-gray border-l-2 border-fresco-border">
-                          <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-fresco-graphite-light animate-pulse" />
-                            <span className="text-fresco-xs text-fresco-graphite-light italic">Thinking…</span>
-                          </div>
-                        </div>
-                      </>
-                    );
-                  }
-                  // All agents done, waiting for verdict — keep progress bar
-                  // visible so the user sees the synthesis step.
-                  return progressBlock;
-                })()}
+          {/* ── Lens primer — surfaces while the run is in progress to pre-frame
+                what's about to land. Pre-teaches the lens feature so it doesn't
+                arrive as an unexpected button cluster. Hides the moment the
+                verdict lands. ─────────────────────────────────────────────── */}
+          <AnimatePresence>
+            {isRunning && !result && (
+              <motion.div
+                key="lens-primer"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, delay: 0.5 }}
+                className="mb-6 border border-fresco-border-light p-4"
+              >
+                <p className="fresco-label mb-2">Coming next</p>
+                <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed mb-3">
+                  Once the verdict lands, you can re-run the analysis through 8 different lenses — each foregrounds a distinct way of thinking.
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { label: 'Critical',   desc: 'Assumptions & evidence' },
+                    { label: 'Systems',    desc: 'Loops & root causes' },
+                    { label: 'Design',     desc: 'Human & experience' },
+                    { label: 'Product',    desc: 'Build decisions' },
+                    { label: 'Strategic',  desc: 'Competitive direction' },
+                    { label: 'Analytical', desc: 'Data & measurement' },
+                    { label: 'Futures',    desc: 'Trajectory & signals' },
+                    { label: 'Economic',   desc: 'Incentives & value' },
+                  ].map(lens => (
+                    <span
+                      key={lens.label}
+                      title={lens.desc}
+                      className="text-fresco-xs px-2 py-0.5 border border-fresco-border-light text-fresco-graphite-light"
+                    >
+                      {lens.label}
+                    </span>
+                  ))}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -3507,11 +3288,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 />
 
                 {/* VERDICT */}
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
-                >
+                <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="fresco-label">Verdict</span>
                     {!showVerdictOverride && (
@@ -3523,15 +3300,17 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     )}
                   </div>
                   {/* System verdict — plain English + spectrum + rationale.
-                      Matches the recent-sessions pattern on the dashboard:
-                      white card body, neutral grey pill, coloured dot inside
-                      the pill, 4px coloured left border carrying the verdict
-                      signal. Body copy reads cleanly on white. */}
+                      The chromatic anchor for the whole result: a 4px coloured
+                      left border keyed to the verdict, AND a faint tint
+                      background so the colour reads as a colour rather than
+                      a barely-visible accent. The tints are light enough that
+                      the card still feels considered, not alarming. */}
                   <div
-                    className="border border-fresco-border bg-white p-4"
+                    className="border border-fresco-border p-4"
                     style={{
                       borderLeftWidth: 4,
                       borderLeftColor: verdictColour(result.verdict).accent,
+                      background: verdictColour(result.verdict).tint,
                     }}
                   >
                     {/* Plain English verdict headline */}
@@ -3541,7 +3320,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                           {verdictPlain?.headline}
                         </p>
                         <span
-                          className="text-[10px] font-medium uppercase tracking-wider bg-fresco-light-gray border border-fresco-border text-fresco-black px-2.5 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5"
+                          className="text-[10px] font-medium uppercase tracking-wider bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5"
+                          style={{ color: verdictColour(result.verdict).accent }}
                         >
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: verdictColour(result.verdict).accent }} />
                           {result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict}
@@ -3556,7 +3336,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       fitLabel={(result as any).fitLabel}
                     />
                     {/* Rationale */}
-                    <p className="text-fresco-sm text-fresco-graphite-mid leading-relaxed mt-4 pt-4 border-t border-fresco-border-light">
+                    <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed mt-4 pt-4 border-t border-fresco-border-light">
                       {result.verdictRationale}
                     </p>
                   </div>
@@ -3606,7 +3386,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       />
                     </div>
                   )}
-                </motion.div>
+                </div>
 
                 {/* SEE THIS FROM A DIFFERENT ANGLE — lens picker.
                     Sits between the verdict and the supporting reasoning. The user
@@ -3654,11 +3434,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 )}
 
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, ease: 'easeOut', delay: 0.35 }}
-                >
+                <div>
                   <span className="fresco-label block mb-3">Key issues</span>
                   <div className="space-y-2">
                     {result.keyIssues.map((issue, i) => (
@@ -3670,13 +3446,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </div>
                     ))}
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, ease: 'easeOut', delay: 0.7 }}
-                >
+                <div>
                   <span className="fresco-label block mb-3">Recommended moves</span>
                   <div className="space-y-2">
                     {result.necessaryMoves.map((move, i) => (
@@ -3688,7 +3460,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </div>
                     ))}
                   </div>
-                </motion.div>
+                </div>
 
                 {/* Next house suggestion */}
                 {result.suggestedNextHouse && (
@@ -3749,6 +3521,59 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 {/* ── ANALYSIS TAB ─────────────────────────────────────── */}
                 {outputTab === 'analysis' && (
                   <>
+                  {/* See this from a different angle — pill row with framing copy.
+                      Each lens runs the analysis again from a distinct intellectual
+                      perspective. Native tooltip on each pill exposes the focus.
+                      Compact (one row vs ~400px grid) without burying discovery. */}
+                  {storedAgentOutputs.length > 0 && (
+                    <div>
+                      <p className="fresco-label mb-1">See this from a different angle</p>
+                      <p className="text-fresco-xs text-fresco-graphite-light mb-3 leading-relaxed">
+                        Run the analysis again through a distinct intellectual perspective.
+                      </p>
+                      {!showLensPicker ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { id: 'critical',   label: 'Critical',    desc: 'Assumptions & evidence' },
+                            { id: 'systems',    label: 'Systems',     desc: 'Loops & root causes' },
+                            { id: 'design',     label: 'Design',      desc: 'Human & experience' },
+                            { id: 'product',    label: 'Product',     desc: 'Build decisions' },
+                            { id: 'strategic',  label: 'Strategic',   desc: 'Competitive direction' },
+                            { id: 'analytical', label: 'Analytical',  desc: 'Data & measurement' },
+                            { id: 'futures',    label: 'Futures',     desc: 'Trajectory & signals' },
+                            { id: 'economic',   label: 'Economic',    desc: 'Incentives & value' },
+                          ].map(lens => (
+                            <button
+                              key={lens.id}
+                              onClick={() => { setShowLensPicker(false); handleReframe(lens.id); }}
+                              disabled={isReframing}
+                              title={lens.desc}
+                              className={cn(
+                                'text-fresco-xs px-2.5 py-1 border transition-all whitespace-nowrap',
+                                activeLens === lens.id
+                                  ? 'bg-fresco-black text-white border-fresco-black'
+                                  : 'border-fresco-border-light text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black hover:bg-fresco-light-gray',
+                                isReframing && activeLens !== lens.id && 'opacity-40 cursor-not-allowed'
+                              )}
+                            >
+                              {isReframing && activeLens === lens.id ? 'Reframing…' : lens.label}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <button onClick={() => setShowLensPicker(false)} className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
+                          ← Back to lenses
+                        </button>
+                      )}
+                      {activeLens && (
+                        <p className="text-fresco-xs text-fresco-graphite-light mt-3">
+                          Currently viewing through the <span className="font-medium text-fresco-black capitalize">{activeLens}</span> lens
+                          <button onClick={() => { setActiveLens(null); }} className="ml-2 underline underline-offset-2 hover:text-fresco-black transition-colors">clear</button>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {(() => {
                     const so = (result as any).systemsOutput;
                     const bmEvent = agentEvents.find(e => e.displayName === 'Belief Mapper');
@@ -3962,12 +3787,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <button onClick={() => setShowExportModal(false)}><X className="w-4 h-4 text-fresco-graphite-light" /></button>
               </div>
 
-              {/* Verdict summary — accent left border on a white surface.
-                  Matches the dashboard pattern. */}
+              {/* Verdict summary — accent left border + tint background so the
+                  verdict reads as a coloured card, not a generic gray rectangle. */}
               <div
-                className="mb-5 p-3 bg-white border border-fresco-border"
+                className="mb-5 p-3"
                 style={{
                   borderLeft: `4px solid ${verdictColour(result.verdict).accent}`,
+                  background: verdictColour(result.verdict).tint,
                 }}
               >
                 <div className="flex items-center gap-2 mb-1">

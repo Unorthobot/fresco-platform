@@ -268,12 +268,10 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
 
   const handleDeleteSession = (sessionId: string) => {
     const wasActive = activeSessionId === sessionId;
-    setDeleteConfirm(null);
-    // If the user deleted the session they were currently in, navigate away
-    // FIRST so the parent stops rendering this view against stale data, then
-    // delete. Same ordering principle as the workspace-delete handler below.
-    if (wasActive) onBack?.();
     deleteSession(sessionId);
+    setDeleteConfirm(null);
+    // If the user deleted the session they were currently in, go back immediately
+    if (wasActive) onBack?.();
   };
 
   const handleSelectToolkit = (type: ToolkitType) => {
@@ -784,17 +782,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                 className="flex-1 h-9 text-fresco-sm text-fresco-graphite-mid border border-fresco-border hover:bg-fresco-light-gray transition-colors">
                 Cancel
               </button>
-              <button onClick={() => {
-                // Order matters: navigate away first so the parent stops
-                // rendering this component, then delete. Inverting the order
-                // means this component briefly tries to render against a
-                // workspace that no longer exists, which used to manifest as
-                // a blank screen during the render cycle gap.
-                const idToDelete = workspace.id;
-                setShowDeleteConfirm(false);
-                onBack?.();
-                db.deleteWorkspace(idToDelete);
-              }}
+              <button onClick={() => { setShowDeleteConfirm(false); db.deleteWorkspace(workspace.id); onBack?.(); }}
                 className="flex-1 h-9 text-fresco-sm text-white bg-red-600 hover:bg-red-700 transition-colors">
                 Delete
               </button>

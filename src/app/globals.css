@@ -31,17 +31,15 @@
 
   /* Verdict colours — used ONLY on verdict cards and verdict summary pills.
      Not accent colours for general UI. Each verdict has an accent (for borders,
-     dots, labels) and a soft tint (for subtle card backgrounds). Tints kept
-     intentionally light — the 4px coloured left border is the chromatic
-     anchor; the tint just supports it. Stronger tints crowd the body copy. */
+     dots, labels) and a soft tint (for subtle card backgrounds). */
   --verdict-go-accent:     #16a34a;  /* clear green — readable at small sizes, not neon */
-  --verdict-go-tint:       #ecf7ef;
+  --verdict-go-tint:       #dcf3e3;
   --verdict-pivot-accent:  #d97706;  /* amber — present, distinctly orange */
-  --verdict-pivot-tint:    #fbf3e2;
+  --verdict-pivot-tint:    #fbe9cc;
   --verdict-stop-accent:   #dc2626;  /* clear red — weighted, unmistakable */
-  --verdict-stop-tint:     #fbeaea;
+  --verdict-stop-tint:     #fadcdc;
   --verdict-signal-accent: #2563eb;  /* clear blue — distinctly blue, not corporate */
-  --verdict-signal-tint:   #eaeefb;
+  --verdict-signal-tint:   #dce5fa;
 }
 
 /* Dark mode - fully inverted with good contrast */
@@ -59,16 +57,15 @@
   --fresco-border-light: #2a2a2a;
   --fresco-grid-color: rgba(255, 255, 255, 0.03);
 
-  /* Verdict colours — dark mode variants, lifted for contrast on dark bg.
-     Tints kept close to the base dark surface so body copy stays readable. */
+  /* Verdict colours — dark mode variants, lifted for contrast on dark bg */
   --verdict-go-accent:     #5ec48a;  /* brighter on dark — emerald reads as green */
-  --verdict-go-tint:       #1a2520;
+  --verdict-go-tint:       #1a2f24;
   --verdict-pivot-accent:  #e0ad65;  /* warmer amber — clearer on dark */
-  --verdict-pivot-tint:    #262218;
+  --verdict-pivot-tint:    #2e2619;
   --verdict-stop-accent:   #e07878;  /* warmer red — readable on dark */
-  --verdict-stop-tint:     #241c1c;
+  --verdict-stop-tint:     #2e1d1d;
   --verdict-signal-accent: #88a4d4;  /* brighter blue — clearer on dark */
-  --verdict-signal-tint:   #1d2228;
+  --verdict-signal-tint:   #1f2530;
 }
 
 /* Dark mode specific overrides for better legibility */

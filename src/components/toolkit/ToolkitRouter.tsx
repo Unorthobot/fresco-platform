@@ -34,29 +34,13 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, 
 
   useEffect(() => {
     if (!session || !workspace) {
-      // Log a breadcrumb so we can audit any blank-screen reports tied to
-      // workspace/session deletion races. localStorage (not sessionStorage)
-      // so it survives tab close.
-      try {
-        const breadcrumbs = JSON.parse(localStorage.getItem('fresco-orphan-session-breadcrumbs') || '[]');
-        breadcrumbs.push({
-          when: new Date().toISOString(),
-          sessionId,
-          workspaceId,
-          hasSession: !!session,
-          hasWorkspace: !!workspace,
-        });
-        localStorage.setItem('fresco-orphan-session-breadcrumbs', JSON.stringify(breadcrumbs.slice(-20)));
-      } catch { /* ignore */ }
-      // eslint-disable-next-line no-console
-      console.warn('[Fresco] ToolkitRouter: session or workspace missing — recovering to home', { sessionId, workspaceId, hasSession: !!session, hasWorkspace: !!workspace });
       setActiveSession(null);
       setActiveWorkspace(null);
       setActiveSection('home');
-      // Skip onBack — we don't know if the workspace it'd navigate back to
-      // still exists. Going straight to home is the only safe target.
+      // Navigate immediately — don't wait for the useEffect chain in FrescoAppContent
+      onBack?.();
     }
-  }, [session, workspace, sessionId, workspaceId, setActiveSession, setActiveWorkspace, setActiveSection]);
+  }, [session, workspace, setActiveSession, setActiveWorkspace, setActiveSection, onBack]);
 
   // Still mounting but session/workspace not yet resolved — render nothing visible
   if (!session || !workspace) return null;
