@@ -262,19 +262,22 @@ Produce the synthesis. Rules:
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to their situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
 - VERDICT RATIONALE: 1–2 sentences. Reference their specific situation.
-- SYSTEMS OUTPUT: This is Fresco's core deliverable. The marketing page promises users they'll get "iceberg analysis, system archetypes, causal loops, scenario simulation" — those are not aspirational outputs, they are the product. The schema enforces this. Populate every required field from the agent material:
-  - currentStateSimulation: One sentence — if nothing changes, what continues happening. Always derivable from the agents' signals.
-  - archetype: The dynamic at work. Use a canonical name (Fixes that Fail, Shifting the Burden, Limits to Growth, Eroding Goals, Escalation, Success to the Successful, Tragedy of the Commons, Accidental Adversaries) when one cleanly fits. If none fit, set name to null and describe the dynamic in description and loop in plain language. Either way: description and loop must be substantive.
-  - behaviorOverTime: A qualitative or numerical trend. At least one variable, at least 2 data points so a trend can be drawn. The variable can be qualitative (e.g. "team's confidence" with low/medium/high mapped to 1/2/3) — it doesn't need real numbers.
-  - causalLoop: At least 3 nodes and 2 edges. Draw the actual feedback dynamic the agents identified — what reinforces what, what balances what. dominantLoop names which loop is active and why.
-  - ipoMap: Inputs (what the user is starting from — at least 1), processes (the mechanisms turning input into output — at least 1), outputs (the actions the analysis points to — at least 1), bottleneck (one sentence: the most critical issue blocking change).
-${house !== 'investigate' ? '  - scenarioModel: At least 2 variables that move the outcome, with currentValue/minValue/maxValue. baselineValue is where the outcome metric is now. Even when exact numbers are unknown, use representative values from the agent material rather than skipping.\n' : ''}${house === 'investigate' ? '  - icebergLevels: All four layers populated — event (visible symptom), pattern (recurring trend), structure (the system element producing it), mentalModel (the belief keeping it this way).\n' : ''}- Optional fields (stockFlow, sensitivityAnalysis, plus house-specific fields like leverageMap, funnelSimulation, influenceMap, kpiSystemMap, evolutionProjection): populate when you have substantive material. These are richer when present but not required.${investigateExtra}
+- SYSTEMS OUTPUT: Extract structured data from agent artifacts. Fill in the systemsOutput fields using what the agents actually found. Do not leave fields as "..." — put real content from the analysis.${investigateExtra}
 
-Anti-fabrication: when the agents didn't find supporting material for a required field, draw on what they DID find — even thin material is more honest than invented detail. A causal loop with three nodes the agents actually mentioned is better than a five-node loop with invented variables. A scenario with rough representative numbers is better than precise fake ones.
+Also extract the SYSTEMS THINKING outputs from the agent structured_artifacts. The agents have embedded frameworks in their outputs — surface them as structured data.
 
-Also extract any SYSTEMS THINKING content embedded in the agent structured_artifacts and surface it through the schema fields above.
-
-Call the submit_synthesis tool with your synthesis. The schema enforces structure — required fields cannot be skipped.`;
+Respond ONLY with valid JSON:
+{
+  "fitStrength": "Strong | Shaky | Mixed",
+  "verdict": "GO | PIVOT | INVESTIGATE FURTHER | STOP",
+  "verdictRationale": "1-2 sentences directly answering whether ${houseName} fit exists",
+  "sentenceOfTruth": "The thing they sensed but hadn't articulated — the uncomfortable truth",
+  "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
+  "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
+  "systemsOutput": {
+    ${systemsOutputShape}
+  }${investigateJsonField}
+}`;
 }
 
 // ─── Build final HouseResult ──────────────────────────────────────────────────
@@ -328,7 +331,6 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
   const allSignals = agentOutputs.map(a => a.signal).filter(Boolean);
   const allIssues = agentOutputs.flatMap(a => a.risks);
   const allMoves = agentOutputs.flatMap(a => a.recommendations);
-  const allFindings = agentOutputs.flatMap(a => a.key_findings);
 
   const dedup = (arr: string[], max: number) => {
     const seen = new Set<string>();
@@ -342,68 +344,6 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
 
   const routing = determineNextHouse(house, 'Mixed', 'INVESTIGATE FURTHER', allIssues);
 
-  // Construct a minimal systemsOutput from agent data so Beats 2 and 3 of
-  // the Analysis tab render something meaningful when the live merge call
-  // fails. Everything here is derived from actual agent output — no
-  // invented content. The shapes match what the section components expect.
-  // Beat 2 shows: "If nothing changes" + risks-as-archetype-stand-in.
-  // Beat 3 shows: an IPO map built from key findings → recommendations.
-  const fallbackSystemsOutput: Record<string, any> = {};
-
-  // Beat 2 anchor: a one-line projection of the current state.
-  // Use the strongest signal as the "if nothing changes" line.
-  if (allSignals[0]) {
-    fallbackSystemsOutput.currentStateSimulation =
-      allSignals[0].length > 220 ? allSignals[0].slice(0, 217) + '…' : allSignals[0];
-  }
-
-  // Beat 2 secondary: a qualitative trend stitched from agent signals.
-  // The fallback can't infer real metrics, so this is honestly a marker
-  // ("agents observed these in sequence") rather than a real trend. Labels
-  // are kept neutral — no framework vocabulary, no fake quantification.
-  if (allSignals.length >= 2) {
-    fallbackSystemsOutput.behaviorOverTime = [{
-      variable: 'What the analyses surface',
-      unit: 'observation',
-      dataPoints: allSignals.slice(0, 3).map((_s, i) => ({
-        label: agentOutputs[i]?.displayName || `Step ${i + 1}`,
-        value: i + 1,
-      })),
-      trend: 'oscillating',
-      projection: [],
-    }];
-  }
-
-  // Beat 3 anchor: IPO (inputs, processes, outputs) built honestly from
-  // synthesized agent material — not from raw key_findings, which can
-  // contain framework-prefixed strings like "EVENTS layer: ..." that
-  // surface internal vocabulary to the user.
-  //
-  // Mapping:
-  //   inputs    = each agent's summary — the situation as the agent reads it
-  //   processes = each agent's signal — the mechanism the agent identifies
-  //   outputs   = each agent's first recommendation — the action that follows
-  //   bottleneck = the most critical issue blocking change
-  //
-  // This produces an IPO that actually reads as IPO: what's there, what's
-  // happening to it, what to do. No framework leakage because we use
-  // synthesized fields (summary/signal/first recommendation), never raw
-  // key_findings.
-  const allSummaries = agentOutputs.map(a => a.summary).filter(Boolean);
-  const firstRecommendations = agentOutputs
-    .map(a => Array.isArray(a.recommendations) ? a.recommendations[0] : null)
-    .filter((m): m is string => Boolean(m));
-
-  if (allSummaries.length > 0 || firstRecommendations.length > 0) {
-    const truncate = (s: string, max = 110) => s.length > max ? s.slice(0, max - 1) + '…' : s;
-    fallbackSystemsOutput.ipoMap = {
-      inputs: allSummaries.slice(0, 3).map(s => ({ label: truncate(s), note: '' })),
-      processes: allSignals.slice(0, 3).map(s => ({ label: truncate(s), note: '' })),
-      outputs: firstRecommendations.slice(0, 3).map(m => ({ label: truncate(m), note: '' })),
-      bottleneck: allIssues[0] || '',
-    };
-  }
-
   return {
     house,
     fitLabel: HOUSE_FIT_LABELS[house],
@@ -413,7 +353,6 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
     sentenceOfTruth: allSignals[0] || 'The real insight lies in the tension between what you know and what you\'re assuming.',
     keyIssues: dedup(allIssues, 5),
     necessaryMoves: dedup(allMoves, 5),
-    systemsOutput: Object.keys(fallbackSystemsOutput).length > 0 ? fallbackSystemsOutput : undefined,
     suggestedNextHouse: routing.nextHouse,
     suggestedNextHouseReason: routing.reason,
     outputLabel: HOUSE_OUTPUT_LABELS[house],

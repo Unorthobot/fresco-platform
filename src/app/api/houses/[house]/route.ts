@@ -8,7 +8,6 @@
 //   { type: 'run_start', agentNames }                           — list of agents that will run, in order
 //   { type: 'agent_narration', displayName, text }              — one-line context, sent before each agent runs
 //   { type: 'agent', displayName, signal, summary, confidence } — one per agent
-//   { type: 'merge_status', status, reason? }                   — whether synthesis used live merge or fallback
 //   { type: 'verdict', ...HouseResult }                          — final merged output
 //   { type: 'error', message }
 
@@ -16,7 +15,6 @@ import { NextRequest } from 'next/server';
 import { HOUSE_AGENTS, type HouseId } from '@/lib/agents';
 import type { AgentOutput } from '@/lib/orchestrator';
 import { buildMergePrompt, buildHouseResult, mergeAgentOutputsLocally } from '@/lib/orchestrator';
-import { buildMergeToolSchema, AGENT_TOOL_SCHEMA } from '@/lib/orchestrator/schemas';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -180,7 +178,7 @@ async function runAgent(
       ).join('\n\n')
     : '';
 
-  const userMessage = `${contextSection}${pageSection}${priorSection}\n\nUSER INPUT:\n${userInput}\n\nCall the submit_analysis tool with your structured analysis.`;
+  const userMessage = `${contextSection}${pageSection}${priorSection}\n\nUSER INPUT:\n${userInput}\n\nReturn your JSON analysis.`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -194,27 +192,17 @@ async function runAgent(
       max_tokens: 1200,
       system: agent.systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
-      // Tool-use enforcement: model must call submit_analysis with args
-      // matching the schema, which means we get guaranteed-valid JSON in
-      // tool_use.input — no parse errors possible.
-      tools: [{
-        name: 'submit_analysis',
-        description: 'Submit your structured analysis as the agent.',
-        input_schema: AGENT_TOOL_SCHEMA,
-      }],
-      tool_choice: { type: 'tool', name: 'submit_analysis' },
     }),
   });
 
   if (!response.ok) throw new Error(`Agent ${agent.id} error: ${response.status}`);
 
   const data = await response.json();
-  // Find the tool_use block — when tool_choice forces a specific tool, it's
-  // always present, but be defensive in case Anthropic changes content
-  // ordering or includes preamble blocks.
-  const toolUse = data.content?.find((b: { type: string }) => b.type === 'tool_use');
-  if (!toolUse?.input) throw new Error(`Agent ${agent.id} returned no tool_use`);
-  const parsed = toolUse.input;
+  const text = data.content?.[0]?.text || '';
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error(`Agent ${agent.id} returned no JSON`);
+
+  const parsed = JSON.parse(jsonMatch[0]);
   return {
     agentId: agent.id,
     displayName: agent.displayName,
@@ -239,30 +227,16 @@ async function runMerge(house: HouseId, agentOutputs: AgentOutput[], userInput: 
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      // 2400 is enough for the per-house schemas (4-7 nested shapes) without
-      // giving the model headroom to over-elaborate. Was 4000 — defensive
-      // bump when adding tool-use, but in practice merges fit comfortably
-      // under 2400 and the extra budget added 2-3s to generation time.
-      max_tokens: 2400,
+      max_tokens: 2000,
       messages: [{ role: 'user', content: mergePrompt }],
-      // Tool-use enforces schema — no more "Expected ',' or ']' at position
-      // 7957" failures from manual JSON.parse on a long verbose response.
-      // The merge schema has 4-7 nested shapes per house; this is exactly
-      // the kind of output where unstructured prompts were producing rare
-      // but real malformed JSON.
-      tools: [{
-        name: 'submit_synthesis',
-        description: 'Submit the synthesised house result.',
-        input_schema: buildMergeToolSchema(house),
-      }],
-      tool_choice: { type: 'tool', name: 'submit_synthesis' },
     }),
   });
   if (!response.ok) throw new Error(`Merge error: ${response.status}`);
   const data = await response.json();
-  const toolUse = data.content?.find((b: { type: string }) => b.type === 'tool_use');
-  if (!toolUse?.input) throw new Error('Merge returned no tool_use');
-  return toolUse.input;
+  const text = data.content?.[0]?.text || '';
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Merge returned no JSON');
+  return JSON.parse(jsonMatch[0]);
 }
 
 export async function POST(
@@ -475,27 +449,18 @@ export async function POST(
         // ── Synthesis merge ──────────────────────────────────────────────────
         const hasOutput = agentOutputs.some(a => a.signal || a.key_findings.length > 0);
         let verdictData;
-        let mergeStatus: 'ok' | 'fallback_no_agent_output' | 'fallback_merge_failed' = 'ok';
-        let mergeErrorReason: string | undefined;
 
         if (hasOutput) {
           try {
             const mergeResponse = await runMerge(house, agentOutputs, userInput.trim());
             verdictData = buildHouseResult(house, mergeResponse);
           } catch (mergeErr) {
-            mergeStatus = 'fallback_merge_failed';
-            mergeErrorReason = mergeErr instanceof Error ? mergeErr.message : String(mergeErr);
             console.error('Merge failed, using local:', mergeErr);
             verdictData = mergeAgentOutputsLocally(house, agentOutputs);
           }
         } else {
-          mergeStatus = 'fallback_no_agent_output';
           verdictData = mergeAgentOutputsLocally(house, agentOutputs);
         }
-
-        // Tell the client which path produced this verdict. Lets the client
-        // log a localStorage breadcrumb so we can audit silent fallback cases.
-        send({ type: 'merge_status', status: mergeStatus, reason: mergeErrorReason });
 
         send({ type: 'verdict', ...verdictData });
 

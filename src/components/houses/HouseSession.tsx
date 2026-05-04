@@ -2720,25 +2720,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   }];
                   return next;
                 });
-              } else if (ev.type === 'merge_status') {
-                // Log silent fallbacks to localStorage so we can audit
-                // when the live merge call fails. Only logs the fallback
-                // cases — successful merges aren't interesting.
-                if (ev.status && ev.status !== 'ok') {
-                  try {
-                    const breadcrumbs = JSON.parse(localStorage.getItem('fresco-merge-fallback-breadcrumbs') || '[]');
-                    breadcrumbs.push({
-                      when: new Date().toISOString(),
-                      sessionId,
-                      houseId,
-                      status: ev.status,
-                      reason: ev.reason || null,
-                    });
-                    localStorage.setItem('fresco-merge-fallback-breadcrumbs', JSON.stringify(breadcrumbs.slice(-30)));
-                  } catch { /* ignore */ }
-                  // eslint-disable-next-line no-console
-                  console.warn('[Fresco] Merge fell back to local synthesis:', ev.status, ev.reason || '(no reason given)');
-                }
               } else if (ev.type === 'verdict') {
                 const { type: _, ...vd } = ev;
                 setResult(vd as HouseResult);
@@ -3880,11 +3861,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     // — Beat 2: Why it persists (the structural read)
                     const beat2Items: React.ReactNode[] = [];
                     if (so?.currentStateSimulation) beat2Items.push(<IfNothingChangesSection key="if-nothing" systemsOutput={so} />);
-                    // Render archetype section when there's substance — either a named
-                    // archetype OR the model populated description/loop honestly
-                    // saying no archetype fits but here's the dynamic. Both have
-                    // analytic value; both should reach the user.
-                    if (so?.archetype && ((so.archetype.name && so.archetype.name !== 'null') || so.archetype.description || so.archetype.loop)) beat2Items.push(<ArchetypeSection key="archetype" systemsOutput={so} />);
+                    if (so?.archetype?.name && so.archetype.name !== 'null') beat2Items.push(<ArchetypeSection key="archetype" systemsOutput={so} />);
                     if (so?.behaviorOverTime?.length) beat2Items.push(<BehaviorOverTimeSection key="bot" systemsOutput={so} />);
                     if (so?.causalLoop?.nodes?.length > 1) beat2Items.push(<CausalLoopSection key="causal" systemsOutput={so} />);
                     if (so?.stockFlow?.stocks?.length) beat2Items.push(<StockFlowSection key="stockflow" systemsOutput={so} />);
@@ -3905,28 +3882,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       { title: 'Where the leverage is', subtitle: 'The actionable read — which variables actually move the outcome.', items: beat3Items },
                     ];
 
-                    const populatedBeats = beats.filter(b => b.items.length > 0);
-
-                    // Empty state: merge succeeded but produced no systemsOutput, or the
-                    // beats filtered to nothing. Without this, the Analysis tab renders
-                    // an empty container that reads as a broken/black screen. The Decision
-                    // tab still has the full verdict — direct the user there rather than
-                    // leaving them on a blank surface.
-                    if (populatedBeats.length === 0) {
-                      return (
-                        <div className="py-8 px-4 border border-fresco-border bg-fresco-light-gray/40">
-                          <p className="fresco-label mb-2">No structural breakdown for this session</p>
-                          <p className="text-fresco-sm text-fresco-graphite-mid leading-relaxed">
-                            This run produced a verdict and key moves but no structural patterns rich enough to chart.
-                            That's not a failure — some questions are answered cleanly without needing causal loops or
-                            archetypes. The Decision tab has the full verdict, key issues, and necessary moves for
-                            this session.
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    return populatedBeats.map((beat, i) => (
+                    return beats.filter(b => b.items.length > 0).map((beat, i) => (
                       <div key={i} className="pt-2">
                         <div className="mb-5">
                           <p className="text-fresco-xs font-medium uppercase tracking-wider text-fresco-graphite-light mb-1">Part {i + 1}</p>

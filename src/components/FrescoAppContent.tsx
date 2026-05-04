@@ -431,20 +431,12 @@ export default function FrescoAppContent() {
             setCurrentView('home');
           }}
         >
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {(() => {
             // SINGLE SWITCH RENDER — one child under AnimatePresence at any time.
             // Previous structure had 7+ sibling conditional motion.divs which
             // could leave AnimatePresence stuck in mode='wait' when an exiting
             // child had no exit animation (no completion signal → no enter).
-            //
-            // 2026-05-02 update: also dropped mode='wait'. Even with a single
-            // switch, mode='wait' would freeze on key transitions (e.g.
-            // session → home) because our motion.divs have no `exit` prop and
-            // Framer doesn't always emit a completion signal for zero-duration
-            // exits. Without mode='wait', the new child enters immediately
-            // and the old one is dropped synchronously — which is what we
-            // want for view-to-view navigation anyway.
             // That was the blank-screen bug across multiple sessions of fixes.
             //
             // Now: one render, one key, one motion.div. Whatever effectiveView
