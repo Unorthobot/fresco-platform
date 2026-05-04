@@ -13,20 +13,35 @@
 // loosely) for reliability.
 //
 // Required vs optional policy:
-// The Analysis tab is part of Fresco's product promise — not a nice-to-have
-// that the model can skip when convenient. So we REQUIRE the four fields that
-// can always be derived from agent material:
-//   - currentStateSimulation  (one-sentence projection from agent signals)
-//   - archetype               (with name + description + loop populated)
-//   - behaviorOverTime        (qualitative trend, derivable from any analysis)
-//   - ipoMap                  (inputs/processes/outputs, minItems enforced)
-// These four guarantee at least three populated beats on the Analysis tab.
+// The Analysis tab IS Fresco's product. The marketing page promises:
+//   "Iceberg analysis. System archetypes. Causal loops. Scenario simulation."
+// Those are deliverables, not aspirations. The schema enforces them as
+// required output across every house, with shape constraints that ensure
+// the renders actually populate (minItems:3 nodes for causal loops,
+// minItems:2 variables for scenarios, minItems:2 dataPoints for BOT, etc.).
 //
-// Fields that need real numerical or structural data we leave OPTIONAL,
-// because requiring them would force fabrication when agents didn't find
-// supporting material:
-//   - causalLoop, stockFlow, scenarioModel, sensitivityAnalysis
-// These render when the model has substance, hide when it doesn't.
+// Required across all houses:
+//   - currentStateSimulation  (one-sentence trajectory projection)
+//   - archetype               (with description + loop populated, name nullable)
+//   - behaviorOverTime        (qualitative or numerical trend, ≥2 data points)
+//   - causalLoop              (≥3 nodes, ≥2 edges, dominantLoop named)
+//   - ipoMap                  (inputs/processes/outputs ≥1 each, plus bottleneck)
+//
+// Required for non-Investigate houses (where forecasting is core):
+//   - scenarioModel           (≥2 variables, baseline value)
+//
+// Required for Investigate (where surface→depth is core):
+//   - icebergLevels           (all four layers populated)
+//
+// Optional everywhere:
+//   - stockFlow, sensitivityAnalysis, plus house-specific ones like
+//     leverageMap, funnelSimulation, influenceMap, kpiSystemMap.
+//   These render when richer material is available, hide when it's not.
+//
+// Anti-fabrication: the prompt instructs the model that when agents didn't
+// find supporting material, draw on what they DID find — thin-but-honest
+// is better than rich-but-invented. Required fields can't be skipped, but
+// they don't need to be elaborate.
 
 import type { HouseId } from '@/lib/agents';
 
@@ -84,20 +99,25 @@ const BOTG_SCHEMA = {
 
 const CAUSAL_LOOP_SCHEMA = {
   type: 'object',
+  description: 'A causal loop diagram showing how variables feed back on each other in THIS situation. Drawn from agent material — what the user described and what the agents identified as dynamics. Not a generic template.',
   properties: {
     nodes: {
       type: 'array',
+      minItems: 3,
+      description: 'At least 3 nodes — fewer than that and you do not have a loop, you have a list. Each node is a variable that participates in the dynamic.',
       items: {
         type: 'object',
         properties: {
-          id: { type: 'string' },
-          label: { type: 'string' },
+          id: { type: 'string', description: 'Short identifier used in edges, e.g. "trust", "friction", "reach".' },
+          label: { type: 'string', description: 'Human-readable name in plain language.' },
         },
         required: ['id', 'label'],
       },
     },
     edges: {
       type: 'array',
+      minItems: 2,
+      description: 'At least 2 edges so a loop can be traced. Each edge connects two nodes by id and shows whether the influence is reinforcing (+) or balancing (-).',
       items: {
         type: 'object',
         properties: {
@@ -109,10 +129,10 @@ const CAUSAL_LOOP_SCHEMA = {
         required: ['from', 'to', 'polarity'],
       },
     },
-    dominantLoop: { type: 'string' },
+    dominantLoop: { type: 'string', description: 'One sentence: which loop is currently dominant and what it means for the situation.' },
     loopType: { type: 'string', enum: ['reinforcing', 'balancing', 'both'] },
   },
-  required: ['nodes', 'edges'],
+  required: ['nodes', 'edges', 'dominantLoop'],
 } as const;
 
 const STOCK_FLOW_SCHEMA = {
@@ -162,12 +182,15 @@ const STOCK_FLOW_SCHEMA = {
 
 const SCENARIO_SCHEMA = {
   type: 'object',
+  description: 'Scenario simulation: how the outcome shifts as key variables change. Drawn from the actual situation — outcomeVariable is what the user cares about, variables are the levers that would move it.',
   properties: {
-    outcomeVariable: { type: 'string' },
+    outcomeVariable: { type: 'string', description: 'The metric the user is trying to move (e.g. "monthly active users", "conversion rate", "revenue").' },
     outcomeUnit: { type: 'string' },
-    baselineValue: { type: 'number' },
+    baselineValue: { type: 'number', description: 'Where the outcome metric is now. If unknown, use a representative number from the agent material.' },
     variables: {
       type: 'array',
+      minItems: 2,
+      description: 'At least 2 variables — fewer than that is not a simulation, it is a single dependency. Each variable is a lever that meaningfully moves the outcome.',
       items: {
         type: 'object',
         properties: {
@@ -176,14 +199,14 @@ const SCENARIO_SCHEMA = {
           currentValue: { type: 'number' },
           minValue: { type: 'number' },
           maxValue: { type: 'number' },
-          sensitivityScore: { type: 'number' },
+          sensitivityScore: { type: 'number', description: '0-1: how much this variable moves the outcome relative to others.' },
           direction: { type: 'string', enum: ['positive', 'negative'] },
         },
-        required: ['name', 'currentValue'],
+        required: ['name', 'currentValue', 'minValue', 'maxValue'],
       },
     },
   },
-  required: ['outcomeVariable', 'variables'],
+  required: ['outcomeVariable', 'baselineValue', 'variables'],
 } as const;
 
 const SENSITIVITY_SCHEMA = {
@@ -280,7 +303,7 @@ const SYSTEMS_OUTPUT_BY_HOUSE: Record<HouseId, Record<string, unknown>> = {
       ipoMap: IPO_SCHEMA,
       sensitivityAnalysis: SENSITIVITY_SCHEMA,
     },
-    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'ipoMap'],
+    required: ['icebergLevels', 'currentStateSimulation', 'archetype', 'behaviorOverTime', 'causalLoop', 'ipoMap'],
   },
   innovate: {
     type: 'object',
@@ -313,7 +336,7 @@ const SYSTEMS_OUTPUT_BY_HOUSE: Record<HouseId, Record<string, unknown>> = {
       scenarioModel: SCENARIO_SCHEMA,
       ipoMap: IPO_SCHEMA,
     },
-    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'ipoMap'],
+    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'causalLoop', 'scenarioModel', 'ipoMap'],
   },
   validate: {
     type: 'object',
@@ -342,7 +365,7 @@ const SYSTEMS_OUTPUT_BY_HOUSE: Record<HouseId, Record<string, unknown>> = {
       stockFlow: STOCK_FLOW_SCHEMA,
       ipoMap: IPO_SCHEMA,
     },
-    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'ipoMap'],
+    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'causalLoop', 'scenarioModel', 'ipoMap'],
   },
   evaluate: {
     type: 'object',
@@ -359,7 +382,7 @@ const SYSTEMS_OUTPUT_BY_HOUSE: Record<HouseId, Record<string, unknown>> = {
       stockFlow: STOCK_FLOW_SCHEMA,
       ipoMap: IPO_SCHEMA,
     },
-    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'ipoMap'],
+    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'causalLoop', 'scenarioModel', 'ipoMap'],
   },
 };
 
