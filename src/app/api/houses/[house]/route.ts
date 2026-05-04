@@ -208,9 +208,33 @@ export async function POST(
   const userInput: string = body.userInput || '';
   const context: string | undefined = body.context;
   const url: string | undefined = body.url;
+  // Client passes evaluateMode explicitly when running the Evaluate house.
+  // Fall back to regex inference for older clients or non-Evaluate paths.
+  const bodyEvaluateMode: 'single' | 'journey' | 'comparison' | undefined =
+    body.evaluateMode === 'single' || body.evaluateMode === 'journey' || body.evaluateMode === 'comparison'
+      ? body.evaluateMode
+      : undefined;
 
   if (!userInput || userInput.trim().length < 10) {
     return new Response(JSON.stringify({ error: 'userInput required (min 10 chars)' }), { status: 400 });
+  }
+
+  // ── Evaluate: classify input type to determine agent emphasis ─────────────
+  // Single page → Page Scorecard leads, Journey Trace light
+  // Multiple pages/flow → all three, Journey Trace gets full context
+  // Comparison (two versions) → Variant Lens leads
+  let evaluateMode: 'single' | 'journey' | 'comparison' = 'single';
+  if (house === 'evaluate') {
+    if (bodyEvaluateMode) {
+      evaluateMode = bodyEvaluateMode;
+    } else {
+      // Fallback for clients that don't send evaluateMode explicitly.
+      const combined = userInput.toLowerCase();
+      const hasComparison = /version [ab]|variant|vs\.|versus|option [ab]|current.*test|control.*treatment/.test(combined);
+      const hasMultiplePages = /step \d|→|->|page \d|flow|journey|sequence|funnel|after.*before|first.*then/.test(combined);
+      if (hasComparison) evaluateMode = 'comparison';
+      else if (hasMultiplePages) evaluateMode = 'journey';
+    }
   }
 
   // ── Fetch page content if URL provided (Evaluate house) ──────────────────
@@ -224,9 +248,17 @@ export async function POST(
       const results = await Promise.all(urls.slice(0, 3).map(u => fetchPageContent(u)));
       const fetched = results.filter(r => r.fetched);
       if (fetched.length > 0) {
+        // Label format depends on mode:
+        //   single   → just the content (one URL only)
+        //   journey  → 'Page 1: <url>' to preserve sequence
+        //   comparison → 'Version A: <url>' / 'Version B: <url>'
+        const labelFor = (i: number) =>
+          evaluateMode === 'comparison'
+            ? `=== Version ${String.fromCharCode(65 + i)}: ${urls[i]} ===`
+            : `=== Page ${i + 1}: ${urls[i]} ===`;
         pageContent = urls.length === 1
           ? fetched[0].content
-          : fetched.map((r, i) => `=== Page ${i + 1}: ${urls[i]} ===\n${r.content}`).join('\n\n');
+          : fetched.map((r, i) => `${labelFor(i)}\n${r.content}`).join('\n\n');
         pageFetchStatus = 'fetched';
       } else {
         pageFetchStatus = 'failed';
@@ -254,21 +286,26 @@ export async function POST(
     });
   }
 
-  const agents = HOUSE_AGENTS[house];
-  const encoder = new TextEncoder();
-
-  // ── Evaluate: classify input type to determine agent emphasis ─────────────
-  // Single page → Page Scorecard leads, Journey Trace light
-  // Multiple pages/flow → all three, Journey Trace gets full context
-  // Comparison (two versions) → Variant Lens leads
-  let evaluateMode: 'single' | 'journey' | 'comparison' = 'single';
+  // For Evaluate, reorder (and trim) the agent sequence based on mode.
+  // The leading agent has the most context and gets the deepest analysis;
+  // single mode skips the cross-page agents that have nothing to compare.
+  let agents = HOUSE_AGENTS[house];
   if (house === 'evaluate') {
-    const combined = userInput.toLowerCase();
-    const hasComparison = /version [ab]|variant|vs\.|versus|option [ab]|current.*test|control.*treatment/.test(combined);
-    const hasMultiplePages = /step \d|→|->|page \d|flow|journey|sequence|funnel|after.*before|first.*then/.test(combined);
-    if (hasComparison) evaluateMode = 'comparison';
-    else if (hasMultiplePages) evaluateMode = 'journey';
+    const [pageScorecard, variantLens, journeyTrace] = HOUSE_AGENTS.evaluate;
+    if (evaluateMode === 'single') {
+      // One page, one frame. Cross-page agents add no signal.
+      agents = [pageScorecard];
+    } else if (evaluateMode === 'journey') {
+      // Multi-step flow → Journey Trace leads, scorecards each step,
+      // Variant Lens hunts diff between steps.
+      agents = [journeyTrace, pageScorecard, variantLens];
+    } else if (evaluateMode === 'comparison') {
+      // Two versions → Variant Lens leads (it's the comparison specialist),
+      // scorecards each version, journey traces overall flow if any.
+      agents = [variantLens, pageScorecard, journeyTrace];
+    }
   }
+  const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {

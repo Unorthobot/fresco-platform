@@ -1672,9 +1672,9 @@ const EVALUATE_STEPS_SINGLE: ConversationStep[] = [
   },
   {
     id: 'concerns',
-    question: "What would a 50% improvement look like — and what's the highest-leverage change to get there?",
-    hint: "The one change most likely to move the metric.",
-    placeholder: "e.g. A 50% improvement gets us to ~3.2% conversion. I think the highest-leverage change is replacing 'Book a demo' with a lower-commitment CTA — 'See it in action' or 'Start free'. The current CTA asks for too much before we've earned it.",
+    question: "What would a 50% improvement look like — and what would prove you're wrong about the cause?",
+    hint: "The one change most likely to move the metric, and how you'd know if your diagnosis is off.",
+    placeholder: "e.g. A 50% improvement gets us to ~3.2% conversion. I think the highest-leverage change is replacing 'Book a demo' with a lower-commitment CTA — 'See it in action' or 'Start free'. I'd be wrong if the new CTA gets the same click rate but downstream conversion drops — meaning the headline is the real bottleneck, not the ask.",
     minHeight: 140,
     agent: 'Variant Lens',
   },
@@ -1691,17 +1691,17 @@ const EVALUATE_STEPS_JOURNEY: ConversationStep[] = [
   },
   {
     id: 'trust_drops',
-    question: 'Where does the user arrive at each step with an unanswered question?',
-    hint: "Where the flow fails to answer the user's next question.",
-    placeholder: "e.g. User arrives at signup still unsure if this is worth their time — pricing page didn't answer 'why should I trust this'. Onboarding asks them to invite their team before they've seen any value themselves — wrong sequence.",
+    question: "At each step, what's the question the user is asking that the page doesn't answer?",
+    hint: "Each step has a question in the user's head. Find the ones the flow doesn't answer.",
+    placeholder: "e.g. Landing: 'Is this for me?' — page talks features, not who it's for. Pricing: 'Can I trust this?' — no social proof, no logos, no case studies. Signup: 'Is this worth 5 minutes of my time?' — form asks for company info before showing value. Onboarding: 'What do I do first?' — dashboard greets them with empty state and 12 buttons.",
     minHeight: 160,
     agent: 'Journey Trace',
   },
   {
     id: 'transitions',
-    question: 'What is the one break in the sequence that, if fixed, would most improve the whole flow?',
-    hint: "The single highest-leverage fix.",
-    placeholder: "e.g. The biggest break is between pricing and signup. Users click the CTA having decided to try it, then hit a form that asks for company info — it feels like being sold to, not signed up. A frictionless signup that asks nothing upfront would change the whole trajectory.",
+    question: 'What is the one break that, if fixed, would most improve the flow — and what would prove you wrong?',
+    hint: "The single highest-leverage fix, and how you'd know if your diagnosis is off.",
+    placeholder: "e.g. The biggest break is between pricing and signup — feels like being sold to, not signed up. A frictionless signup would change everything. I'd be wrong if signup completion rises but day-7 retention stays flat — meaning the friction was filtering out unqualified users, not blocking qualified ones.",
     minHeight: 140,
     agent: 'Journey Trace',
   },
@@ -2151,8 +2151,8 @@ function EvaluateFlow({
       <UrlTagInput
         urls={url ? url.split('\n').map(u => u.trim()).filter(Boolean) : []}
         onChange={urls => onUrlChange(urls.join('\n'))}
-        maxUrls={mode === 'journey' ? 5 : 1}
-        label={mode === 'journey' ? 'Page URLs (optional)' : 'URL (optional)'}
+        maxUrls={mode === 'journey' ? 5 : mode === 'comparison' ? 2 : 1}
+        label={mode === 'journey' ? 'Page URLs (optional)' : mode === 'comparison' ? 'Version URLs — A first, B second (optional)' : 'URL (optional)'}
       />
 
       {/* Mode-specific questions */}
@@ -2234,7 +2234,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (target === 'investigate') return 'situation';
     if (target === 'innovate') return 'start';
     if (target === 'validate') return 'subject';
-    if (target === 'evaluate') return 'subject';
+    // Evaluate is special: it has a 'goal' field rendered above the mode-
+    // specific steps (single/journey/comparison). The diagnostic input
+    // semantically matches 'goal' ("What are you trying to understand?")
+    // and unlike 'subject', it's present in all three modes. Seeding
+    // 'subject' meant comparison mode silently dropped the seed entirely
+    // because comparison's field order skips 'subject'.
+    if (target === 'evaluate') return 'goal';
     return '';
   };
 
@@ -2471,6 +2477,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       const body: Record<string, string> = { userInput };
       if (context) body.context = context;
       if (url.trim()) body.url = url.trim();
+      // Tell the API explicitly which mode this Evaluate session is in.
+      // Backend uses this to choose primary agent + label pages correctly.
+      if (houseId === 'evaluate') body.evaluateMode = evaluateMode;
 
       const response = await fetch(`/api/houses/${houseId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
