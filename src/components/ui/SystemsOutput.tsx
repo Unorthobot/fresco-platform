@@ -465,10 +465,17 @@ export function SystemProjectionSection({ systemsOutput }: { systemsOutput: any 
 
 export function ArchetypeSection({ systemsOutput }: { systemsOutput: any }) {
   const a = systemsOutput?.archetype;
-  if (!a?.name || a.name === 'null') return null;
+  if (!a) return null;
+  const hasName = a.name && a.name !== 'null';
+  const hasDynamic = a.description || a.loop;
+  // Render either a named archetype OR an unnamed-but-described dynamic.
+  // Both carry analytic value — naming an archetype is sharper, but
+  // describing the dynamic in plain language is still better than
+  // hiding the section because no canonical archetype fits.
+  if (!hasName && !hasDynamic) return null;
   return (
     <ArchetypeCard
-      name={a.name}
+      name={hasName ? a.name : 'The dynamic at work'}
       description={a.description || ''}
       loop={a.loop || ''}
       escape={a.escape || ''}

@@ -3880,7 +3880,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     // — Beat 2: Why it persists (the structural read)
                     const beat2Items: React.ReactNode[] = [];
                     if (so?.currentStateSimulation) beat2Items.push(<IfNothingChangesSection key="if-nothing" systemsOutput={so} />);
-                    if (so?.archetype?.name && so.archetype.name !== 'null') beat2Items.push(<ArchetypeSection key="archetype" systemsOutput={so} />);
+                    // Render archetype section when there's substance — either a named
+                    // archetype OR the model populated description/loop honestly
+                    // saying no archetype fits but here's the dynamic. Both have
+                    // analytic value; both should reach the user.
+                    if (so?.archetype && ((so.archetype.name && so.archetype.name !== 'null') || so.archetype.description || so.archetype.loop)) beat2Items.push(<ArchetypeSection key="archetype" systemsOutput={so} />);
                     if (so?.behaviorOverTime?.length) beat2Items.push(<BehaviorOverTimeSection key="bot" systemsOutput={so} />);
                     if (so?.causalLoop?.nodes?.length > 1) beat2Items.push(<CausalLoopSection key="causal" systemsOutput={so} />);
                     if (so?.stockFlow?.stocks?.length) beat2Items.push(<StockFlowSection key="stockflow" systemsOutput={so} />);

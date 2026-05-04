@@ -12,11 +12,21 @@
 // (each schema repeats structure that prose-prompts could reference more
 // loosely) for reliability.
 //
-// These schemas are intentionally permissive on optional fields. Strict
-// schemas are appropriate when the consumer fails on missing data; ours
-// degrades gracefully (the section components hide if a field is missing),
-// so requiring fewer fields gives the model room to omit data it doesn't
-// have rather than fabricating it.
+// Required vs optional policy:
+// The Analysis tab is part of Fresco's product promise — not a nice-to-have
+// that the model can skip when convenient. So we REQUIRE the four fields that
+// can always be derived from agent material:
+//   - currentStateSimulation  (one-sentence projection from agent signals)
+//   - archetype               (with name + description + loop populated)
+//   - behaviorOverTime        (qualitative trend, derivable from any analysis)
+//   - ipoMap                  (inputs/processes/outputs, minItems enforced)
+// These four guarantee at least three populated beats on the Analysis tab.
+//
+// Fields that need real numerical or structural data we leave OPTIONAL,
+// because requiring them would force fabrication when agents didn't find
+// supporting material:
+//   - causalLoop, stockFlow, scenarioModel, sensitivityAnalysis
+// These render when the model has substance, hide when it doesn't.
 
 import type { HouseId } from '@/lib/agents';
 
@@ -25,23 +35,27 @@ import type { HouseId } from '@/lib/agents';
 const ARCHETYPE_SCHEMA = {
   type: 'object',
   properties: {
-    name: { type: ['string', 'null'], description: 'System archetype name (Fixes that Fail, Shifting the Burden, Limits to Growth, Eroding Goals, Escalation, Success to the Successful, Tragedy of the Commons, Accidental Adversaries) or null if none clearly applies.' },
-    description: { type: 'string', description: '1-2 sentences: why this archetype applies to THIS situation' },
-    loop: { type: 'string', description: 'The specific loop in plain English' },
-    escape: { type: 'string', description: 'How to break out of this archetype — one concrete action' },
+    name: { type: ['string', 'null'], description: 'System archetype name (Fixes that Fail, Shifting the Burden, Limits to Growth, Eroding Goals, Escalation, Success to the Successful, Tragedy of the Commons, Accidental Adversaries) or null if none clearly applies. If null, still populate description and loop with the dynamic at work in plain language.' },
+    description: { type: 'string', description: '1-2 sentences in plain English: the dynamic at work in THIS situation. If name is set, why this archetype applies. If name is null, the dynamic in plain terms.' },
+    loop: { type: 'string', description: 'The specific feedback dynamic in plain English — what triggers what.' },
+    escape: { type: 'string', description: 'One concrete action that would interrupt the dynamic.' },
   },
-  required: ['name'],
+  required: ['name', 'description', 'loop'],
 } as const;
 
 const BOTG_SCHEMA = {
   type: 'array',
+  minItems: 1,
+  description: 'A qualitative trend showing how the situation has moved over time. At least one series with at least 2 data points so the chart actually renders.',
   items: {
     type: 'object',
     properties: {
-      variable: { type: 'string' },
+      variable: { type: 'string', description: 'What is being tracked over time' },
       unit: { type: 'string' },
       dataPoints: {
         type: 'array',
+        minItems: 2,
+        description: 'At least two points so a trend can be drawn.',
         items: {
           type: 'object',
           properties: {
@@ -198,6 +212,8 @@ const IPO_SCHEMA = {
   properties: {
     inputs: {
       type: 'array',
+      minItems: 1,
+      description: 'What the user is bringing in or starting from. At least one entry.',
       items: {
         type: 'object',
         properties: {
@@ -209,6 +225,8 @@ const IPO_SCHEMA = {
     },
     processes: {
       type: 'array',
+      minItems: 1,
+      description: 'The mechanisms or dynamics turning inputs into outputs. At least one entry.',
       items: {
         type: 'object',
         properties: {
@@ -220,6 +238,8 @@ const IPO_SCHEMA = {
     },
     outputs: {
       type: 'array',
+      minItems: 1,
+      description: 'The actions or results that follow from the analysis. At least one entry.',
       items: {
         type: 'object',
         properties: {
@@ -229,8 +249,9 @@ const IPO_SCHEMA = {
         required: ['label'],
       },
     },
-    bottleneck: { type: 'string' },
+    bottleneck: { type: 'string', description: 'The single most critical issue blocking change. One sentence.' },
   },
+  required: ['inputs', 'processes', 'outputs', 'bottleneck'],
 } as const;
 
 const ICEBERG_SCHEMA = {
@@ -251,7 +272,7 @@ const SYSTEMS_OUTPUT_BY_HOUSE: Record<HouseId, Record<string, unknown>> = {
     type: 'object',
     properties: {
       icebergLevels: ICEBERG_SCHEMA,
-      currentStateSimulation: { type: 'string', description: 'If nothing changes — one sentence' },
+      currentStateSimulation: { type: 'string', description: 'If nothing changes — one sentence about the trajectory.' },
       systemTruth: { type: 'string', description: 'The uncomfortable truth — one sentence' },
       archetype: ARCHETYPE_SCHEMA,
       behaviorOverTime: BOTG_SCHEMA,
@@ -259,10 +280,12 @@ const SYSTEMS_OUTPUT_BY_HOUSE: Record<HouseId, Record<string, unknown>> = {
       ipoMap: IPO_SCHEMA,
       sensitivityAnalysis: SENSITIVITY_SCHEMA,
     },
+    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'ipoMap'],
   },
   innovate: {
     type: 'object',
     properties: {
+      currentStateSimulation: { type: 'string', description: 'If nothing changes about the current direction — one sentence.' },
       leverageMap: {
         type: 'array',
         items: {
@@ -290,10 +313,12 @@ const SYSTEMS_OUTPUT_BY_HOUSE: Record<HouseId, Record<string, unknown>> = {
       scenarioModel: SCENARIO_SCHEMA,
       ipoMap: IPO_SCHEMA,
     },
+    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'ipoMap'],
   },
   validate: {
     type: 'object',
     properties: {
+      currentStateSimulation: { type: 'string', description: 'If the test plays out as designed — one sentence about expected outcome.' },
       funnelSimulation: {
         type: 'object',
         properties: {
@@ -317,10 +342,12 @@ const SYSTEMS_OUTPUT_BY_HOUSE: Record<HouseId, Record<string, unknown>> = {
       stockFlow: STOCK_FLOW_SCHEMA,
       ipoMap: IPO_SCHEMA,
     },
+    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'ipoMap'],
   },
   evaluate: {
     type: 'object',
     properties: {
+      currentStateSimulation: { type: 'string', description: 'If the page/flow stays as it is — one sentence about expected behavior.' },
       evolutionProjection: { type: 'string', description: 'If current trends continue, in 3 months: one sentence' },
       doublLoopLearning: { type: 'string', description: 'Are we solving the right problem? one sentence' },
       kpiSystemMap: { type: 'string', description: 'What actually drives the outcome metric' },
@@ -332,6 +359,7 @@ const SYSTEMS_OUTPUT_BY_HOUSE: Record<HouseId, Record<string, unknown>> = {
       stockFlow: STOCK_FLOW_SCHEMA,
       ipoMap: IPO_SCHEMA,
     },
+    required: ['currentStateSimulation', 'archetype', 'behaviorOverTime', 'ipoMap'],
   },
 };
 
@@ -356,7 +384,7 @@ export function buildMergeToolSchema(house: HouseId): Record<string, unknown> {
   return {
     type: 'object',
     properties: baseProps,
-    required: ['fitStrength', 'verdict', 'verdictRationale', 'sentenceOfTruth', 'keyIssues', 'necessaryMoves'],
+    required: ['fitStrength', 'verdict', 'verdictRationale', 'sentenceOfTruth', 'keyIssues', 'necessaryMoves', 'systemsOutput'],
   };
 }
 

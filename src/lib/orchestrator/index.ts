@@ -262,11 +262,16 @@ Produce the synthesis. Rules:
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to their situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
 - VERDICT RATIONALE: 1–2 sentences. Reference their specific situation.
-- SYSTEMS OUTPUT: Extract structured data from agent artifacts. Fill in the systemsOutput fields using what the agents actually found. Do not leave fields as "..." — put real content from the analysis.${investigateExtra}
+- SYSTEMS OUTPUT: This is part of Fresco's product promise — the Analysis tab depth is what users come for. The schema REQUIRES four fields you must populate from the agent material:
+  - currentStateSimulation: One sentence — if nothing changes, what continues happening. Always derivable.
+  - archetype: The dynamic at work. Use a canonical name (Fixes that Fail, Shifting the Burden, Limits to Growth, Eroding Goals, Escalation, Success to the Successful, Tragedy of the Commons, Accidental Adversaries) when one cleanly fits — otherwise set name to null and describe the dynamic in description and loop in plain language. Either way, description and loop must be populated with substance from the agents.
+  - behaviorOverTime: A qualitative trend with at least one variable and 2+ data points. The variable can be qualitative (e.g. "team's confidence in the direction" with low/medium/high) — it doesn't need to be numerical.
+  - ipoMap: Inputs (what they're starting from), processes (what's turning input into output), outputs (the actions the analysis points to), bottleneck (the single most critical issue). All four required, with at least one entry in each array.
+- Optional fields (causalLoop, stockFlow, scenarioModel, sensitivityAnalysis) — populate ONLY when you have substantive material. Fabricating these is worse than omitting them.${investigateExtra}
 
-Also extract the SYSTEMS THINKING outputs from the agent structured_artifacts. The agents have embedded frameworks in their outputs — surface them as structured data.
+Also extract any SYSTEMS THINKING content embedded in the agent structured_artifacts and surface it through the schema fields above.
 
-Call the submit_synthesis tool with your synthesis. The tool's input schema defines the exact shape — populate every field that has supporting evidence, omit optional fields when the data isn't there (don't fabricate).`;
+Call the submit_synthesis tool with your synthesis. The schema enforces structure — required fields cannot be skipped.`;
 }
 
 // ─── Build final HouseResult ──────────────────────────────────────────────────
