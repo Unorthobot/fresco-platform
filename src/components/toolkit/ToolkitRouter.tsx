@@ -34,11 +34,43 @@ export function ToolkitRouter({ sessionId, workspaceId, onBack, onStartToolkit, 
 
   useEffect(() => {
     if (!session || !workspace) {
-      setActiveSession(null);
-      setActiveWorkspace(null);
-      setActiveSection('home');
-      // Navigate immediately — don't wait for the useEffect chain in FrescoAppContent
-      onBack?.();
+      // Defer the store reset to next tick so we don't fire setState during
+      // a render commit — that's a React anti-pattern that may itself feed
+      // into the stuck-render bug we're recovering from.
+      const tReset = setTimeout(() => {
+        setActiveSession(null);
+        setActiveWorkspace(null);
+        setActiveSection('home');
+        onBack?.();
+      }, 0);
+
+      // Watchdog: if the parent hasn't unmounted us within 1.5s, the React
+      // tree is stuck. Hard-reload to /. Brutal — but a hard reload is
+      // strictly better than the user staring at a permanent spinner with
+      // no escape. Also clears nav-state from localStorage before reload so
+      // we land cleanly on home.
+      const tWatchdog = setTimeout(() => {
+        // eslint-disable-next-line no-console
+        console.warn('[Fresco] ToolkitRouter: stuck in orphan state for 1.5s — hard reload');
+        try {
+          const raw = localStorage.getItem('fresco-storage');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.state) {
+              parsed.state.activeWorkspaceId = null;
+              parsed.state.activeSessionId = null;
+              parsed.state.activeSection = 'home';
+              localStorage.setItem('fresco-storage', JSON.stringify(parsed));
+            }
+          }
+        } catch { /* ignore */ }
+        window.location.href = '/';
+      }, 1500);
+
+      return () => {
+        clearTimeout(tReset);
+        clearTimeout(tWatchdog);
+      };
     }
   }, [session, workspace, setActiveSession, setActiveWorkspace, setActiveSection, onBack]);
 
