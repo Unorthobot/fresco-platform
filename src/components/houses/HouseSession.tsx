@@ -1726,8 +1726,8 @@ const EVALUATE_STEPS_COMPARISON: ConversationStep[] = [
   },
   {
     id: 'delta_focus',
-    question: 'What result would change your decision — and what result would leave you uncertain?',
-    hint: "What result means a winner, and what leaves you unsure.",
+    question: 'Before you see the numbers — what result would tell you Version B wins, what would tell you A wins, and what would leave you genuinely unsure?',
+    hint: "Pre-commit to your thresholds now. Most A/B tests get rationalised either way after the fact — the only protection against that is naming the lines before the data lands.",
     placeholder: "e.g. Version B at 3.5%+ conversion = clear winner, roll it out. Below 2.5% = current is better, rethink the hypothesis. Between 2.5–3.5% = inconclusive — the CTA might be right but the headline isn't doing enough work.",
     minHeight: 140,
     agent: 'Variant Lens',
