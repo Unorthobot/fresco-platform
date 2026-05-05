@@ -544,7 +544,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                                       return (
                                         <span className="text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-fresco-light-gray text-fresco-black border-fresco-border flex items-center gap-1.5">
                                           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: verdictColour(v).accent }} />
-                                          {v === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : v}
+                                          {v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : v}
                                         </span>
                                       );
                                     })()}

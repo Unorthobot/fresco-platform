@@ -2843,7 +2843,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     'GO':                  { headline: 'Proceed with confidence',     subline: 'The evidence supports this direction. Commit and move forward.',           tag: 'GO' },
     'PIVOT':               { headline: 'Change direction first',      subline: "There's something worth pursuing here, but the approach needs to change before you commit.", tag: 'PIVOT' },
     'STOP':                { headline: "Don't proceed",              subline: "The evidence doesn't support this. Committing further would compound the problem.",         tag: 'STOP' },
-    'INVESTIGATE FURTHER': { headline: 'You need more signal first',  subline: "The input isn't specific enough for a reliable verdict. Add evidence and run again.",  tag: 'NEEDS MORE SIGNAL' },
+    'INVESTIGATE FURTHER': { headline: 'You need more signal first',  subline: "The input isn't specific enough for a reliable verdict. Add evidence and run again.",  tag: 'MORE SIGNAL' },
   };
   const verdictPlain = result ? (VERDICT_PLAIN[result.verdict] || VERDICT_PLAIN['INVESTIGATE FURTHER']) : null;
 
@@ -3323,11 +3323,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                           {verdictPlain?.headline}
                         </p>
                         <span
-                          className="text-[10px] font-medium uppercase tracking-wider bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5"
-                          style={{ color: verdictColour(result.verdict).accent }}
+                          className="text-[10px] font-medium uppercase tracking-wider bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5 text-fresco-black"
                         >
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: verdictColour(result.verdict).accent }} />
-                          {result.verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : result.verdict}
+                          {result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict}
                         </span>
                       </div>
                       <p className="text-fresco-xs text-fresco-graphite-light">{verdictPlain?.subline}</p>
@@ -3753,7 +3752,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     className="text-[10px] font-medium uppercase tracking-wider"
                     style={{ color: verdictColour(result.verdict).accent }}
                   >
-                    {result.verdict === 'INVESTIGATE FURTHER' ? 'NEEDS MORE SIGNAL' : result.verdict}
+                    {result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict}
                   </span>
                 </div>
                 <p className="text-fresco-sm font-medium text-fresco-black leading-snug">{result.sentenceOfTruth?.slice(0, 100)}{(result.sentenceOfTruth?.length || 0) > 100 ? '…' : ''}</p>
