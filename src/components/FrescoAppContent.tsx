@@ -419,7 +419,7 @@ export default function FrescoAppContent() {
             setCurrentView('home');
           }}
         >
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {startingHouse && (
             <motion.div key="starting-house" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="h-screen flex items-center justify-center fresco-grid-bg-subtle">
               <div className="flex flex-col items-center gap-4">
