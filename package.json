@@ -19,6 +19,7 @@
     "@stripe/stripe-js": "^8.7.0",
     "@supabase/ssr": "^0.5.1",
     "@supabase/supabase-js": "^2.46.1",
+    "@vercel/analytics": "^2.0.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "docx": "^9.6.0",

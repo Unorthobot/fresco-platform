@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/react';
 import { ThemeProvider } from '@/lib/theme';
 import { SessionProvider } from '@/components/providers/SessionProvider';
 import './globals.css';
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </ThemeProvider>
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   );
