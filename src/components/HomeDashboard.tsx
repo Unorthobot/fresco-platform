@@ -53,19 +53,6 @@ export function HomeDashboard({
   useEffect(() => {
     try { setGuestHasRun(!!localStorage.getItem('fresco-has-run')); } catch {}
   }, []);
-
-  // Onboarding handoff: if the user typed their decision on the third
-  // onboarding slide, pre-fill the diagnostic input with it. Then clear
-  // the handoff key so it doesn't reappear on subsequent visits.
-  useEffect(() => {
-    try {
-      const handoff = localStorage.getItem('fresco-onboarding-decision-text');
-      if (handoff && handoff.trim().length > 0) {
-        setDiagnosticInput(handoff);
-        localStorage.removeItem('fresco-onboarding-decision-text');
-      }
-    } catch { /* localStorage blocked — no handoff possible, proceed quietly */ }
-  }, []);
   // hasActivity = true only when there's real persistent work to return to:
   // authenticated users need at least one workspace or session in the DB;
   // guests need the run flag AND at least one in-memory session (so a fresh
