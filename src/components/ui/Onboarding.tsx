@@ -3,71 +3,53 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight } from 'lucide-react';
-import { HOUSE_META } from '@/lib/agents';
 
 interface OnboardingProps {
   onComplete: () => void;
 }
 
-const STEPS = [
-  {
-    id: 'welcome',
-    label: null,
-    title: 'Fresco is a systems thinking platform.',
-    body: 'Most teams jump to solutions before understanding the problem. Fresco structures your thinking — from diagnosis to decision — so you stop solving the wrong thing.',
-    visual: null,
-  },
-  {
-    id: 'houses',
-    label: 'THE FOUR HOUSES',
-    title: 'Each house answers a different question.',
-    body: null,
-    visual: 'houses',
-  },
-  {
-    id: 'how',
-    label: 'HOW IT WORKS',
-    title: 'Answer a few questions. Get a verdict.',
-    body: 'Three specialist agents run sequentially on your input. Each one builds on the previous. The synthesis returns a GO, PIVOT, STOP, or NEEDS MORE SIGNAL verdict — plus an iceberg analysis, system archetypes, leverage maps, causal loops, and behavior over time charts.',
-    visual: null,
-  },
-  {
-    id: 'simulation',
-    label: 'SYSTEMS INTELLIGENCE',
-    title: 'Fresco models the system, not just the symptom.',
-    body: 'Every run surfaces the structure beneath your problem — the beliefs keeping it in place, the loops sustaining it, the leverage points where small changes create large impact. Run the scenario simulation to test what happens before you commit.',
-    visual: null,
-  },
-  {
-    id: 'start',
-    label: null,
-    title: 'Click a house to begin.',
-    body: 'No workspace setup needed. Pick the house that matches where you are. Answer honestly. Get a verdict.',
-    visual: 'cta',
-  },
-];
+/* ──────────────────────────────────────────────────────────────────────────
+   Three-slide onboarding — each slide is a working artefact, not an
+   explainer. The discipline (per the Fresco brand book): show, don't tell.
 
-const HOUSES = [
-  { id: 'investigate', q: 'Is the problem real?' },
-  { id: 'innovate',    q: 'Will people want this?' },
-  { id: 'validate',   q: 'Will it sell?' },
-  { id: 'evaluate',   q: 'How is it actually doing?' },
-] as const;
+   Slide 1 — A real verdict card (the deliverable)
+   Slide 2 — A real iceberg analysis (the structure beneath)
+   Slide 3 — Live entry: the user types their own decision
+
+   The example in slides 1 & 2 is consistent with FRSC-005 (the Annotated
+   Session poster) — measurement framework that nobody populates. Specific,
+   recognisable to senior product/design folks, not invented.
+
+   Slide 3 captures the user's decision text into localStorage. The home
+   dashboard reads this on mount and pre-fills its diagnostic input — so
+   the user lands on the dashboard with their decision already typed and
+   ready to route. No double-entry.
+   ────────────────────────────────────────────────────────────────────────── */
+
+const ONBOARDING_INPUT_KEY = 'fresco-onboarding-decision-text';
 
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(true);
+  const [decisionText, setDecisionText] = useState('');
 
-  const current = STEPS[step];
+  const isLast = step === 2;
+  const canFinish = decisionText.trim().length >= 8;
 
   const next = () => {
-    if (step < STEPS.length - 1) setStep(s => s + 1);
+    if (step < 2) setStep(s => s + 1);
     else complete();
   };
 
   const complete = () => {
+    // Capture the user's decision text for the home dashboard to pre-fill.
+    if (decisionText.trim().length > 0) {
+      try {
+        localStorage.setItem(ONBOARDING_INPUT_KEY, decisionText.trim());
+      } catch { /* localStorage blocked — proceed without handoff */ }
+    }
     setVisible(false);
-    localStorage.setItem('fresco-onboarding-complete', 'true');
+    try { localStorage.setItem('fresco-onboarding-complete', 'true'); } catch {}
     setTimeout(onComplete, 250);
   };
 
@@ -85,12 +67,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.2 }}
-            className="bg-white shadow-2xl max-w-lg w-full overflow-hidden"
+            className="bg-white shadow-2xl max-w-xl w-full overflow-hidden"
           >
             {/* Progress + close */}
             <div className="flex items-center justify-between px-6 pt-5 pb-0">
               <div className="flex items-center gap-1.5">
-                {STEPS.map((_, i) => (
+                {[0, 1, 2].map(i => (
                   <div key={i} className={`h-0.5 transition-all duration-300 ${
                     i === step ? 'w-6 bg-fresco-black' :
                     i < step  ? 'w-3 bg-fresco-graphite-light' :
@@ -105,60 +87,18 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               </button>
             </div>
 
-            {/* Content */}
+            {/* Slide content */}
             <motion.div
               key={step}
-              initial={{ opacity: 0, x: 16 }}
+              initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.18 }}
-              className="px-6 py-6"
+              className="px-6 py-5"
             >
-              {current.label && (
-                <p className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light mb-3">
-                  {current.label}
-                </p>
-              )}
-              <h2 className="text-xl font-medium text-fresco-black leading-snug mb-3">
-                {current.title}
-              </h2>
-              {current.body && (
-                <p className="text-fresco-sm text-fresco-graphite-mid leading-relaxed">
-                  {current.body}
-                </p>
-              )}
-
-              {/* Houses visual */}
-              {current.visual === 'houses' && (
-                <div className="mt-4 space-y-2">
-                  {HOUSES.map(h => {
-                    const meta = HOUSE_META[h.id];
-                    return (
-                      <div key={h.id} className="flex items-center gap-3 p-3 border border-fresco-border-light bg-fresco-light-gray">
-                        <div className="w-20 flex-shrink-0">
-                          <p className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light">{meta.name}</p>
-                          <p className="text-[9px] text-fresco-graphite-light/60">{meta.formalLabel}</p>
-                        </div>
-                        <div className="w-px h-8 bg-fresco-border flex-shrink-0" />
-                        <p className="text-fresco-sm text-fresco-graphite-soft">{h.q}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* CTA visual */}
-              {current.visual === 'cta' && (
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {HOUSES.map(h => {
-                    const meta = HOUSE_META[h.id];
-                    return (
-                      <div key={h.id} className="p-3 border border-fresco-border hover:border-fresco-black transition-colors cursor-default">
-                        <p className="text-fresco-xs font-medium text-fresco-black mb-0.5">{meta.name}</p>
-                        <p className="text-[10px] text-fresco-graphite-light">{h.q}</p>
-                      </div>
-                    );
-                  })}
-                </div>
+              {step === 0 && <SlideVerdict />}
+              {step === 1 && <SlideIceberg />}
+              {step === 2 && (
+                <SlideLiveEntry value={decisionText} onChange={setDecisionText} />
               )}
             </motion.div>
 
@@ -168,10 +108,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
                 Skip
               </button>
-              <button onClick={next} className="fresco-btn">
-                {step < STEPS.length - 1
-                  ? <><span>Next</span><ArrowRight className="w-4 h-4" /></>
-                  : <><span>Get started</span><ArrowRight className="w-4 h-4" /></>
+              <button
+                onClick={next}
+                disabled={isLast && !canFinish}
+                className="fresco-btn disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {isLast
+                  ? <><span>Begin</span><ArrowRight className="w-4 h-4" /></>
+                  : <><span>Next</span><ArrowRight className="w-4 h-4" /></>
                 }
               </button>
             </div>
@@ -182,6 +126,163 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   );
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   SLIDE 1 — A real verdict card
+   ────────────────────────────────────────────────────────────────────────── */
+function SlideVerdict() {
+  return (
+    <div>
+      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-fresco-graphite-light mb-1">
+        WHAT YOU LEAVE WITH
+      </p>
+      <h2 className="text-fresco-lg font-medium text-fresco-black leading-snug mb-4">
+        A defensible verdict — not a summary.
+      </h2>
+
+      <div className="border border-fresco-border bg-white" style={{ borderLeft: '4px solid #d97706' }}>
+        <div className="px-5 py-4 border-b border-fresco-border-light">
+          <div className="inline-flex items-center gap-1.5 border border-fresco-border bg-fresco-light-gray px-2.5 py-0.5 mb-3">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#d97706' }} />
+            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-fresco-black">PIVOT</span>
+          </div>
+          <p className="text-fresco-base text-fresco-black leading-snug font-medium mb-1.5">
+            Change direction first
+          </p>
+          <p className="text-fresco-xs text-fresco-graphite-mid italic leading-relaxed">
+            &quot;The framework is fine. The contradiction is at leadership level — and the framework was built for the stated identity while landing in the operating reality.&quot;
+          </p>
+        </div>
+
+        <div className="px-5 py-3 border-b border-fresco-border-light">
+          <p className="text-[9px] font-mono uppercase tracking-[0.14em] text-fresco-graphite-light mb-1.5">
+            KEY ISSUES
+          </p>
+          <ol className="space-y-1.5 text-fresco-xs text-fresco-black leading-snug">
+            <li className="flex gap-2"><span className="text-fresco-graphite-light font-mono">01</span><span>&quot;Data-led&quot; prioritisation untested against actual sponsorship or commitment</span></li>
+            <li className="flex gap-2"><span className="text-fresco-graphite-light font-mono">02</span><span>Measurement point sits downstream of the decision being protected</span></li>
+          </ol>
+        </div>
+
+        <div className="px-5 py-3">
+          <p className="text-[9px] font-mono uppercase tracking-[0.14em] text-fresco-graphite-light mb-1.5">
+            RECOMMENDED MOVES
+          </p>
+          <ol className="space-y-1.5 text-fresco-xs text-fresco-black leading-snug">
+            <li className="flex gap-2"><span className="text-fresco-graphite-light font-mono">01</span><span>Get a named executive to sign accountability before iterating the framework</span></li>
+            <li className="flex gap-2"><span className="text-fresco-graphite-light font-mono">02</span><span>Phased measurement design — start with what&apos;s actually measurable today</span></li>
+          </ol>
+        </div>
+      </div>
+
+      <p className="text-[10px] text-fresco-graphite-light italic mt-3 leading-relaxed">
+        Real output from an Investigate session. Pill, sentence of truth, ranked issues, ranked moves. Defensible in a meeting.
+      </p>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   SLIDE 2 — A real iceberg analysis
+   ────────────────────────────────────────────────────────────────────────── */
+function SlideIceberg() {
+  const layers = [
+    {
+      label: 'EVENT',
+      what: 'What is being observed',
+      content: '9 of 12 metrics empty after 11 weeks. Two reviews scheduled, both rescheduled.',
+    },
+    {
+      label: 'PATTERN',
+      what: 'What keeps happening',
+      content: 'Easy metrics get populated, hard ones don\u2019t. The team produces data when it\u2019s free.',
+    },
+    {
+      label: 'STRUCTURE',
+      what: 'What in the system produces this',
+      content: 'No accountability link between metric and person. No consequence for empty cells.',
+    },
+    {
+      label: 'MENTAL MODEL',
+      what: 'What belief keeps it in place',
+      content: '\u201CWe are data-driven\u201D is being held as identity, not behaviour.',
+    },
+  ];
+
+  return (
+    <div>
+      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-fresco-graphite-light mb-1">
+        AND THE STRUCTURE BENEATH IT
+      </p>
+      <h2 className="text-fresco-lg font-medium text-fresco-black leading-snug mb-4">
+        Every verdict surfaces what&apos;s holding the problem in place.
+      </h2>
+
+      <div className="border border-fresco-border bg-white">
+        {layers.map((layer, i) => (
+          <div
+            key={layer.label}
+            className={`px-5 py-3 ${i < layers.length - 1 ? 'border-b border-fresco-border-light' : ''}`}
+          >
+            <div className="flex items-baseline gap-3 mb-1">
+              <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-fresco-black w-28 flex-shrink-0">
+                {layer.label}
+              </span>
+              <span className="text-[10px] text-fresco-graphite-light italic">
+                {layer.what}
+              </span>
+            </div>
+            <p className="text-fresco-xs text-fresco-black leading-snug pl-[124px]">
+              {layer.content}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-[10px] text-fresco-graphite-light italic mt-3 leading-relaxed">
+        Iceberg analysis from the same session. Investigate produces this. Innovate produces a leverage map. Validate produces a barrier scorecard. Evaluate produces a journey trace.
+      </p>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   SLIDE 3 — Live entry
+   ────────────────────────────────────────────────────────────────────────── */
+function SlideLiveEntry({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-fresco-graphite-light mb-1">
+        NOW YOURS
+      </p>
+      <h2 className="text-fresco-lg font-medium text-fresco-black leading-snug mb-4">
+        What&apos;s the decision in front of you?
+      </h2>
+
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        rows={4}
+        autoFocus
+        placeholder="A few sentences. e.g. We're seeing drop-off after signup climbing week-on-week. We're about to commit to an onboarding redesign — I'm not sure we've actually diagnosed what's causing it."
+        className="w-full px-4 py-3 text-fresco-sm text-fresco-black bg-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors placeholder:text-fresco-graphite-light resize-none leading-relaxed"
+      />
+
+      <p className="text-[10px] text-fresco-graphite-light italic mt-3 leading-relaxed">
+        We&apos;ll route you to the right house based on what you describe. The text you enter here pre-fills the next screen — you can edit it before running.
+      </p>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Hook — used by AppContent to decide whether to show onboarding
+   ────────────────────────────────────────────────────────────────────────── */
 export function useOnboarding() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -198,7 +299,11 @@ export function useOnboarding() {
     },
     resetOnboarding: () => {
       localStorage.removeItem('fresco-onboarding-complete');
+      localStorage.removeItem(ONBOARDING_INPUT_KEY);
       setShowOnboarding(true);
     },
   };
 }
+
+/* Exported so HomeDashboard can pre-fill its diagnostic input on mount. */
+export const ONBOARDING_HANDOFF_KEY = ONBOARDING_INPUT_KEY;
