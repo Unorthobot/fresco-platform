@@ -26,6 +26,7 @@ model User {
   workspaces  Workspace[]
   ownedTeams  Team[]       @relation("TeamOwner")
   teamMembers TeamMember[]
+  extensionKeys ExtensionKey[]
 }
 
 model Account {
@@ -136,4 +137,24 @@ model TeamInvite {
   createdAt DateTime  @default(now())
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+// Keys for the Fresco Evaluate Chrome extension. Each key is generated on
+// the connect-extension page and stored only as a hash; the plaintext is
+// shown once at creation and never persisted. Revoking sets revokedAt;
+// the key remains in the row for audit but auth lookups exclude it.
+model ExtensionKey {
+  id         String    @id @default(cuid())
+  userId     String
+  hash       String    @unique
+  prefix     String    // first 12 chars of the plaintext for UI display
+  label      String?   // user-supplied name, optional
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([prefix])
 }
