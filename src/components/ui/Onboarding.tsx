@@ -57,7 +57,7 @@ const DURATIONS: Record<Beat['kind'], number> = {
 };
 
 const TYPED_ANSWER =
-  'Built a measurement framework for a business unit because they said they wanted to be more data-driven. They keep saying the right things — but only 3 of 12 metrics have been populated in 11 weeks, and only the easy ones.';
+  'Six weeks ago we shipped a major mobile redesign. Average session length has dropped from 8 minutes to 4.8 minutes — a 40% drop. The team is split. Half want to roll back, half want to push through and patch what they think are regressions. We need to commit one way or the other this week.';
 
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [visible, setVisible] = useState(true);
@@ -234,9 +234,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                           ICEBERG · STRUCTURE LAYER
                         </p>
                         <p className="text-fresco-xs text-fresco-black leading-snug">
-                          The framework is being treated as the unit of analysis — but the
-                          evidence is behavioural. Frameworks don&apos;t produce data; people do.
-                          No accountability link between metric and person.
+                          The framing assumes session length is a quality signal — but the
+                          evidence doesn&apos;t support that link. Users who spent 8 minutes
+                          pre-redesign were navigating, searching, retrying. Users who spend
+                          4.8 minutes now arrive, complete, leave. That&apos;s not regression.
+                          That&apos;s compression.
                         </p>
                       </div>
                     </div>
@@ -260,9 +262,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                           ASSUMPTION BEING TREATED AS FACT
                         </p>
                         <p className="text-fresco-xs text-fresco-black leading-snug italic">
-                          &quot;If they prioritise being data-led, the framework becomes viable.&quot;
-                          A belief, not a fact. Assumes prioritisation = capability — and that
-                          stated identity is being held back by infrastructure, not behaviour.
+                          &quot;Longer sessions mean a better product.&quot; A belief held since the
+                          early app-engagement era. Holds for content and social products,
+                          where time IS the value. Doesn&apos;t hold for utility products,
+                          where time IS the cost. The team is measuring engagement when they
+                          should be measuring completion.
                         </p>
                       </div>
                     </div>
@@ -284,7 +288,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                           </span>
                         </div>
                         <p className="text-fresco-base text-fresco-black leading-snug font-medium mb-1">
-                          The framework is fine. The contradiction is at leadership level.
+                          Session length isn&apos;t your metric. Task completion is.
                         </p>
                         <p className="text-[10px] text-fresco-graphite-light italic">
                           Sentence of truth — defensible in a meeting.
