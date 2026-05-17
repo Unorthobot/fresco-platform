@@ -146,18 +146,20 @@ body {
 
 .fresco-grid-bg {
   background-color: var(--fresco-white);
-  background-image: 
+  background-image:
     linear-gradient(var(--fresco-grid-color) 1px, transparent 1px),
     linear-gradient(90deg, var(--fresco-grid-color) 1px, transparent 1px);
   background-size: var(--fresco-grid-size) var(--fresco-grid-size);
+  background-attachment: fixed;
 }
 
 .fresco-grid-bg-subtle {
   background-color: var(--fresco-white);
-  background-image: 
+  background-image:
     linear-gradient(var(--fresco-grid-color) 1px, transparent 1px),
     linear-gradient(90deg, var(--fresco-grid-color) 1px, transparent 1px);
   background-size: 24px 24px;
+  background-attachment: fixed;
 }
 
 /* Dot grid variant */
@@ -165,6 +167,7 @@ body {
   background-color: var(--fresco-white);
   background-image: radial-gradient(var(--fresco-grid-color) 1px, transparent 1px);
   background-size: var(--fresco-grid-size) var(--fresco-grid-size);
+  background-attachment: fixed;
 }
 
 /* ============================================
