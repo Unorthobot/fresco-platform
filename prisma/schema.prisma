@@ -139,6 +139,18 @@ model TeamInvite {
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
 }
 
+// Public read-only snapshot of a house verdict, addressable by token via
+// /share/[token]. The payload is a frozen copy of the HouseResult so later
+// edits or deletion of the originating session never break a shared link.
+model SharedResult {
+  id        String   @id @default(cuid())
+  token     String   @unique @default(cuid())
+  userId    String?
+  houseName String
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
 // Keys for the Fresco Evaluate Chrome extension. Each key is generated on
 // the connect-extension page and stored only as a hash; the plaintext is
 // shown once at creation and never persisted. Revoking sets revokedAt;

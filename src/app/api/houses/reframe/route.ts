@@ -8,6 +8,10 @@ import { buildHouseResult, HOUSE_FIT_LABELS } from '@/lib/orchestrator';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
+// Single synthesis call, but still a large-context LLM request that can
+// exceed Vercel's default duration on slow generations.
+export const maxDuration = 120;
+
 const LENS_INSTRUCTIONS: Record<string, string> = {
   critical: `Apply a CRITICAL THINKING lens. Prioritise truth-testing and assumption recognition. The Sentence of Truth should name the most important unexamined assumption. Key Issues should surface where reasoning is fragile. At least one Necessary Move should be "validate this assumption before proceeding."`,
   systems: `Apply a SYSTEMS THINKING lens. Prioritise interconnections, feedback loops, and structural causes. The Sentence of Truth should name the system dynamic driving the situation. Key Issues should trace symptoms to structural roots. Necessary Moves should target the leverage point in the system.`,

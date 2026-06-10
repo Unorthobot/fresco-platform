@@ -553,6 +553,11 @@ export const useFrescoStore = create<FrescoState>()(
         user: state.user,
         workspaces: state.workspaces,
         sessions: state.sessions,
+        // Persist position so a reload (or returning from an external view,
+        // e.g. a share/report tab) restores the user to where they were
+        // instead of dumping them on the home screen.
+        activeWorkspaceId: state.activeWorkspaceId,
+        activeSessionId: state.activeSessionId,
       }),
     }
   )

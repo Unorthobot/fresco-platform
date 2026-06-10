@@ -64,4 +64,4 @@ Investigate, Innovate, Validate, Evaluate remain as engine internals — the ana
 
 ## Open questions
 
-- **0% session completion rate** in the admin dashboard. `completedSessions` counts rows where `isLocked = true`. Need to confirm whether the front-end ever calls the lock endpoint, or whether the metric definition needs revisiting.
+- ~~**0% session completion rate**~~ Resolved June 2026: the metric counted `isLocked = true` (the optional sentence-of-truth lock, which the verdict flow never sets). Completion is now defined in `/api/admin/usage` as "session has a verdict in `aiOutputs`" (`isLocked` still counts too).

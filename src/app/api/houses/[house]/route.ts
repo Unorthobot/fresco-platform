@@ -15,6 +15,11 @@ import { buildMergePrompt, buildHouseResult, mergeAgentOutputsLocally } from '@/
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
+// Sequential multi-agent runs regularly exceed Vercel's default function
+// duration. Without this, long runs are killed mid-stream and the client
+// sees a dead connection instead of a verdict.
+export const maxDuration = 300;
+
 // ── URL content fetcher ───────────────────────────────────────────────────────
 
 async function fetchPageContent(url: string): Promise<{ content: string; title: string; fetched: boolean }> {

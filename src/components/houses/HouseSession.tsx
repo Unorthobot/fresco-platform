@@ -33,6 +33,7 @@ import { SystemsOutput, CrossHouseSystems,
   IPOSection, SensitivitySection, ScenarioSection,
 } from '@/components/ui/SystemsOutput';
 import { generatePDFReport, generateHTMLDeck } from '@/lib/reportGenerator';
+import { downloadHousePDF } from '@/lib/housePDF';
 import { useSession } from 'next-auth/react';
 import { incrementGuestRunCount } from '@/lib/guestRuns';
 
@@ -827,6 +828,10 @@ function QuestionCard({
 
   useEffect(() => {
     if (isActive && textRef.current) {
+      // No auto-focus on touch devices — it pops the keyboard uninvited and
+      // steals the first tap from navigation buttons (Settings needed two
+      // taps on the session screen).
+      if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) return;
       textRef.current.focus();
     }
   }, [isActive]);
@@ -2275,6 +2280,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [url, setUrl] = useState('');
   const [evaluateMode, setEvaluateMode] = useState<'single' | 'journey' | 'comparison'>('single');
   const [isRunning, setIsRunning] = useState(false);
+  // Desktop gets the animated split-pane; mobile stacks panels and lets the
+  // document scroll. Tracked live so rotation/resize behaves.
+  const [isDesktop, setIsDesktop] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
   const abortRef = useRef<AbortController | null>(null);
   const outputScrollRef = useRef<HTMLDivElement>(null);
   const inputScrollRef = useRef<HTMLDivElement>(null);
@@ -2308,6 +2323,28 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [isFetchingChallenge, setIsFetchingChallenge] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [shareLinkState, setShareLinkState] = useState<'idle' | 'creating' | 'copied' | 'error' | 'auth'>('idle');
+
+  const handleCreateShareLink = async () => {
+    if (!result || shareLinkState === 'creating') return;
+    setShareLinkState('creating');
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ houseName: meta.name, payload: result }),
+      });
+      if (res.status === 401) { setShareLinkState('auth'); return; }
+      if (!res.ok) throw new Error('share failed');
+      const { url } = await res.json();
+      await navigator.clipboard.writeText(`${window.location.origin}${url}`);
+      setShareLinkState('copied');
+      setTimeout(() => setShareLinkState('idle'), 2500);
+    } catch {
+      setShareLinkState('error');
+      setTimeout(() => setShareLinkState('idle'), 2500);
+    }
+  };
 
   const setValue = (k: string, v: string) => setValues(prev => {
     const next = { ...prev, [k]: v };
@@ -2492,6 +2529,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         const reader = response.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let verdictReceived = false;
+        let serverError: string | null = null;
         while (true) {
           if (abort.signal.aborted) { reader.cancel(); break; }
           const { done, value } = await reader.read();
@@ -2502,7 +2541,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             if (!line.startsWith('data: ')) continue;
             try {
               const ev = JSON.parse(line.slice(6));
-              if (ev.type === 'pageFetch') {
+              if (ev.type === 'error') {
+                serverError = ev.message || 'The analysis failed on the server.';
+              } else if (ev.type === 'pageFetch') {
                 if (ev.message) setPageFetchMessage(ev.message);
               } else if (ev.type === 'agent') {
                 setAgentEvents(prev => {
@@ -2529,6 +2570,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   return next;
                 });
               } else if (ev.type === 'verdict') {
+                verdictReceived = true;
                 const { type: _, ...vd } = ev;
                 setResult(vd as HouseResult);
                 await persistResult(vd as HouseResult);
@@ -2553,6 +2595,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             } catch { /* skip */ }
           }
         }
+        // The stream can end without a verdict — server error, Vercel duration
+        // limit, or a dropped mobile connection. Silence here looked like a
+        // 10-minute hang to beta testers; surface it instead.
+        if (!verdictReceived && !abort.signal.aborted) {
+          setRunError(
+            serverError
+              ? `${serverError} Your answers are saved — try running again.`
+              : 'The connection dropped before the verdict arrived. Your answers are saved — try running again.'
+          );
+        }
       } else {
         const data = await response.json();
         if (data.verdict) { setResult(data); await persistResult(data); inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -2562,7 +2614,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       const wasAbort = (err as any)?.name === 'AbortError' || abort.signal.aborted;
       if (!wasAbort) {
         console.error('House run failed:', err);
-        setRunError('Something went wrong. Check your connection and try again.');
+        setRunError('The connection failed before the analysis could finish. Your answers are saved — check your network and try again.');
       }
     }
     setIsRunning(false);
@@ -2849,26 +2901,34 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
   return (
     <>
-    <div className="flex flex-col md:flex-row h-full bg-fresco-white">
+    <div className="flex flex-col md:flex-row md:h-full bg-fresco-white">
 
       {/* ── LEFT / MIDDLE: Conversation input ─────────────────────────────── */}
+      {/* The split-pane geometry (fixed flexBasis/maxWidth/minWidth) is
+          desktop-only. Applying it on mobile squeezed both panels into
+          fixed-height boxes inside h-screen — the layout beta testers
+          called unusable below 700px. On mobile the panels stack and the
+          document scrolls naturally. */}
       <motion.div
-        animate={{ flexBasis: result ? '440px' : undefined, maxWidth: result ? '440px' : undefined }}
+        animate={isDesktop ? { flexBasis: result ? '440px' : undefined, maxWidth: result ? '440px' : undefined } : {}}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
-        className={cn("flex-1 flex flex-col overflow-hidden", result && "border-r border-fresco-border-light flex-shrink-0")}
-        style={{ minWidth: result ? 360 : undefined }}
+        className={cn("md:flex-1 flex flex-col md:overflow-hidden", result && "md:border-r border-fresco-border-light md:flex-shrink-0")}
+        style={{ minWidth: isDesktop && result ? 360 : undefined }}
       >
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto" ref={inputScrollRef}>
+        <div className="md:flex-1 md:overflow-y-auto" ref={inputScrollRef}>
           <div className={cn("mx-auto py-6 md:py-10", result ? "px-4" : "max-w-[640px] px-4 md:px-8")}>
 
           {/* Back + header */}
           <div className="mb-10">
             <div className="flex items-center justify-between mb-8">
+              {/* "Back to {title}" read as broken house navigation when the
+                  auto-created workspace was titled e.g. "Innovate · June 2026".
+                  Say what it actually does. */}
               <button type="button" onClick={onBack}
                 className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
                 <ChevronLeft className="w-4 h-4" />
-                Back to {workspace?.title || 'Workspace'}
+                Back to workspace{workspace?.title ? ` — ${workspace.title}` : ''}
               </button>
               {(result || Object.values(values).some(v => v?.trim())) && (
                 <button type="button" onClick={() => setShowStartOver(true)}
@@ -2990,8 +3050,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         </div>
         </div>
 
-        {/* #3 — Sticky Run footer */}
-        <div className="border-t border-fresco-border-light bg-fresco-white px-4 md:px-8 py-4">
+        {/* #3 — Sticky Run footer. On mobile the page itself scrolls, so the
+            footer pins to the viewport bottom; left padding keeps it clear of
+            the fixed hamburger button. */}
+        <div className="sticky bottom-0 z-40 md:static border-t border-fresco-border-light bg-fresco-white pl-20 pr-4 md:px-8 py-4">
           <div className="max-w-[640px] mx-auto">
             <AnimatePresence>
               {false && canRun && !result && !isRunning && challengeQuestions.length > 0 && !challengeDismissed && (
@@ -3050,11 +3112,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
       {/* ── RIGHT: Output ──────────────────────────────────────────────────── */}
       <motion.div
-        animate={{ flex: result ? '1 1 0%' : '0 0 360px', minWidth: 320 }}
+        animate={isDesktop ? { flex: result ? '1 1 0%' : '0 0 360px', minWidth: 320 } : {}}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
-        className="flex flex-col border-t border-fresco-border-light bg-fresco-off-white overflow-hidden md:border-t-0 md:border-l"
+        className="flex flex-col border-t border-fresco-border-light bg-fresco-off-white md:overflow-hidden md:border-t-0 md:border-l"
       >
-        <div className="flex-1 overflow-y-auto" ref={outputScrollRef}>
+        <div className="md:flex-1 md:overflow-y-auto" ref={outputScrollRef}>
         <div className="px-6 pt-6 pb-6">
           <div className="sticky top-0 z-30 -mx-6 px-6 pt-2 pb-3 mb-4 bg-fresco-off-white border-b border-fresco-border-light flex items-center justify-between">
             <div className="flex-1">
@@ -3288,6 +3350,41 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 {/* ── DECISION TAB ─────────────────────────────────────── */}
                 {outputTab === 'decision' && (
                   <>
+                {/* YOUR INPUT — collapsed recap of what produced this verdict.
+                    Beta feedback: after submission the original prompt felt
+                    gone; keep it one tap away next to the verdict. */}
+                {(() => {
+                  const houseSteps = houseId === 'investigate' ? INVESTIGATE_STEPS
+                    : houseId === 'innovate' ? INNOVATE_STEPS
+                    : houseId === 'validate' ? VALIDATE_STEPS
+                    : evaluateMode === 'journey' ? EVALUATE_STEPS_JOURNEY
+                    : evaluateMode === 'comparison' ? EVALUATE_STEPS_COMPARISON
+                    : EVALUATE_STEPS_SINGLE;
+                  const answered = houseSteps.filter((s: any) => (values[s.id] || '').trim().length > 0);
+                  if (answered.length === 0) return null;
+                  return (
+                    <details className="border border-fresco-border-light bg-white group">
+                      <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+                        <span className="fresco-label">Your input</span>
+                        <span className="text-fresco-xs text-fresco-graphite-light group-open:hidden">
+                          {answered.length} answer{answered.length !== 1 ? 's' : ''} — tap to review
+                        </span>
+                        <ChevronDown className="w-3.5 h-3.5 text-fresco-graphite-light hidden group-open:block rotate-180" />
+                      </summary>
+                      <div className="px-4 pb-4 space-y-3 border-t border-fresco-border-light pt-3">
+                        {answered.map((s: any) => (
+                          <div key={s.id}>
+                            <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">{s.question}</p>
+                            <p className="text-fresco-sm text-fresco-graphite-soft whitespace-pre-wrap leading-relaxed">
+                              {serializeStructuredField(s.inputType || 'textarea', values[s.id] || '')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })()}
+
                 {/* SENTENCE OF TRUTH */}
                 <EditableSentenceOfTruth
                   value={result.sentenceOfTruth}
@@ -3759,37 +3856,92 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               </div>
 
               <div className="space-y-2">
-                {/* 0. PDF Report — comprehensive download */}
+                {/* Share link — public read-only page anyone can open */}
+                <button onClick={handleCreateShareLink}
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
+                  {shareLinkState === 'copied'
+                    ? <Check className="w-4 h-4 text-fresco-black flex-shrink-0" />
+                    : shareLinkState === 'creating'
+                      ? <Loader2 className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0 animate-spin" />
+                      : <svg className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                        </svg>}
+                  <div>
+                    <p className="text-fresco-sm font-medium text-fresco-black">
+                      {shareLinkState === 'copied' ? 'Link copied!'
+                        : shareLinkState === 'creating' ? 'Creating link…'
+                        : shareLinkState === 'auth' ? 'Sign in to share'
+                        : shareLinkState === 'error' ? 'Failed — try again'
+                        : 'Copy share link'}
+                    </p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">
+                      {shareLinkState === 'auth'
+                        ? 'Share links need an account so they stay live'
+                        : 'Public read-only page — works for anyone, never expires'}
+                    </p>
+                  </div>
+                </button>
+
+                {/* 0. PDF — direct download, no print dialog */}
                 <button onClick={() => {
-                  {
-                    const houseSteps = houseId === 'investigate' ? INVESTIGATE_STEPS
-                      : houseId === 'innovate' ? INNOVATE_STEPS
-                      : houseId === 'validate' ? VALIDATE_STEPS
-                      : evaluateMode === 'journey' ? EVALUATE_STEPS_JOURNEY
-                      : evaluateMode === 'comparison' ? EVALUATE_STEPS_COMPARISON
-                      : EVALUATE_STEPS_SINGLE;
-                    generatePDFReport({
-                      houseName: meta.name,
-                      formalLabel: (meta as any).formalLabel || meta.name,
-                      result: result as any,
-                      agentEvents: agentEvents,
-                      inputs: houseSteps
-                        .filter((s: any) => (values[s.id] || '').trim().length > 0)
-                        .map((s: any) => ({
-                          question: s.question,
-                          answer: serializeStructuredField(s.inputType || 'textarea', values[s.id] || ''),
-                        })),
-                      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-                    });
-                  }
+                  const houseSteps = houseId === 'investigate' ? INVESTIGATE_STEPS
+                    : houseId === 'innovate' ? INNOVATE_STEPS
+                    : houseId === 'validate' ? VALIDATE_STEPS
+                    : evaluateMode === 'journey' ? EVALUATE_STEPS_JOURNEY
+                    : evaluateMode === 'comparison' ? EVALUATE_STEPS_COMPARISON
+                    : EVALUATE_STEPS_SINGLE;
+                  downloadHousePDF({
+                    houseName: meta.name,
+                    formalLabel: (meta as any).formalLabel || meta.name,
+                    result: result as any,
+                    inputs: houseSteps
+                      .filter((s: any) => (values[s.id] || '').trim().length > 0)
+                      .map((s: any) => ({
+                        question: s.question,
+                        answer: serializeStructuredField(s.inputType || 'textarea', values[s.id] || ''),
+                      })),
+                    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+                  });
                 }}
                   className="w-full flex items-center gap-3 p-3 border border-fresco-black bg-fresco-black hover:bg-fresco-graphite transition-colors text-left">
                   <svg className="w-4 h-4 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                   </svg>
                   <div>
-                    <p className="text-fresco-sm font-medium text-white">Download full report (PDF)</p>
-                    <p className="text-fresco-xs text-white/60">Complete analysis — Decision + Systems Intelligence — shareable anywhere</p>
+                    <p className="text-fresco-sm font-medium text-white">Download verdict (PDF)</p>
+                    <p className="text-fresco-xs text-white/60">Saves a .pdf file directly — verdict, issues, moves, and your input</p>
+                  </div>
+                </button>
+
+                {/* 0a. Rich print view — full HTML report with systems intelligence */}
+                <button onClick={() => {
+                  const houseSteps = houseId === 'investigate' ? INVESTIGATE_STEPS
+                    : houseId === 'innovate' ? INNOVATE_STEPS
+                    : houseId === 'validate' ? VALIDATE_STEPS
+                    : evaluateMode === 'journey' ? EVALUATE_STEPS_JOURNEY
+                    : evaluateMode === 'comparison' ? EVALUATE_STEPS_COMPARISON
+                    : EVALUATE_STEPS_SINGLE;
+                  generatePDFReport({
+                    houseName: meta.name,
+                    formalLabel: (meta as any).formalLabel || meta.name,
+                    result: result as any,
+                    agentEvents: agentEvents,
+                    inputs: houseSteps
+                      .filter((s: any) => (values[s.id] || '').trim().length > 0)
+                      .map((s: any) => ({
+                        question: s.question,
+                        answer: serializeStructuredField(s.inputType || 'textarea', values[s.id] || ''),
+                      })),
+                    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+                  });
+                }}
+                  className="w-full flex items-center gap-3 p-3 border border-fresco-border hover:border-fresco-black hover:bg-fresco-light-gray transition-colors text-left">
+                  <svg className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659" />
+                  </svg>
+                  <div>
+                    <p className="text-fresco-sm font-medium text-fresco-black">Open full report (print view)</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">Complete analysis with Systems Intelligence — print or save from your browser</p>
                   </div>
                 </button>
 

@@ -191,6 +191,52 @@ export default function FrescoAppContent() {
     window.scrollTo(0, 0);
   }, [currentView]);
 
+  // ── Browser history integration ──────────────────────────────────────────
+  // The app is state-driven with no routes, so without these entries the
+  // back button leaves the site entirely (beta testers bounced back to
+  // LinkedIn mid-session). Each view change pushes a history entry; popstate
+  // restores the corresponding state instead of unloading the app.
+  const isRestoringHistory = useRef(false);
+  useEffect(() => {
+    if (isRestoringHistory.current) {
+      isRestoringHistory.current = false;
+      return;
+    }
+    const frescoState = {
+      v: currentView,
+      w: activeWorkspaceId,
+      s: activeSessionId,
+      sec: activeSection,
+    };
+    const prev = window.history.state?.fresco;
+    if (!prev) {
+      window.history.replaceState({ fresco: frescoState }, '');
+    } else if (prev.v !== frescoState.v || prev.w !== frescoState.w || prev.s !== frescoState.s) {
+      window.history.pushState({ fresco: frescoState }, '');
+    }
+  }, [currentView, activeWorkspaceId, activeSessionId, activeSection]);
+
+  useEffect(() => {
+    const onPopState = (e: PopStateEvent) => {
+      const st = e.state?.fresco;
+      isRestoringHistory.current = true;
+      if (!st || st.v === 'home') {
+        setActiveSession(null);
+        setActiveWorkspace(null);
+        setActiveSection('home');
+        setCurrentView('home');
+        return;
+      }
+      setActiveWorkspace(st.w || null);
+      setActiveSession(st.s || null);
+      setActiveSection(st.sec || (st.s ? 'toolkit' : st.w ? 'workspaces' : 'home'));
+      setCurrentView(st.v);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Listen for upgrade events from nested components (e.g. NextToolkitCTA)
   useEffect(() => {
     const handler = () => setShowPricingModal(true);
@@ -451,8 +497,12 @@ onStartToolkit={handleStartToolkit}
             </motion.div>
           )}
 
+          {/* dvh (not vh): mobile browser chrome makes 100vh taller than the
+              visible viewport, which clipped the bottom of the verdict panel.
+              Height is desktop-only — mobile stacks panels and scrolls the
+              document. */}
           {!startingHouse && effectiveView === 'session' && activeWorkspaceId && currentSession && (
-            <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }} className="h-screen">
+            <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }} className="md:h-dvh">
               <ToolkitRouter
                 sessionId={currentSession.id}
                 workspaceId={activeWorkspaceId}

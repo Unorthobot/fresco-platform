@@ -91,6 +91,10 @@ export function AccountPage() {
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
+    // Mark this as a deliberate sign-out so useDBSync knows it may clear the
+    // store. Transient auth flickers (expired JWT, webview cookie loss) must
+    // NOT wipe local work — that destroyed beta testers' sessions.
+    try { sessionStorage.setItem('fresco_explicit_signout', '1'); } catch {}
     await signOut({ callbackUrl: '/' });
   };
 

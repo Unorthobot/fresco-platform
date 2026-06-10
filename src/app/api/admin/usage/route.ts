@@ -42,6 +42,7 @@ export async function GET() {
                 toolkitType: true,
                 decision: true,
                 isLocked: true,
+                aiOutputs: true,
                 createdAt: true,
                 updatedAt: true,
               },
@@ -58,10 +59,21 @@ export async function GET() {
         toolkitType: true,
         decision: true,
         isLocked: true,
+        aiOutputs: true,
         createdAt: true,
       },
     }),
   ]);
+
+  // A session counts as completed when it produced a verdict. The old
+  // definition (isLocked) measured the optional sentence-of-truth lock,
+  // which the verdict flow never sets — hence the 0% completion rate the
+  // dashboard showed during beta despite testers finishing runs.
+  const isCompleted = (s: { isLocked: boolean; aiOutputs?: unknown }) => {
+    if (s.isLocked) return true;
+    const out = s.aiOutputs as { verdict?: unknown; houseResult?: unknown } | null;
+    return !!(out && (out.verdict || out.houseResult));
+  };
 
   // ── Summary ────────────────────────────────────────────────────────────
   type SessionRow = {
@@ -70,6 +82,7 @@ export async function GET() {
     toolkitType: string;
     decision: string | null;
     isLocked: boolean;
+    aiOutputs?: unknown;
     createdAt: Date;
     updatedAt?: Date;
   };
@@ -86,7 +99,7 @@ export async function GET() {
 
   const totalUsers = typedUsers.length;
   const totalSessions = typedSessions.length;
-  const completedSessions = typedSessions.filter((s: SessionRow) => s.isLocked).length;
+  const completedSessions = typedSessions.filter((s: SessionRow) => isCompleted(s)).length;
   const completionRate = totalSessions > 0
     ? Math.round((completedSessions / totalSessions) * 100)
     : 0;
@@ -97,7 +110,7 @@ export async function GET() {
     const house = s.houseType || s.toolkitType || 'unknown';
     const entry = houseMap.get(house) || { total: 0, completed: 0 };
     entry.total += 1;
-    if (s.isLocked) entry.completed += 1;
+    if (isCompleted(s)) entry.completed += 1;
     houseMap.set(house, entry);
   }
   const houseBreakdown = Array.from(houseMap.entries())
@@ -107,7 +120,7 @@ export async function GET() {
   // ── Verdict breakdown — only count completed sessions ──────────────────
   const verdictMap = new Map<string, number>();
   for (const s of typedSessions) {
-    if (!s.isLocked || !s.decision) continue;
+    if (!isCompleted(s) || !s.decision) continue;
     verdictMap.set(s.decision, (verdictMap.get(s.decision) || 0) + 1);
   }
   const verdictBreakdown = Array.from(verdictMap.entries())
@@ -117,7 +130,7 @@ export async function GET() {
   // ── Per-tester breakdown ───────────────────────────────────────────────
   const testers = typedUsers.map((u: UserWithSessions) => {
     const sessions = u.workspaces.flatMap((w: { sessions: SessionRow[] }) => w.sessions);
-    const completed = sessions.filter((s: SessionRow) => s.isLocked).length;
+    const completed = sessions.filter((s: SessionRow) => isCompleted(s)).length;
     const housesUsed = Array.from(
       new Set(
         sessions

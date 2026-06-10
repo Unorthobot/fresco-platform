@@ -22,6 +22,58 @@ export function useDBSync() {
 
     const loadFromDB = async () => {
       try {
+        // ── Migrate guest work to the DB before loading ──────────────────
+        // Work created before sign-up lives only in the local store. Without
+        // this step, the setState below would silently discard it — beta
+        // testers lost entire sessions to that. Upload guest rows first so
+        // the DB load below returns them as the user's own.
+        const local = useFrescoStore.getState();
+        const guestWorkspaces = local.workspaces.filter(
+          w => !w.userId || w.userId === 'guest' || w.userId === 'demo-user'
+        );
+        const guestSessions = local.sessions.filter(
+          s => guestWorkspaces.some(w => w.id === s.workspaceId)
+        );
+        for (const ws of guestWorkspaces) {
+          try {
+            await fetch('/api/workspaces', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: ws.id, title: ws.title, description: ws.description }),
+            });
+          } catch { /* duplicate or network error — continue with the rest */ }
+        }
+        for (const s of guestSessions) {
+          try {
+            await fetch('/api/sessions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: s.id, workspaceId: s.workspaceId,
+                toolkitType: s.toolkitType, houseType: (s as any).houseType || null,
+              }),
+            });
+            await fetch(`/api/sessions/${s.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                thinkingLens: s.thinkingLens,
+                stepResponses: Object.fromEntries(
+                  (s.steps || []).map((st: any) => [String(st.stepNumber), st.response || st.content || ''])
+                ),
+                aiOutputs: (s as any).aiOutputs?.houseResult
+                  ? (s as any).aiOutputs
+                  : {
+                      insights: (s.insights || []).map((i: any) => i.content).filter(Boolean),
+                      necessaryMoves: (s.necessaryMoves || []).map((m: any) => m.content).filter(Boolean),
+                    },
+                sentenceOfTruth: s.sentenceOfTruth?.content || null,
+                isLocked: s.sentenceOfTruth?.isLocked || false,
+              }),
+            });
+          } catch { /* continue — partial migration beats data loss */ }
+        }
+
         const res = await fetch('/api/workspaces');
         if (!res.ok) return;
         const dbWorkspaces = await res.json();
@@ -112,11 +164,19 @@ export function useDBSync() {
     loadFromDB();
   }, [isAuthenticated]);
 
-  // On logout: clear store
+  // On logout: clear store — but ONLY for a deliberate sign-out. A JWT that
+  // expires mid-session (or a webview that drops cookies) also flips status
+  // to 'unauthenticated'; wiping there destroyed in-progress work for beta
+  // testers. AccountPage sets the explicit-signout flag before calling
+  // signOut(); without it we keep local state intact.
   useEffect(() => {
-    if (status === 'unauthenticated' && sessionStorage.getItem("fresco_was_authed")) {
+    if (status !== 'unauthenticated') return;
+    const wasAuthed = sessionStorage.getItem('fresco_was_authed');
+    const explicitSignout = sessionStorage.getItem('fresco_explicit_signout');
+    if (wasAuthed && explicitSignout) {
       hasSynced.current = false;
-      sessionStorage.removeItem("fresco_was_authed");
+      sessionStorage.removeItem('fresco_was_authed');
+      sessionStorage.removeItem('fresco_explicit_signout');
       setIsSyncComplete(false);
       useFrescoStore.setState({
         workspaces: [],
@@ -124,6 +184,9 @@ export function useDBSync() {
         activeWorkspaceId: null,
         activeSessionId: null,
       });
+    } else if (wasAuthed) {
+      // Auth flicker — keep data, allow a re-sync when auth recovers.
+      hasSynced.current = false;
     }
   }, [status]);
 
