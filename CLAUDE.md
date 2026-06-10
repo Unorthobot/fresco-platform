@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Product identity
+
+_Last updated: 2026-06-10, after the May 2026 beta feedback review._
+
+Fresco is a decision engine for startup founders. Built for the moments early in a company's life when you have to choose what to build with no senior colleague to push back on the decision, Fresco runs your thinking through structured analysis and returns a clear verdict — GO, PIVOT, STOP, or NEEDS MORE SIGNAL — with the reasoning that produced it. Not a thinking partner. Not a workshop. A verdict, defensible enough to act on, in the time it takes to drink a coffee.
+
 ## Commands
 
 ```bash
@@ -25,7 +31,7 @@ Next.js 14 App Router, deployed to Vercel. PostgreSQL via Prisma. Auth via NextA
 - Unauthenticated users get the full app experience stored only in `localStorage`.
 
 **"Four Houses" model:**
-The core product concept is four thinking modes — **Investigate, Innovate, Validate, Evaluate** — each backed by a set of toolkits. House sessions (`houseType` on `ToolkitSession`) use a sentinel `toolkitType` value (e.g. `insight_stack` for Investigate). The AI routes under `/api/houses/` handle house-level generation; `/api/extension/` handles the Path A Chrome extension equivalents (`evaluate`, `compare`, `journey`).
+Investigate, Innovate, Validate, Evaluate remain as engine internals — the analysis stages that feed the verdict — but are no longer the user's first interaction. House sessions (`houseType` on `ToolkitSession`) use a sentinel `toolkitType` value (e.g. `insight_stack` for Investigate). The AI routes under `/api/houses/` handle house-level generation; `/api/extension/` handles the Path A Chrome extension equivalents (`evaluate`, `compare`, `journey`).
 
 **Extension auth (Path A):**
 `ExtensionKey` rows store SHA-256 hashes of API keys (prefix `frsk_`). Plaintext is shown once and never stored. `src/lib/extension-auth.ts` exports `authenticateExtensionRequest()` — all `/api/extension/*` routes call this first.
