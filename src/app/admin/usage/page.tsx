@@ -11,6 +11,7 @@ type Summary = {
 
 type HouseRow = { house: string; total: number; completed: number };
 type VerdictRow = { verdict: string; count: number };
+type DecisionRow = { decision: string; count: number };
 type Tester = {
   email: string;
   name: string | null;
@@ -26,6 +27,7 @@ type UsageData = {
   summary: Summary;
   houseBreakdown: HouseRow[];
   verdictBreakdown: VerdictRow[];
+  userDecisions: DecisionRow[];
   testers: Tester[];
   dailyActivity: DailyActivity[];
   generatedAt: string;
@@ -112,7 +114,7 @@ export default function AdminUsagePage() {
 
   if (!data) return null;
 
-  const { summary, houseBreakdown, verdictBreakdown, testers, dailyActivity, generatedAt } = data;
+  const { summary, houseBreakdown, verdictBreakdown, userDecisions, testers, dailyActivity, generatedAt } = data;
 
   // For the daily chart — find the max so we can scale bars
   const maxDaily = Math.max(1, ...dailyActivity.map(d => d.sessions));
@@ -227,7 +229,7 @@ export default function AdminUsagePage() {
 
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-fresco-graphite-light mb-3 pb-2 border-b border-fresco-border">
-              Verdicts produced
+              Verdicts produced · engine
             </div>
             <div className="bg-white border border-fresco-border">
               {verdictBreakdown.length === 0 ? (
@@ -244,6 +246,30 @@ export default function AdminUsagePage() {
                       {v.verdict}
                     </div>
                     <div className="text-fresco-2xl font-light">{v.count}</div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-fresco-graphite-light mt-8 mb-3 pb-2 border-b border-fresco-border">
+              User decisions · recorded via decision gate
+            </div>
+            <div className="bg-white border border-fresco-border">
+              {userDecisions.length === 0 ? (
+                <div className="p-6 text-fresco-sm text-fresco-graphite-mid italic">
+                  No explicit user decisions recorded yet — testers see the
+                  verdict but haven&apos;t logged their own call.
+                </div>
+              ) : (
+                userDecisions.map((d, idx) => (
+                  <div
+                    key={d.decision}
+                    className={`flex items-center justify-between p-4 ${idx > 0 ? 'border-t border-fresco-border-light' : ''}`}
+                  >
+                    <div className="font-mono text-fresco-sm uppercase tracking-wide">
+                      {d.decision}
+                    </div>
+                    <div className="text-fresco-2xl font-light">{d.count}</div>
                   </div>
                 ))
               )}
