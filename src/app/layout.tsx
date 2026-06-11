@@ -8,8 +8,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Fresco — The thinking layer for your product team',
-  description: 'Run any product decision through four specialist agents. Get a GO, PIVOT, STOP, or NEEDS MORE SIGNAL verdict — with the structure beneath it.',
+  title: 'Fresco — A decision engine for startup founders',
+  description: 'Run the decision you\'re facing through structured analysis and get a clear verdict — GO, PIVOT, STOP, or NEEDS MORE SIGNAL — with the reasoning that produced it.',
   icons: {
     icon: '/fresco-logo.png',
     apple: '/fresco-logo.png',
