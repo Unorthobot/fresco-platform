@@ -140,14 +140,33 @@ export async function GET() {
     .map(([house, counts]) => ({ house, ...counts }))
     .sort((a, b) => b.total - a.total);
 
-  // ── Verdict breakdown — only count completed sessions ──────────────────
+  // ── Verdict breakdown — AI verdicts, read from aiOutputs ───────────────
+  // The engine's verdict lives in the aiOutputs JSON, not the `decision`
+  // column (that's the user's own call via DecisionGate — tracked
+  // separately below). Reading `decision` here is why this panel showed
+  // zero against 25 completed sessions.
+  const verdictOf = (s: SessionRow): string | null => {
+    const out = s.aiOutputs as { verdict?: string; houseResult?: { verdict?: string } } | null;
+    return out?.verdict || out?.houseResult?.verdict || null;
+  };
   const verdictMap = new Map<string, number>();
   for (const s of typedSessions) {
-    if (!isCompleted(s) || !s.decision) continue;
-    verdictMap.set(s.decision, (verdictMap.get(s.decision) || 0) + 1);
+    const v = verdictOf(s);
+    if (!v) continue;
+    verdictMap.set(v, (verdictMap.get(v) || 0) + 1);
   }
   const verdictBreakdown = Array.from(verdictMap.entries())
     .map(([verdict, count]) => ({ verdict, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // ── User decisions — explicit calls recorded via DecisionGate ──────────
+  const decisionMap = new Map<string, number>();
+  for (const s of typedSessions) {
+    if (!s.decision) continue;
+    decisionMap.set(s.decision, (decisionMap.get(s.decision) || 0) + 1);
+  }
+  const userDecisions = Array.from(decisionMap.entries())
+    .map(([decision, count]) => ({ decision, count }))
     .sort((a, b) => b.count - a.count);
 
   // ── Per-tester breakdown ───────────────────────────────────────────────
@@ -216,6 +235,7 @@ export async function GET() {
     },
     houseBreakdown,
     verdictBreakdown,
+    userDecisions,
     testers,
     dailyActivity,
     generatedAt: new Date().toISOString(),
