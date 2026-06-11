@@ -2661,6 +2661,21 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const handleRunRef = useRef<() => Promise<void>>(async () => {});
   useEffect(() => { handleRunRef.current = handleRun; }, [handleRun]);
 
+  // WP1 — arriving from the clarify screen with confirmed values: start the
+  // analysis immediately. "Run the analysis" on clarify must mean run, not
+  // land in the question flow waiting for a second click (Javier's
+  // re-asking complaint, which WP1 exists to remove).
+  const autoRanRef = useRef(false);
+  useEffect(() => {
+    if (autoRanRef.current || isRunning || result) return;
+    let shouldAutoRun = false;
+    try { shouldAutoRun = localStorage.getItem(`fresco-autorun-${sessionId}`) === '1'; } catch { /* no storage, no autorun */ }
+    if (!shouldAutoRun || !canRun) return;
+    autoRanRef.current = true;
+    try { localStorage.removeItem(`fresco-autorun-${sessionId}`); } catch { /* ignore */ }
+    handleRunRef.current();
+  }, [canRun, isRunning, result, sessionId]);
+
   const persistResult = async (data: HouseResult) => {
     if (!session) return;
     await db.saveAIOutputs(sessionId, {

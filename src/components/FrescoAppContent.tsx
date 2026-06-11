@@ -475,6 +475,14 @@ export default function FrescoAppContent() {
       for (const [id, a] of Object.entries(payload.answers)) {
         if (a.answer.trim()) values[id] = a.answer;
       }
+      // The founder's own description always answers the house's primary
+      // question. Without this, a thin prompt with unanswered gaps lands
+      // the user on an empty Question 1 — the exact re-asking WP1 removes.
+      const PRIMARY_FIELD: Record<HouseId, string> = {
+        investigate: 'situation', innovate: 'start', validate: 'subject', evaluate: 'goal',
+      };
+      const primary = PRIMARY_FIELD[payload.house];
+      if (!values[primary]?.trim()) values[primary] = payload.prompt;
       const routerOutput = {
         prompt: payload.prompt,
         house: payload.house,
@@ -492,6 +500,9 @@ export default function FrescoAppContent() {
         if (payload.evaluateMode) {
           localStorage.setItem(`fresco-evalmode-${session.id}`, payload.evaluateMode);
         }
+        // "Run the analysis" means run — the session auto-starts on mount
+        // instead of dropping the user back into the question flow.
+        localStorage.setItem(`fresco-autorun-${session.id}`, '1');
       } catch { /* storage unavailable — session still works, unseeded */ }
       useFrescoStore.getState().updateSession(session.id, { routerOutput } as any);
       if (!isAnonymous) {
