@@ -55,6 +55,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+  events: {
+    // WP0 funnel: signup via OAuth (adapter-created users, i.e. Google).
+    // Credentials signups are recorded in /api/auth/signup.
+    async createUser({ user }) {
+      if (!user.id) return;
+      await prisma.event
+        .create({ data: { name: 'signup', userId: user.id, meta: { provider: 'oauth' } } })
+        .catch(() => {});
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

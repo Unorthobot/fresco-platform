@@ -24,5 +24,24 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // WP0 funnel: second_session_14d — fires exactly once, when this create
+  // brings the user to 2 sessions within 14 days of signup. Server-side
+  // because the client can't reliably know the user's session count.
+  // Fire-and-forget; never blocks the response.
+  (async () => {
+    const userId = session.user!.id!;
+    const [count, user] = await Promise.all([
+      prisma.toolkitSession.count({ where: { workspace: { userId } } }),
+      prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true } }),
+    ]);
+    if (count !== 2 || !user) return;
+    const daysSinceSignup = (Date.now() - user.createdAt.getTime()) / 86_400_000;
+    if (daysSinceSignup <= 14) {
+      await prisma.event.create({
+        data: { name: 'second_session_14d', userId, sessionId: toolkitSession.id },
+      });
+    }
+  })().catch(() => {});
+
   return NextResponse.json(toolkitSession);
 }

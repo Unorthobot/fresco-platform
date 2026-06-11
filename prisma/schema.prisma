@@ -139,6 +139,22 @@ model TeamInvite {
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
 }
 
+// Funnel instrumentation (WP0). One row per event; analysis happens at
+// read time in /api/admin/usage. Deliberately FK-free so guest events
+// (no user row) and events for later-deleted sessions are never lost.
+// Allowed names are enforced in /api/events.
+model Event {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String?
+  sessionId String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([userId])
+}
+
 // Public read-only snapshot of a house verdict, addressable by token via
 // /share/[token]. The payload is a frozen copy of the HouseResult so later
 // edits or deletion of the originating session never break a shared link.

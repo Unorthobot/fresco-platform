@@ -55,6 +55,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // WP0 funnel: signup (credentials path). OAuth signups are recorded by
+    // the createUser event in src/lib/auth.ts. Fire-and-forget.
+    prisma.event
+      .create({ data: { name: 'signup', userId: user.id, meta: { provider: 'credentials' } } })
+      .catch(() => {});
+
     return NextResponse.json({
       user: {
         id: user.id,

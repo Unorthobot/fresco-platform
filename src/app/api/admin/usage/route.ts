@@ -26,7 +26,7 @@ export async function GET() {
   }
 
   // Fetch everything we need in parallel — small enough dataset that this is fine.
-  const [users, allSessions] = await Promise.all([
+  const [users, allSessions, ttvEvents] = await Promise.all([
     prisma.user.findMany({
       select: {
         id: true,
@@ -62,6 +62,11 @@ export async function GET() {
         aiOutputs: true,
         createdAt: true,
       },
+    }),
+    // WP0: time-to-verdict samples (meta.ttvMs on verdict_rendered events)
+    prisma.event.findMany({
+      where: { name: 'verdict_rendered' },
+      select: { meta: true },
     }),
   ]);
 
@@ -103,6 +108,24 @@ export async function GET() {
   const completionRate = totalSessions > 0
     ? Math.round((completedSessions / totalSessions) * 100)
     : 0;
+
+  // WP0: activation — signed up AND started at least one session. This is
+  // the headline number for the rebuild baseline.
+  const activatedUsers = typedUsers.filter(
+    (u: UserWithSessions) => u.workspaces.some(w => w.sessions.length > 0)
+  ).length;
+  const activationRate = totalUsers > 0
+    ? Math.round((activatedUsers / totalUsers) * 100)
+    : 0;
+
+  // WP0: median time-to-verdict from instrumentation events.
+  const ttvSamples = (ttvEvents as Array<{ meta: unknown }>)
+    .map(e => (e.meta as { ttvMs?: unknown } | null)?.ttvMs)
+    .filter((n): n is number => typeof n === 'number' && n > 0)
+    .sort((a, b) => a - b);
+  const medianTtvMs = ttvSamples.length > 0
+    ? ttvSamples[Math.floor(ttvSamples.length / 2)]
+    : null;
 
   // ── House breakdown — only count sessions where house is set ──────────
   const houseMap = new Map<string, { total: number; completed: number }>();
@@ -187,6 +210,9 @@ export async function GET() {
       totalSessions,
       completedSessions,
       completionRate,
+      activatedUsers,
+      activationRate,
+      medianTtvMs,
     },
     houseBreakdown,
     verdictBreakdown,

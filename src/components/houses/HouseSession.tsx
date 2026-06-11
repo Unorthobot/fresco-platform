@@ -36,6 +36,7 @@ import { generatePDFReport, generateHTMLDeck } from '@/lib/reportGenerator';
 import { downloadHousePDF } from '@/lib/housePDF';
 import { useSession } from 'next-auth/react';
 import { incrementGuestRunCount } from '@/lib/guestRuns';
+import { track, trackOnce } from '@/lib/analytics';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2280,6 +2281,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [url, setUrl] = useState('');
   const [evaluateMode, setEvaluateMode] = useState<'single' | 'journey' | 'comparison'>('single');
   const [isRunning, setIsRunning] = useState(false);
+  // WP0 funnel — reaching a house session screen is "routing complete" in
+  // the current flow (house chosen, questions on screen). Once per session.
+  const runStartedAtRef = useRef<number | null>(null);
+  useEffect(() => {
+    trackOnce('routing_complete', sessionId, { sessionId, meta: { house: houseId } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
   // Desktop gets the animated split-pane; mobile stacks panels and lets the
   // document scroll. Tracked live so rotation/resize behaves.
   const [isDesktop, setIsDesktop] = useState(true);
@@ -2437,6 +2445,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     if (!canGenerate) { setShowPricingModal(true); return; }
     const abort = new AbortController();
     abortRef.current = abort;
+    // WP0 funnel: first_submit once per session; run start time for TTV.
+    runStartedAtRef.current = Date.now();
+    trackOnce('first_submit', sessionId, { sessionId, meta: { house: houseId } });
     setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
     // Once the run starts, clear the handoff + seed markers so a refresh
     // doesn't re-seed. The values are already persisted to localStorage.
@@ -2571,6 +2582,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 });
               } else if (ev.type === 'verdict') {
                 verdictReceived = true;
+                // WP0 funnel: verdict rendered + time-to-verdict for this run.
+                track('verdict_rendered', {
+                  sessionId,
+                  meta: {
+                    house: houseId,
+                    ttvMs: runStartedAtRef.current ? Date.now() - runStartedAtRef.current : null,
+                  },
+                });
                 const { type: _, ...vd } = ev;
                 setResult(vd as HouseResult);
                 await persistResult(vd as HouseResult);
@@ -2901,7 +2920,17 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
   return (
     <>
-    <div className="flex flex-col md:flex-row md:h-full bg-fresco-white">
+    <div
+      className="flex flex-col md:flex-row md:h-full bg-fresco-white"
+      // WP0 funnel: first time the user focuses any answer field in this
+      // session. Capture phase — no per-input wiring, zero flow changes.
+      onFocusCapture={e => {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === 'TEXTAREA' || tag === 'INPUT') {
+          trackOnce('first_input_focused', sessionId, { sessionId, meta: { house: houseId } });
+        }
+      }}
+    >
 
       {/* ── LEFT / MIDDLE: Conversation input ─────────────────────────────── */}
       {/* The split-pane geometry (fixed flexBasis/maxWidth/minWidth) is

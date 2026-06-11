@@ -7,6 +7,9 @@ type Summary = {
   totalSessions: number;
   completedSessions: number;
   completionRate: number;
+  activatedUsers: number;
+  activationRate: number;
+  medianTtvMs: number | null;
 };
 
 type HouseRow = { house: string; total: number; completed: number };
@@ -136,6 +139,36 @@ export default function AdminUsagePage() {
             Generated · {generatedAt.slice(0, 19).replace('T', ' ')}
           </div>
         </header>
+
+        {/* HEADLINE — activation rate (WP0 rebuild baseline) */}
+        <section className="mb-8">
+          <div className="bg-fresco-black text-white p-8 flex items-end justify-between">
+            <div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/50 mb-2">
+                Activation rate · signed up → started ≥1 session
+              </div>
+              <div className="text-[56px] leading-none font-light">{summary.activationRate}%</div>
+              <div className="font-mono text-[10px] text-white/40 mt-2">
+                {summary.activatedUsers} of {summary.totalUsers} testers
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/50 mb-2">
+                Median time to verdict
+              </div>
+              <div className="text-fresco-3xl font-light">
+                {summary.medianTtvMs === null
+                  ? '—'
+                  : summary.medianTtvMs >= 60_000
+                    ? `${(summary.medianTtvMs / 60_000).toFixed(1)}m`
+                    : `${Math.round(summary.medianTtvMs / 1000)}s`}
+              </div>
+              {summary.medianTtvMs === null && (
+                <div className="font-mono text-[10px] text-white/40 mt-2">no samples yet</div>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* SUMMARY — four big numbers */}
         <section className="mb-16">
