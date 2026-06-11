@@ -2279,15 +2279,24 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     setAttachmentContext(prev => content ? { ...prev, [stepId]: content } : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== stepId)));
   };
   const [url, setUrl] = useState('');
-  const [evaluateMode, setEvaluateMode] = useState<'single' | 'journey' | 'comparison'>('single');
+  // WP1 — the clarify screen seeds the routed mode and original prompt.
+  const [evaluateMode, setEvaluateMode] = useState<'single' | 'journey' | 'comparison'>(() => {
+    try {
+      const seeded = localStorage.getItem(`fresco-evalmode-${sessionId}`);
+      if (seeded === 'journey' || seeded === 'comparison') return seeded;
+    } catch { /* default below */ }
+    return 'single';
+  });
+  const [originalPrompt] = useState<string | null>(() => {
+    try {
+      const fromStore = (useFrescoStore.getState().sessions.find(s => s.id === sessionId) as any)?.routerOutput?.prompt;
+      return fromStore || localStorage.getItem(`fresco-prompt-${sessionId}`) || null;
+    } catch { return null; }
+  });
   const [isRunning, setIsRunning] = useState(false);
-  // WP0 funnel — reaching a house session screen is "routing complete" in
-  // the current flow (house chosen, questions on screen). Once per session.
+  // WP0 funnel — run-start timestamp for time-to-verdict. (routing_complete
+  // moved to classifier-return in the WP1 arrival flow.)
   const runStartedAtRef = useRef<number | null>(null);
-  useEffect(() => {
-    trackOnce('routing_complete', sessionId, { sessionId, meta: { house: houseId } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
   // Desktop gets the animated split-pane; mobile stacks panels and lets the
   // document scroll. Tracked live so rotation/resize behaves.
   const [isDesktop, setIsDesktop] = useState(true);
@@ -2946,6 +2955,19 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       >
         {/* Scrollable content */}
         <div className="md:flex-1 md:overflow-y-auto" ref={inputScrollRef}>
+          {/* WP1 — original prompt pinned from clarify through to the verdict */}
+          {originalPrompt && (
+            <details className="sticky top-0 z-40 bg-fresco-white border-b border-fresco-border-light px-4 md:px-8 py-2.5 group">
+              <summary className="cursor-pointer list-none flex items-center justify-between gap-3">
+                <span className="min-w-0 flex-1">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-fresco-graphite-light block">Your decision</span>
+                  <span className="text-fresco-xs text-fresco-black truncate block group-open:hidden">{originalPrompt}</span>
+                </span>
+                <ChevronDown className="w-3 h-3 text-fresco-graphite-light flex-shrink-0 group-open:rotate-180 transition-transform" />
+              </summary>
+              <p className="text-fresco-sm text-fresco-black leading-relaxed pt-1.5 pb-1 whitespace-pre-wrap">{originalPrompt}</p>
+            </details>
+          )}
           <div className={cn("mx-auto py-6 md:py-10", result ? "px-4" : "max-w-[640px] px-4 md:px-8")}>
 
           {/* Back + header */}

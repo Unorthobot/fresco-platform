@@ -87,6 +87,9 @@ model ToolkitSession {
   thinkingLens       String    @default("automatic")
   stepResponses      Json      @default("{}")
   aiOutputs          Json?
+  // WP1: raw router result + original prompt + per-answer sources
+  // ('extracted' | 'user') captured on the clarify screen.
+  routerOutput       Json?
   sentenceOfTruth    String?
   isLocked           Boolean   @default(false)
   decision           String?

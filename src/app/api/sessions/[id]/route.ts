@@ -26,6 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       ...(data.decisionRationale !== undefined && { decisionRationale: data.decisionRationale }),
       ...(data.decisionConfidence !== undefined && { decisionConfidence: data.decisionConfidence }),
       ...(data.decisionAt !== undefined && { decisionAt: new Date(data.decisionAt) }),
+      ...(data.routerOutput !== undefined && { routerOutput: data.routerOutput }),
       updatedAt: new Date(),
     },
   });

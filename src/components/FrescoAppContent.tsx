@@ -10,7 +10,6 @@ import { useFrescoStore } from '@/lib/store';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { LeftNavRail } from '@/components/layout/LeftNavRail';
 import { MobileNav } from '@/components/layout/MobileNav';
-import { HomeDashboard } from '@/components/HomeDashboard';
 import { WorkspaceOverview } from '@/components/workspace/WorkspaceOverview';
 import { ToolkitRouter } from '@/components/toolkit/ToolkitRouter';
 import { ArchivePage } from '@/components/ArchivePage';
@@ -23,8 +22,12 @@ import { NewWorkspaceModal } from '@/components/ui/NewWorkspaceModal';
 import { PricingModal } from '@/components/ui/PricingModal';
 import { type ToolkitType } from '@/types';
 import type { HouseId } from '@/lib/agents';
+import { ArrivalHome } from '@/components/arrival/ArrivalHome';
+import { ClarifyScreen, type ClarifiedAnswer } from '@/components/arrival/ClarifyScreen';
+import type { EvaluateMode, RouterResult } from '@/lib/houseQuestions';
+import { track } from '@/lib/analytics';
 
-type View = 'home' | 'workspace' | 'session' | 'archive' | 'settings' | 'account' | 'team';
+type View = 'home' | 'workspace' | 'session' | 'clarify' | 'archive' | 'settings' | 'account' | 'team';
 
 export default function FrescoAppContent() {
   const [currentView, setCurrentView] = useState<View>('home');
@@ -33,6 +36,9 @@ export default function FrescoAppContent() {
   const [upgradeReason, setUpgradeReason] = useState<'workspaces' | 'guest_limit'>('workspaces');
   const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
+  // WP1 — clarify state: the routed prompt awaiting confirmation.
+  const [clarify, setClarify] = useState<{ prompt: string; router: RouterResult } | null>(null);
+  const [clarifyStarting, setClarifyStarting] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const { data: session, status } = useSession();
   const { isSyncComplete } = useDBSync();
@@ -93,6 +99,8 @@ export default function FrescoAppContent() {
   // Compute effective view — NEVER returns a state that could blank the screen.
   // Every branch must terminate in a view that has a matching render case below.
   const effectiveView = (() => {
+    // Clarify view needs a routed prompt
+    if (currentView === 'clarify' && !clarify) return 'home';
     // Workspace view needs an active workspace
     if (currentView === 'workspace' && !activeWorkspaceId) return 'home';
     // Session view needs: session in store + its workspace in store
@@ -148,7 +156,7 @@ export default function FrescoAppContent() {
     const branchHome = effectiveView === 'home';
     const branchWorkspace = effectiveView === 'workspace' && activeWorkspaceId;
     const branchSession = effectiveView === 'session' && activeWorkspaceId && currentSession;
-    const branchSimple = ['archive', 'settings', 'account', 'team'].includes(effectiveView);
+    const branchSimple = ['clarify', 'archive', 'settings', 'account', 'team'].includes(effectiveView);
     const anythingMatches = branchHome || branchWorkspace || branchSession || branchSimple;
     if (!anythingMatches) {
       const snapshot = {
@@ -401,6 +409,108 @@ export default function FrescoAppContent() {
     }
   };
 
+  // ── WP1: arrival → clarify → session ─────────────────────────────────────
+  const handleRouted = (input: string, result: RouterResult) => {
+    // routing_complete now marks classifier-return (WP0 fired it on session
+    // mount; the funnel step means the same thing in both flows).
+    track('routing_complete', { meta: { house: result.house, confidence: result.confidence } });
+    setClarify({ prompt: input, router: result });
+    setCurrentView('clarify');
+  };
+
+  const handleEditPrompt = async (newPrompt: string, reroute: boolean) => {
+    if (!clarify || !newPrompt.trim()) return;
+    if (!reroute) {
+      setClarify({ ...clarify, prompt: newPrompt });
+      return;
+    }
+    try {
+      const res = await fetch('/api/route-decision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: newPrompt }),
+      });
+      if (res.ok) {
+        const result: RouterResult = await res.json();
+        track('routing_complete', { meta: { house: result.house, confidence: result.confidence, reroute: true } });
+        setClarify({ prompt: newPrompt, router: result });
+        return;
+      }
+    } catch { /* fall through — keep the previous routing */ }
+    setClarify({ ...clarify, prompt: newPrompt });
+  };
+
+  const handleClarifyRun = async (payload: {
+    prompt: string;
+    house: HouseId;
+    evaluateMode: EvaluateMode | null;
+    answers: Record<string, ClarifiedAnswer>;
+    router: RouterResult;
+  }) => {
+    // Same gates as the old house start — routing is free, running is not.
+    const isAnonymous = status !== 'authenticated';
+    if (isAnonymous && !canGuestRun()) {
+      setUpgradeReason('guest_limit');
+      setShowUpgradeModal(true);
+      return;
+    }
+    let workspaceId = activeWorkspaceId;
+    if (!workspaceId && !canCreateWorkspace()) {
+      setUpgradeReason('workspaces');
+      setShowUpgradeModal(true);
+      return;
+    }
+    setClarifyStarting(true);
+    try {
+      if (!workspaceId) {
+        // Titled from the decision itself — "Innovate · June 2026" style
+        // titles made the back link read like broken house navigation.
+        const title = payload.prompt.length > 48 ? `${payload.prompt.slice(0, 48)}…` : payload.prompt;
+        const workspace = await db.createWorkspace(title, '');
+        workspaceId = workspace.id;
+      }
+      const session = await db.createHouseSession(workspaceId, payload.house);
+
+      const values: Record<string, string> = {};
+      for (const [id, a] of Object.entries(payload.answers)) {
+        if (a.answer.trim()) values[id] = a.answer;
+      }
+      const routerOutput = {
+        prompt: payload.prompt,
+        house: payload.house,
+        evaluateMode: payload.evaluateMode,
+        sources: Object.fromEntries(Object.entries(payload.answers).map(([id, a]) => [id, a.source])),
+        router: payload.router,
+      };
+
+      // Seed the session. HouseSession initialises its inputs from these
+      // localStorage keys; the DB copy makes the router output and confirmed
+      // values durable for authenticated users.
+      try {
+        localStorage.setItem(`fresco-inputs-${session.id}`, JSON.stringify(values));
+        localStorage.setItem(`fresco-prompt-${session.id}`, payload.prompt);
+        if (payload.evaluateMode) {
+          localStorage.setItem(`fresco-evalmode-${session.id}`, payload.evaluateMode);
+        }
+      } catch { /* storage unavailable — session still works, unseeded */ }
+      useFrescoStore.getState().updateSession(session.id, { routerOutput } as any);
+      if (!isAnonymous) {
+        fetch(`/api/sessions/${session.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stepResponses: values, routerOutput }),
+        }).catch(() => { /* non-fatal — localStorage seed already in place */ });
+      }
+
+      handleNavigateToSession(session.id, workspaceId);
+      setClarify(null);
+    } catch (err) {
+      console.error('Failed to start session from clarify:', err);
+    } finally {
+      setClarifyStarting(false);
+    }
+  };
+
   const handleBackToHome = () => {
     setActiveWorkspace(null);
     setActiveSession(null);
@@ -474,13 +584,26 @@ export default function FrescoAppContent() {
               </div>
             </motion.div>
           )}
+          {/* WP1 — the front door is one input. No house picker, no
+              workspace creation. Workspaces stay reachable from nav. */}
           {!startingHouse && effectiveView === 'home' && (
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
-              <HomeDashboard
-                onNavigateToWorkspace={handleNavigateToWorkspace}
+              <ArrivalHome
+                onRouted={handleRouted}
                 onNavigateToSession={handleNavigateToSession}
-onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
+              />
+            </motion.div>
+          )}
+
+          {!startingHouse && effectiveView === 'clarify' && clarify && (
+            <motion.div key="clarify" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+              <ClarifyScreen
+                prompt={clarify.prompt}
+                router={clarify.router}
+                isStarting={clarifyStarting}
+                onRun={handleClarifyRun}
+                onEditPrompt={handleEditPrompt}
+                onBack={() => { setClarify(null); setCurrentView('home'); }}
               />
             </motion.div>
           )}
@@ -544,14 +667,12 @@ onStartToolkit={handleStartToolkit}
               where state is briefly inconsistent), render home rather than
               show a blank screen. */}
           {!startingHouse && ![
-            'home', 'workspace', 'session', 'archive', 'settings', 'account', 'team'
+            'home', 'workspace', 'session', 'clarify', 'archive', 'settings', 'account', 'team'
           ].includes(effectiveView) && (
             <motion.div key="fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <HomeDashboard
-                onNavigateToWorkspace={handleNavigateToWorkspace}
+              <ArrivalHome
+                onRouted={handleRouted}
                 onNavigateToSession={handleNavigateToSession}
-                onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
               />
             </motion.div>
           )}
@@ -560,22 +681,18 @@ onStartToolkit={handleStartToolkit}
               those are missing, render home. */}
           {!startingHouse && effectiveView === 'session' && (!activeWorkspaceId || !currentSession) && (
             <motion.div key="session-fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <HomeDashboard
-                onNavigateToWorkspace={handleNavigateToWorkspace}
+              <ArrivalHome
+                onRouted={handleRouted}
                 onNavigateToSession={handleNavigateToSession}
-                onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
               />
             </motion.div>
           )}
           {/* Same guard for workspace. */}
           {!startingHouse && effectiveView === 'workspace' && !activeWorkspaceId && (
             <motion.div key="workspace-fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <HomeDashboard
-                onNavigateToWorkspace={handleNavigateToWorkspace}
+              <ArrivalHome
+                onRouted={handleRouted}
                 onNavigateToSession={handleNavigateToSession}
-                onStartToolkit={handleStartToolkit}
-                onStartHouse={handleStartHouse}
               />
             </motion.div>
           )}
