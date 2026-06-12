@@ -74,25 +74,38 @@ Return ONLY JSON, no markdown fences:
 Canonical questions:
 ${buildRegistryBlock()}`;
 
+// The house's opening question is always answered by the prompt itself —
+// "What are you trying to figure out?" IS what they just typed. Re-asking
+// it made the clarify screen feel like it ignored the user (beta: Javier;
+// repeated in post-launch testing).
+const PRIMARY_FIELD: Record<HouseId, string> = {
+  investigate: 'situation',
+  innovate: 'start',
+  validate: 'subject',
+  evaluate: 'goal',
+};
+
 /** Safe fallback when the model fails, times out, or returns junk. */
-function fallbackResult(): RouterResult {
+function fallbackResult(input: string): RouterResult {
   const questions = HOUSE_QUESTIONS.investigate;
+  const primary = PRIMARY_FIELD.investigate;
+  const rest = questions.filter(q => q.id !== primary);
   return {
     house: 'investigate',
     evaluateMode: null,
     confidence: 0,
-    extracted: {},
-    gaps: questions.map(q => q.id),
-    followups: questions.slice(0, MAX_FOLLOWUPS).map(q => ({
+    extracted: { [primary]: { answer: input, confidence: 0.3 } },
+    gaps: rest.map(q => q.id),
+    followups: rest.slice(0, MAX_FOLLOWUPS).map(q => ({
       questionId: q.id,
       question: q.question,
-      reason: 'Your description was brief — this fills in what the analysis needs most.',
+      reason: q.whyItMatters,
     })),
   };
 }
 
 /** Validate + normalise raw model output into a trustworthy RouterResult. */
-function normalise(raw: unknown): RouterResult {
+function normalise(raw: unknown, input: string): RouterResult {
   const r = raw as Record<string, unknown>;
   let house = VALID_HOUSES.includes(r.house as HouseId) ? (r.house as HouseId) : 'investigate';
   let evaluateMode: EvaluateMode | null =
@@ -127,14 +140,22 @@ function normalise(raw: unknown): RouterResult {
     }
   }
 
+  // The prompt itself always answers the house's primary question. If the
+  // model didn't extract it, seed it — the clarify screen must never ask
+  // the user to repeat what they just typed.
+  const primary = PRIMARY_FIELD[house];
+  const promptSeededPrimary = !extracted[primary];
+  if (promptSeededPrimary) {
+    extracted[primary] = { answer: input, confidence: 0.3 };
+  }
+
   // Gaps = canonical questions without an extraction (derived, not trusted).
   const gaps = canonical.map(q => q.id).filter(id => !extracted[id]);
 
   // Followups: model's ordering and reasons, but canonical text, valid ids,
-  // gaps only, hard cap. If the model named none but gaps exist, surface
-  // the top gaps with a generic reason rather than asking nothing on an
-  // empty prompt — but ONLY when nothing was extracted (rich prompts with
-  // incidental gaps go straight to confirm, per spec).
+  // gaps only, hard cap. Default reasons come from the registry's
+  // whyItMatters — never a generic line.
+  const whyOf = new Map(canonical.map(q => [q.id, q.whyItMatters]));
   const modelFollowups = Array.isArray(r.followups) ? (r.followups as Array<Record<string, unknown>>) : [];
   let followups = modelFollowups
     .filter(f => typeof f?.questionId === 'string' && validIds.has(f.questionId as string) && !extracted[f.questionId as string])
@@ -143,16 +164,19 @@ function normalise(raw: unknown): RouterResult {
       question: textOf.get(f.questionId as string) || '',
       reason: typeof f.reason === 'string' && f.reason.trim()
         ? f.reason.trim()
-        : 'The analysis is sharper with this answered.',
+        : whyOf.get(f.questionId as string) || 'sharpens the verdict',
     }))
     .slice(0, MAX_FOLLOWUPS);
 
-  if (followups.length === 0 && Object.keys(extracted).length === 0) {
-    followups = canonical.slice(0, MAX_FOLLOWUPS).map(q => ({
-      questionId: q.id,
-      question: q.question,
-      reason: 'Your description was brief — this fills in what the analysis needs most.',
-    }));
+  // Thin prompt (model extracted nothing real, named no followups): ask the
+  // top remaining questions with their registry reasons. Rich prompts with
+  // incidental gaps still go straight to confirm, per spec.
+  const onlySeededPrimary = promptSeededPrimary && Object.keys(extracted).length === 1;
+  if (followups.length === 0 && gaps.length > 0 && onlySeededPrimary) {
+    followups = canonical
+      .filter(q => gaps.includes(q.id))
+      .slice(0, MAX_FOLLOWUPS)
+      .map(q => ({ questionId: q.id, question: q.question, reason: q.whyItMatters }));
   }
 
   return { house, evaluateMode, confidence, extracted, gaps, followups };
@@ -170,7 +194,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Describe the decision in a sentence or two first.' }, { status: 400 });
   }
   if (!ANTHROPIC_API_KEY) {
-    return NextResponse.json(fallbackResult());
+    return NextResponse.json(fallbackResult(input));
   }
 
   const controller = new AbortController();
@@ -194,16 +218,16 @@ export async function POST(req: NextRequest) {
       }),
     });
     clearTimeout(timeout);
-    if (!res.ok) return NextResponse.json(fallbackResult());
+    if (!res.ok) return NextResponse.json(fallbackResult(input));
 
     const data = await res.json();
     const text: string = data.content?.[0]?.text || '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return NextResponse.json(fallbackResult());
+    if (!jsonMatch) return NextResponse.json(fallbackResult(input));
 
-    return NextResponse.json(normalise(JSON.parse(jsonMatch[0])));
+    return NextResponse.json(normalise(JSON.parse(jsonMatch[0]), input));
   } catch {
     clearTimeout(timeout);
-    return NextResponse.json(fallbackResult());
+    return NextResponse.json(fallbackResult(input));
   }
 }
