@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { useDBWrite } from '@/lib/useDBSync';
 import { useFrescoStore } from '@/lib/store';
 import { HOUSE_META, type HouseId } from '@/lib/agents';
+import { questionsFor } from '@/lib/houseQuestions';
 import type { HouseResult } from '@/lib/orchestrator';
 import { PricingModal } from '@/components/ui/PricingModal';
 import { useAIGeneration } from '@/lib/useAIGeneration';
@@ -3108,19 +3109,48 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             </div>
           )}
 
-          {/* House-specific conversation */}
+          {/* House-specific conversation. Router-originated sessions store
+              plain text keyed by the canonical question ids — editing must
+              show those exact fields. The legacy structured forms (Evaluate
+              brief, option cards, metrics tables) JSON.parse their values
+              and render the clarify answers as empty fields. */}
           <div className="mb-8">
-            {houseId === 'investigate' && (
-              <><ConversationFlow steps={INVESTIGATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
-            )}
-            {houseId === 'innovate' && (
-              <><ConversationFlow steps={INNOVATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
-            )}
-            {houseId === 'validate' && (
-              <><ConversationFlow steps={VALIDATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
-            )}
-            {houseId === 'evaluate' && (
-              <EvaluateFlow values={values} onChange={setValue} url={url} onUrlChange={setUrl} mode={evaluateMode} onModeChange={setEvaluateMode} onAttach={handleAttach} />
+            {originalPrompt ? (
+              <>
+                <div className="space-y-6">
+                  {questionsFor(houseId, evaluateMode).map(q => (
+                    <div key={q.id}>
+                      <p className="text-fresco-base font-medium text-fresco-black mb-1">{q.question}</p>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-2">
+                        NEEDED FOR · {q.whyItMatters}
+                      </p>
+                      <textarea
+                        value={values[q.id] || ''}
+                        onChange={e => setValue(q.id, e.target.value)}
+                        placeholder="A sentence or two is enough"
+                        className="w-full px-3 py-2.5 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors resize-none leading-relaxed"
+                        style={{ minHeight: 90 }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <UniversalUrlInput url={url} onUrlChange={setUrl} />
+              </>
+            ) : (
+              <>
+                {houseId === 'investigate' && (
+                  <><ConversationFlow steps={INVESTIGATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
+                )}
+                {houseId === 'innovate' && (
+                  <><ConversationFlow steps={INNOVATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
+                )}
+                {houseId === 'validate' && (
+                  <><ConversationFlow steps={VALIDATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
+                )}
+                {houseId === 'evaluate' && (
+                  <EvaluateFlow values={values} onChange={setValue} url={url} onUrlChange={setUrl} mode={evaluateMode} onModeChange={setEvaluateMode} onAttach={handleAttach} />
+                )}
+              </>
             )}
           </div>
         </div>
