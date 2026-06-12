@@ -115,7 +115,7 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
 
   return (
     <div className="min-h-screen fresco-grid-bg-subtle">
-      <div className="max-w-xl mx-auto px-4 md:px-0 py-8 md:py-12">
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
 
         {/* Back */}
         <button
