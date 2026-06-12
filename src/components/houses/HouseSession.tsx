@@ -2947,7 +2947,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   };
   const verdictPlain = result ? (VERDICT_PLAIN[result.verdict] || VERDICT_PLAIN['INVESTIGATE FURTHER']) : null;
 
-  const collapseInputs = !!originalPrompt && (isRunning || !!result) && !inputsExpanded;
+  const fromClarify = !!originalPrompt;
+  const collapseInputs = fromClarify && (isRunning || !!result) && !inputsExpanded;
 
   return (
     <>
@@ -3023,7 +3024,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               <button type="button" onClick={onBack}
                 className="flex items-center gap-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors">
                 <ChevronLeft className="w-4 h-4" />
-                Back to workspace{workspace?.title ? ` — ${workspace.title}` : ''}
+                {/* Clarify workspaces are titled with the prompt itself —
+                    repeating it here is noise */}
+                {fromClarify ? 'Back' : `Back to workspace${workspace?.title ? ` — ${workspace.title}` : ''}`}
               </button>
               {(result || Object.values(values).some(v => v?.trim())) && (
                 <button type="button" onClick={() => setShowStartOver(true)}
@@ -3069,34 +3072,64 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 </p>
               </div>
             )}
-            <div className="flex items-center gap-3 mb-1">
-              <img src={meta.icon} alt="" className="w-6 h-6 opacity-60 icon-theme"
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight">{meta.name}</h1>
-            </div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2.5 py-0.5 rounded-full">
-                {(meta as any).formalLabel}
-              </span>
-              <span className="text-fresco-xs text-fresco-graphite-light">{meta.output}</span>
-            </div>
-            <p className="text-fresco-sm text-fresco-graphite-mid max-w-lg">{meta.description}</p>
-            {/* Systems thinking mode indicator */}
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {(houseId === 'investigate' ? ['Iceberg model', 'Mental models', 'Root cause', 'Causal loops'] :
-                houseId === 'innovate'    ? ['Leverage points', 'Causal loops', 'Intervention mapping', 'Scenario simulation'] :
-                houseId === 'validate'   ? ['Funnel simulation', 'Influence mapping', 'Sensitivity analysis', 'Experiment design'] :
-                ['KPI system mapping', 'Feedback loops', 'Signal vs noise', 'Evolution projection']
-              ).map(tool => (
-                <span key={tool} className="text-[9px] font-medium uppercase tracking-wide text-fresco-graphite-light/60 bg-fresco-light-gray/60 border border-fresco-border/50 px-2 py-0.5 rounded-full">
-                  {tool}
-                </span>
-              ))}
-            </div>
+            {/* The house identity header (name, framework labels, systems
+                chips) belongs to the legacy entry path. Clarify-originated
+                sessions get a plain editing header instead — the user came
+                here to adjust answers, not to be re-introduced to a house. */}
+            {!fromClarify && (
+              <>
+                <div className="flex items-center gap-3 mb-1">
+                  <img src={meta.icon} alt="" className="w-6 h-6 opacity-60 icon-theme"
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight">{meta.name}</h1>
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2.5 py-0.5 rounded-full">
+                    {(meta as any).formalLabel}
+                  </span>
+                  <span className="text-fresco-xs text-fresco-graphite-light">{meta.output}</span>
+                </div>
+                <p className="text-fresco-sm text-fresco-graphite-mid max-w-lg">{meta.description}</p>
+                {/* Systems thinking mode indicator */}
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {(houseId === 'investigate' ? ['Iceberg model', 'Mental models', 'Root cause', 'Causal loops'] :
+                    houseId === 'innovate'    ? ['Leverage points', 'Causal loops', 'Intervention mapping', 'Scenario simulation'] :
+                    houseId === 'validate'   ? ['Funnel simulation', 'Influence mapping', 'Sensitivity analysis', 'Experiment design'] :
+                    ['KPI system mapping', 'Feedback loops', 'Signal vs noise', 'Evolution projection']
+                  ).map(tool => (
+                    <span key={tool} className="text-[9px] font-medium uppercase tracking-wide text-fresco-graphite-light/60 bg-fresco-light-gray/60 border border-fresco-border/50 px-2 py-0.5 rounded-full">
+                      {tool}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+            {fromClarify && (
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-1">
+                    Your answers · running as {meta.name}
+                  </p>
+                  <p className="text-fresco-sm text-fresco-graphite-mid">
+                    Edit anything below, then run again.
+                  </p>
+                </div>
+                {(isRunning || result) && (
+                  <button
+                    type="button"
+                    onClick={() => setInputsExpanded(false)}
+                    className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-black underline underline-offset-4 transition-colors flex-shrink-0 mt-0.5"
+                  >
+                    Hide inputs
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Top progress strip — visible before first answer */}
-          {houseId !== 'evaluate' && (() => {
+          {/* Top progress strip — visible before first answer (legacy path
+              only; clarify sessions arrive with answers already in place) */}
+          {houseId !== 'evaluate' && !fromClarify && (() => {
             const allSteps = houseId === 'investigate' ? INVESTIGATE_STEPS : houseId === 'innovate' ? INNOVATE_STEPS : VALIDATE_STEPS;
             const answered = allSteps.filter(s => (values[s.id] || '').trim().length > 0).length;
             const pct = Math.round((answered / allSteps.length) * 100);
@@ -3119,8 +3152,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             );
           })()}
 
-          {/* Feature 5: First-session guidance banner */}
-          {isFirstSession && !result && (
+          {/* Feature 5: First-session guidance banner (legacy path only) */}
+          {isFirstSession && !result && !fromClarify && (
             <div className="mb-6 p-4 border border-fresco-border-light bg-fresco-off-white">
               <p className="text-fresco-xs font-medium text-fresco-black mb-1">Answer each question as honestly as you can</p>
               <p className="text-[11px] text-fresco-graphite-light leading-relaxed">The agents work best when you separate what you've actually observed from what you believe is causing it. Specifics beat generalities — real numbers, real quotes, real friction points.</p>
