@@ -103,32 +103,64 @@ export default function ConnectExtensionPage() {
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-fresco-graphite-light mb-2">
             FRSC · Connect extension
           </p>
-          <h1 className="text-fresco-3xl font-normal mb-3">Connect Fresco Evaluate</h1>
+          <h1 className="text-fresco-3xl font-normal mb-3">Set up Fresco Evaluate</h1>
           <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">
-            Generate an extension key to sign your browser extension in to this
-            account. Each key is shown once — copy it into the extension or let
-            it pick the key up automatically.
+            Evaluate any page, compare versions, and trace user journeys —
+            without leaving your browser. Two steps: install the extension,
+            then connect it to this account.
           </p>
         </header>
 
         {!generatedKey && (
-          <div className="bg-white border border-fresco-border p-6 mb-4">
-            <p className="text-fresco-sm text-fresco-graphite-mid mb-5 leading-relaxed">
-              Signed in as <span className="text-fresco-black">{session.user?.email}</span>.
-              Click below to generate a key for the Chrome extension.
-            </p>
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={generating}
-              className="w-full px-4 py-3 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite-soft transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {generating ? 'Generating…' : 'Generate extension key'}
-            </button>
-            {error && (
-              <p className="mt-3 text-fresco-xs text-red-600">{error}</p>
-            )}
-          </div>
+          <>
+            {/* Step 1 — install. The page previously assumed the extension
+                was already installed, which left first-time visitors with a
+                key and nowhere to put it. */}
+            <div className="bg-white border border-fresco-border p-6 mb-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-fresco-graphite-light mb-3">
+                Step 1 · Install the extension
+              </p>
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-4 leading-relaxed">
+                Already installed? Skip to step 2.
+              </p>
+              <a
+                href="https://frescolab.io/fresco-evaluate-extension.zip"
+                className="block w-full text-center px-4 py-3 border border-fresco-black text-fresco-black text-fresco-sm font-medium hover:bg-fresco-black hover:text-white transition-colors mb-4"
+              >
+                Download Fresco Evaluate (.zip)
+              </a>
+              <ol className="space-y-2 text-fresco-xs text-fresco-graphite-mid leading-relaxed list-decimal pl-4">
+                <li>Unzip the download — you&apos;ll get a <span className="font-mono">fresco-evaluate</span> folder</li>
+                <li>Open <span className="font-mono">chrome://extensions</span> in Chrome</li>
+                <li>Turn on <span className="text-fresco-black">Developer mode</span> (top right)</li>
+                <li>Click <span className="text-fresco-black">Load unpacked</span> and choose the unzipped folder</li>
+                <li>Pin Fresco Evaluate from the puzzle-piece menu so it&apos;s a click away</li>
+              </ol>
+            </div>
+
+            {/* Step 2 — connect */}
+            <div className="bg-white border border-fresco-border p-6 mb-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-fresco-graphite-light mb-3">
+                Step 2 · Connect it to your account
+              </p>
+              <p className="text-fresco-sm text-fresco-graphite-mid mb-5 leading-relaxed">
+                Signed in as <span className="text-fresco-black">{session.user?.email}</span>.
+                Generate a key — it&apos;s shown once, and the extension picks it
+                up automatically if its side panel is open.
+              </p>
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={generating}
+                className="w-full px-4 py-3 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite-soft transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generating ? 'Generating…' : 'Generate extension key'}
+              </button>
+              {error && (
+                <p className="mt-3 text-fresco-xs text-red-600">{error}</p>
+              )}
+            </div>
+          </>
         )}
 
         {generatedKey && (
