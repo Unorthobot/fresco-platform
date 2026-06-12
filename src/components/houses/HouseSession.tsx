@@ -3207,7 +3207,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
 
       {/* ── RIGHT: Output ──────────────────────────────────────────────────── */}
       <motion.div
-        animate={isDesktop ? { flex: result ? '1 1 0%' : '0 0 360px', minWidth: 320 } : {}}
+        // The output owns the width as soon as the input rail collapses
+        // (run start), not only once the verdict lands — otherwise the run
+        // plays out in a 360px strip beside dead space.
+        animate={isDesktop ? { flex: (result || collapseInputs) ? '1 1 0%' : '0 0 360px', minWidth: 320 } : {}}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
         className="flex flex-col border-t border-fresco-border-light bg-fresco-off-white md:overflow-hidden md:border-t-0 md:border-l"
       >
