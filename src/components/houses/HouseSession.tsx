@@ -2322,6 +2322,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [activeLens, setActiveLens] = useState<string | null>(null);
   const [isReframing, setIsReframing] = useState(false);
   const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
+  // WP2 pulled forward for clarify-originated sessions: once the run starts
+  // the question stack gets out of the way (spec Moment 4 — the single
+  // highest-priority UI change). A slim rail holds the decision + an
+  // expander; legacy nav-started sessions (no originalPrompt) are unchanged.
+  const [inputsExpanded, setInputsExpanded] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [userVerdict, setUserVerdict] = useState<string | null>(null);
   const [showVerdictOverride, setShowVerdictOverride] = useState(false);
@@ -2942,6 +2947,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   };
   const verdictPlain = result ? (VERDICT_PLAIN[result.verdict] || VERDICT_PLAIN['INVESTIGATE FURTHER']) : null;
 
+  const collapseInputs = !!originalPrompt && (isRunning || !!result) && !inputsExpanded;
+
   return (
     <>
     <div
@@ -2963,15 +2970,37 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           called unusable below 700px. On mobile the panels stack and the
           document scrolls naturally. */}
       <motion.div
-        animate={isDesktop ? { flexBasis: result ? '440px' : undefined, maxWidth: result ? '440px' : undefined } : {}}
+        animate={isDesktop ? {
+          flexBasis: collapseInputs ? '300px' : result ? '440px' : undefined,
+          maxWidth: collapseInputs ? '300px' : result ? '440px' : undefined,
+        } : {}}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
-        className={cn("md:flex-1 flex flex-col md:overflow-hidden", result && "md:border-r border-fresco-border-light md:flex-shrink-0")}
-        style={{ minWidth: isDesktop && result ? 360 : undefined }}
+        className={cn("md:flex-1 flex flex-col md:overflow-hidden", (result || collapseInputs) && "md:border-r border-fresco-border-light md:flex-shrink-0")}
+        style={{ minWidth: isDesktop && (result || collapseInputs) ? (collapseInputs ? 280 : 360) : undefined }}
       >
         {/* Scrollable content */}
         <div className="md:flex-1 md:overflow-y-auto" ref={inputScrollRef}>
+          {/* Slim rail — question stack out of the way while the analysis
+              runs and once the verdict is on screen */}
+          {collapseInputs && (
+            <div className="px-4 md:px-5 py-6">
+              <button type="button" onClick={onBack}
+                className="flex items-center gap-1.5 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors mb-6">
+                <ChevronLeft className="w-3.5 h-3.5" /> Back
+              </button>
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-1.5">Your decision</p>
+              <p className="text-fresco-sm text-fresco-black leading-relaxed mb-5 whitespace-pre-wrap">{originalPrompt}</p>
+              <button
+                type="button"
+                onClick={() => setInputsExpanded(true)}
+                className="text-fresco-xs text-fresco-graphite-mid hover:text-fresco-black underline underline-offset-4 transition-colors"
+              >
+                View &amp; edit inputs
+              </button>
+            </div>
+          )}
           {/* WP1 — original prompt pinned from clarify through to the verdict */}
-          {originalPrompt && (
+          {originalPrompt && !collapseInputs && (
             <details className="sticky top-0 z-40 bg-fresco-white border-b border-fresco-border-light px-4 md:px-8 py-2.5 group">
               <summary className="cursor-pointer list-none flex items-center justify-between gap-3">
                 <span className="min-w-0 flex-1">
@@ -2983,7 +3012,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               <p className="text-fresco-sm text-fresco-black leading-relaxed pt-1.5 pb-1 whitespace-pre-wrap">{originalPrompt}</p>
             </details>
           )}
-          <div className={cn("mx-auto py-6 md:py-10", result ? "px-4" : "max-w-[640px] px-4 md:px-8")}>
+          <div className={cn("mx-auto py-6 md:py-10", result ? "px-4" : "max-w-[640px] px-4 md:px-8", collapseInputs && "hidden")}>
 
           {/* Back + header */}
           <div className="mb-10">
