@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { User, CreditCard, Calendar, LogOut, Check, Crown, Zap, Camera, Users, Loader2, LogIn } from 'lucide-react';
+import { User, CreditCard, Calendar, LogOut, Check, Crown, Zap, Camera, Loader2, LogIn } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
 
 export function AccountPage() {
@@ -253,7 +253,7 @@ export function AccountPage() {
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-none">
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">{user?.aiGenerationsThisMonth || 0}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">House Runs (this month)</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Verdicts (this month)</p>
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-none">
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white capitalize">{currentPlan}</p>
@@ -279,55 +279,34 @@ export function AccountPage() {
             }`}>
               <div className="flex items-center gap-2 mb-1">
                 {currentPlan !== 'free' && <Crown className="w-4 h-4 text-amber-500" />}
-                <p className="font-medium text-gray-900 dark:text-white capitalize">{currentPlan} Plan</p>
+                <p className="font-medium text-gray-900 dark:text-white capitalize">{currentPlan === 'pro' ? 'Founder' : currentPlan} Plan</p>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {currentPlan === 'free' ? '3 workspaces, 10 house runs/month' :
-                 currentPlan === 'pro' ? 'Unlimited workspaces & house runs' :
-                 'Everything in Pro + Team features'}
+                {currentPlan === 'free' ? '3 verdicts a month · full engine, full reasoning' :
+                 currentPlan === 'pro' ? 'Unlimited verdicts · decision memory · all lenses' :
+                 'Everything in Founder + team features'}
               </p>
             </div>
 
             {/* Upgrade Options */}
             {currentPlan === 'free' && (
-              <div className="space-y-3">
-                <button
-                  onClick={() => handleUpgrade('pro')}
-                  disabled={loadingPlan === 'pro'}
-                  className="w-full p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-none font-medium hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {loadingPlan === 'pro' ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
-                  ) : (
-                    <><Crown className="w-4 h-4" /> Upgrade to Pro — $29/mo (≈ R530)</>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleUpgrade('studio')}
-                  disabled={loadingPlan === 'studio'}
-                  className="w-full p-4 border-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-none font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {loadingPlan === 'studio' ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
-                  ) : (
-                    <><Users className="w-4 h-4" /> Upgrade to Studio — $79/mo (≈ R1,290)</>
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={() => handleUpgrade('pro')}
+                disabled={loadingPlan === 'pro'}
+                className="w-full p-4 bg-fresco-black text-white rounded-none font-medium hover:bg-fresco-graphite transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loadingPlan === 'pro' ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
+                ) : (
+                  <><Crown className="w-4 h-4" /> Get Founder — R450/mo (≈ $24)</>
+                )}
+              </button>
             )}
 
             {currentPlan === 'pro' && (
-              <button
-                onClick={() => handleUpgrade('studio')}
-                disabled={loadingPlan === 'studio'}
-                className="w-full p-4 border-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-none font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {loadingPlan === 'studio' ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
-                ) : (
-                  <><Users className="w-4 h-4" /> Upgrade to Studio — $79/mo (≈ R1,290)</>
-                )}
-              </button>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                You're on Founder — unlimited verdicts, all lenses.
+              </p>
             )}
           </div>
 

@@ -483,7 +483,10 @@ export const useFrescoStore = create<FrescoState>()(
       
       canUseAI: () => {
         const state = get();
-        const limits = { free: 10, pro: -1, studio: -1 };
+        // 3/month is what the site sells; this was 10 while getUsageLimits
+        // and all UI copy said 3 (client-side gate — server enforcement is
+        // the rest of WP5).
+        const limits = { free: 3, pro: -1, studio: -1 };
         const tier = state.user?.subscription || 'free';
         const limit = limits[tier];
         if (limit === -1) return true;

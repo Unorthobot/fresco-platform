@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Users, Zap, ArrowRight } from 'lucide-react';
+import { X, Check, Zap, ArrowRight } from 'lucide-react';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -17,45 +17,28 @@ const HOUSES = [
   { name: 'Evaluate',    output: 'How is it actually doing?', agents: ['Page Scorecard', 'Variant Lens', 'Journey Trace'] },
 ];
 
+// Public ladder matches frescolab.io: Free + Founder. Founder is the public
+// name of the `pro` tier (same entitlements: unlimited verdicts, all
+// lenses). Studio left the public ladder June 2026 — the beta cohort stays
+// grandfathered; nothing in the entitlement checks changed.
 const PLANS = [
   {
     key: 'pro' as const,
-    name: 'Pro',
-    price: 29,
-    zarPrice: 530,
-    description: 'For individuals who make product decisions regularly.',
+    name: 'Founder',
+    price: 24,
+    zarPrice: 450,
+    description: 'For founders who make the call week after week.',
     icon: Zap,
     features: [
-      '30 house runs per month',
+      'Unlimited verdicts',
+      "Decision memory — every call you've made, searchable",
+      'All eight analytical lenses',
+      'Priority runs',
       'Unlimited plugin evaluations',
-      'All 4 houses, all 12 agents',
-      'All 8 thinking lenses',
-      'Unlimited workspaces',
       'PDF report + presentation deck export',
-      'Priority support',
     ],
-    cta: 'Upgrade to Pro',
+    cta: 'Get Founder',
     primary: true,
-  },
-  {
-    key: 'studio' as const,
-    name: 'Studio',
-    price: 79,
-    zarPrice: 1290,
-    description: 'For teams who think together.',
-    icon: Users,
-    features: [
-      'Unlimited house runs',
-      'Unlimited plugin evaluations',
-      'Everything in Pro',
-      'Shared team workspaces',
-      'Invite members with one link',
-      'Owner, admin and member roles',
-      'Team admin dashboard',
-      'Dedicated support',
-    ],
-    cta: 'Upgrade to Studio',
-    primary: false,
   },
 ];
 
@@ -93,8 +76,8 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
                 <h2 className="text-fresco-xl font-medium text-fresco-black">Upgrade Fresco</h2>
                 <p className="text-fresco-sm text-fresco-graphite-light mt-0.5">
                   {triggerHouse
-                    ? `You've used your free house runs. Upgrade to keep analysing.`
-                    : 'Four houses. Twelve agents. Browser plugin. One verdict per run.'}
+                    ? `You've used your free verdicts this month. Upgrade to keep deciding.`
+                    : 'A clear verdict on the decision in front of you — with the reasoning that produced it.'}
                 </p>
               </div>
               <button onClick={onClose} className="p-1.5 text-fresco-graphite-light hover:text-fresco-black transition-colors mt-0.5">
@@ -107,13 +90,13 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-fresco-sm font-medium text-fresco-black">Free plan</p>
-                  <p className="text-fresco-xs text-fresco-graphite-mid">3 house runs/month · 3 plugin evaluations/month · 3 workspaces · All 4 houses</p>
+                  <p className="text-fresco-xs text-fresco-graphite-mid">3 verdicts a month · Full engine, full reasoning · Chrome plugin included</p>
                 </div>
                 <button
                   onClick={() => setShowArchitecture(v => !v)}
                   className="text-fresco-xs text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1"
                 >
-                  What's a house run? <ArrowRight className={`w-3 h-3 transition-transform ${showArchitecture ? 'rotate-90' : ''}`} />
+                  What happens in a run? <ArrowRight className={`w-3 h-3 transition-transform ${showArchitecture ? 'rotate-90' : ''}`} />
                 </button>
               </div>
 
@@ -126,7 +109,7 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
                     className="mt-4 overflow-hidden"
                   >
                     <p className="text-fresco-xs text-fresco-graphite-mid mb-3">
-                      Each house run sends your input through 3 specialist agents sequentially, then synthesises their outputs into a single verdict. One run = one complete analysis.
+                      Each verdict runs your input through three specialist analysis passes, then synthesises them into a single call — GO, PIVOT, STOP, or NEEDS MORE SIGNAL. One run = one complete analysis.
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {HOUSES.map(h => (
@@ -153,7 +136,7 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
               </div>
               <div className="flex-1">
                 <p className="text-fresco-sm font-medium text-fresco-black mb-0.5">Includes the Fresco Evaluate Chrome plugin</p>
-                <p className="text-fresco-xs text-fresco-graphite-mid leading-relaxed">Evaluate any page, compare versions, and trace user journeys — directly in your browser, without switching context. Free plan includes 3 plugin evaluations/month. Pro and Studio include unlimited plugin use.</p>
+                <p className="text-fresco-xs text-fresco-graphite-mid leading-relaxed">Evaluate any page, compare versions, and trace user journeys — directly in your browser, without switching context. Every plan includes the Chrome extension.</p>
                 {/* The promise was unactionable — the setup page existed but
                     nothing in the app linked to it. */}
                 <a
@@ -166,7 +149,7 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
             </div>
 
             {/* Plan cards */}
-            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-fresco-border-light">
+            <div>
               {PLANS.map(plan => {
                 const Icon = plan.icon;
                 return (
@@ -177,12 +160,10 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
                         <span className="text-fresco-xs uppercase tracking-widest text-fresco-graphite-light font-medium">{plan.name}</span>
                       </div>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-fresco-4xl font-medium text-fresco-black">${plan.price}</span>
+                        <span className="text-fresco-4xl font-medium text-fresco-black">R{(plan as any).zarPrice.toLocaleString()}</span>
                         <span className="text-fresco-sm text-fresco-graphite-light">/month</span>
                       </div>
-                      {'zarPrice' in plan && (
-                        <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">≈ R{(plan as any).zarPrice.toLocaleString()}/month</p>
-                      )}
+                      <p className="text-fresco-xs text-fresco-graphite-light mt-0.5">≈ ${plan.price}/month</p>
                       <p className="text-fresco-sm text-fresco-graphite-mid mt-1">{plan.description}</p>
                     </div>
 

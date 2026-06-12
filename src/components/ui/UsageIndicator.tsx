@@ -75,7 +75,7 @@ export function UsageIndicator() {
         <div className="mb-4">
           <div className="flex items-center justify-between text-fresco-xs mb-1">
             <span className="flex items-center gap-1.5 text-fresco-graphite-mid">
-              <Zap className="w-3 h-3" />House Runs
+              <Zap className="w-3 h-3" />Verdicts
             </span>
             <span className={`font-medium ${aiPercentage >= 100 ? 'text-fresco-black' : 'text-fresco-graphite-mid'}`}>
               {aiCount}/{aiLimit}

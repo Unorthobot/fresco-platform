@@ -25,7 +25,7 @@ export function UpgradeModal({ isOpen, onClose, reason, currentUsage, limit }: U
     toolkits: {
       icon: Crown,
       title: 'This is Pro only',
-      description: 'Upgrade to unlock unlimited workspaces and house runs.',
+      description: 'Upgrade to unlock unlimited workspaces and verdicts.',
     },
     workspaces: {
       icon: Sparkles,
