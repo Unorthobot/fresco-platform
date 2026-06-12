@@ -46,7 +46,7 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
   const [showArchitecture, setShowArchitecture] = useState(false);
 
   const CHECKOUT_URLS: Record<'pro' | 'studio', string> = {
-    pro:    'https://frescolab.lemonsqueezy.com/checkout/buy/7621eccf-cb2f-4f75-94f0-c092b201f03b',
+    pro:    'https://frescolab.lemonsqueezy.com/checkout/buy/2cff72c9-78bb-4698-b41d-9bb3abe6ef65',
     studio: 'https://frescolab.lemonsqueezy.com/checkout/buy/76f524c3-3cf8-49cf-98c3-2cd56465d460',
   };
 

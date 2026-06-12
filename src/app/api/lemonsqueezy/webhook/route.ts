@@ -32,9 +32,13 @@ export async function POST(req: NextRequest) {
 
   const proVariantId = process.env.LEMONSQUEEZY_PRO_VARIANT_ID!;
   const studioVariantId = process.env.LEMONSQUEEZY_STUDIO_VARIANT_ID!;
+  // Founder (June 2026 public ladder) maps to the `pro` tier — same
+  // entitlements, new LemonSqueezy product. Env override supported; the
+  // fallback is the live variant id so billing works without a config step.
+  const founderVariantId = process.env.LEMONSQUEEZY_FOUNDER_VARIANT_ID || '1782750';
 
   let plan: string | null = null;
-  if (variantId === proVariantId) plan = 'pro';
+  if (variantId === founderVariantId || variantId === proVariantId) plan = 'pro';
   else if (variantId === studioVariantId) plan = 'studio';
 
   if (!userId) {
