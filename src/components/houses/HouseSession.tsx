@@ -2325,7 +2325,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   // WP2 pulled forward for clarify-originated sessions: once the run starts
   // the question stack gets out of the way (spec Moment 4 — the single
   // highest-priority UI change). A slim rail holds the decision + an
-  // expander; legacy nav-started sessions (no originalPrompt) are unchanged.
+  // expander.
   const [inputsExpanded, setInputsExpanded] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [userVerdict, setUserVerdict] = useState<string | null>(null);
@@ -2947,8 +2947,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   };
   const verdictPlain = result ? (VERDICT_PLAIN[result.verdict] || VERDICT_PLAIN['INVESTIGATE FURTHER']) : null;
 
-  const fromClarify = !!originalPrompt;
-  const collapseInputs = fromClarify && (isRunning || !!result) && !inputsExpanded;
+  // The legacy house chrome is retired for ALL sessions (June 2026): the
+  // input column collapses whenever a run is live or a verdict exists,
+  // whatever the session's origin. The pinned decision falls back to the
+  // primary answer for sessions that predate the router.
+  const railPrompt = originalPrompt || (values[primaryField] || '').trim() || workspace?.title || null;
+  const collapseInputs = (isRunning || !!result) && !inputsExpanded;
 
   return (
     <>
@@ -2990,7 +2994,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <ChevronLeft className="w-3.5 h-3.5" /> Back
               </button>
               <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-1.5">Your decision</p>
-              <p className="text-fresco-sm text-fresco-black leading-relaxed mb-5 whitespace-pre-wrap">{originalPrompt}</p>
+              <p className="text-fresco-sm text-fresco-black leading-relaxed mb-5 whitespace-pre-wrap">{railPrompt}</p>
               <button
                 type="button"
                 onClick={() => setInputsExpanded(true)}
@@ -3001,16 +3005,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             </div>
           )}
           {/* WP1 — original prompt pinned from clarify through to the verdict */}
-          {originalPrompt && !collapseInputs && (
+          {railPrompt && !collapseInputs && (
             <details className="sticky top-0 z-40 bg-fresco-white border-b border-fresco-border-light px-4 md:px-8 py-2.5 group">
               <summary className="cursor-pointer list-none flex items-center justify-between gap-3">
                 <span className="min-w-0 flex-1">
                   <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-fresco-graphite-light block">Your decision</span>
-                  <span className="text-fresco-xs text-fresco-black truncate block group-open:hidden">{originalPrompt}</span>
+                  <span className="text-fresco-xs text-fresco-black truncate block group-open:hidden">{railPrompt}</span>
                 </span>
                 <ChevronDown className="w-3 h-3 text-fresco-graphite-light flex-shrink-0 group-open:rotate-180 transition-transform" />
               </summary>
-              <p className="text-fresco-sm text-fresco-black leading-relaxed pt-1.5 pb-1 whitespace-pre-wrap">{originalPrompt}</p>
+              <p className="text-fresco-sm text-fresco-black leading-relaxed pt-1.5 pb-1 whitespace-pre-wrap">{railPrompt}</p>
             </details>
           )}
           <div className={cn("mx-auto py-6 md:py-10", result ? "px-4" : "max-w-[640px] px-4 md:px-8", collapseInputs && "hidden")}>
@@ -3026,7 +3030,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <ChevronLeft className="w-4 h-4" />
                 {/* Clarify workspaces are titled with the prompt itself —
                     repeating it here is noise */}
-                {fromClarify ? 'Back' : `Back to workspace${workspace?.title ? ` — ${workspace.title}` : ''}`}
+                Back
               </button>
               {(result || Object.values(values).some(v => v?.trim())) && (
                 <button type="button" onClick={() => setShowStartOver(true)}
@@ -3072,46 +3076,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 </p>
               </div>
             )}
-            {/* The house identity header (name, framework labels, systems
-                chips) belongs to the legacy entry path. Clarify-originated
-                sessions get a plain editing header instead — the user came
-                here to adjust answers, not to be re-introduced to a house. */}
-            {!fromClarify && (
-              <>
-                <div className="flex items-center gap-3 mb-1">
-                  <img src={meta.icon} alt="" className="w-6 h-6 opacity-60 icon-theme"
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                  <h1 className="text-fresco-3xl font-medium text-fresco-black tracking-tight">{meta.name}</h1>
-                </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-fresco-graphite-light bg-fresco-light-gray border border-fresco-border px-2.5 py-0.5 rounded-full">
-                    {(meta as any).formalLabel}
-                  </span>
-                  <span className="text-fresco-xs text-fresco-graphite-light">{meta.output}</span>
-                </div>
-                <p className="text-fresco-sm text-fresco-graphite-mid max-w-lg">{meta.description}</p>
-                {/* Systems thinking mode indicator */}
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {(houseId === 'investigate' ? ['Iceberg model', 'Mental models', 'Root cause', 'Causal loops'] :
-                    houseId === 'innovate'    ? ['Leverage points', 'Causal loops', 'Intervention mapping', 'Scenario simulation'] :
-                    houseId === 'validate'   ? ['Funnel simulation', 'Influence mapping', 'Sensitivity analysis', 'Experiment design'] :
-                    ['KPI system mapping', 'Feedback loops', 'Signal vs noise', 'Evolution projection']
-                  ).map(tool => (
-                    <span key={tool} className="text-[9px] font-medium uppercase tracking-wide text-fresco-graphite-light/60 bg-fresco-light-gray/60 border border-fresco-border/50 px-2 py-0.5 rounded-full">
-                      {tool}
-                    </span>
-                  ))}
-                </div>
-              </>
-            )}
-            {fromClarify && (
-              <div className="flex items-start justify-between gap-4">
+            {/* Plain working header — the house identity chrome (name,
+                framework labels, systems chips) was retired June 2026.
+                Houses are engine internals, not the interface. */}
+            <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-1">
                     Your answers · running as {meta.name}
                   </p>
                   <p className="text-fresco-sm text-fresco-graphite-mid">
-                    Edit anything below, then run again.
+                    Answer or adjust below, then run the analysis.
                   </p>
                 </div>
                 {(isRunning || result) && (
@@ -3124,36 +3098,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </button>
                 )}
               </div>
-            )}
           </div>
 
-          {/* Top progress strip — visible before first answer (legacy path
-              only; clarify sessions arrive with answers already in place) */}
-          {houseId !== 'evaluate' && !fromClarify && (() => {
-            const allSteps = houseId === 'investigate' ? INVESTIGATE_STEPS : houseId === 'innovate' ? INNOVATE_STEPS : VALIDATE_STEPS;
-            const answered = allSteps.filter(s => (values[s.id] || '').trim().length > 0).length;
-            const pct = Math.round((answered / allSteps.length) * 100);
-            if (answered === 0) return null;
-            return (
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-fresco-xs text-fresco-graphite-light">{answered} of {allSteps.length} answered</span>
-                  <span className="text-fresco-xs text-fresco-graphite-light">{pct}%</span>
-                </div>
-                <div className="flex gap-0.5">
-                  {allSteps.map((step, idx) => (
-                    <div key={idx} className={cn(
-                      'h-0.5 flex-1 transition-all duration-300',
-                      (values[step.id] || '').trim().length > 0 ? 'bg-fresco-black' : 'bg-fresco-border'
-                    )} />
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Feature 5: First-session guidance banner (legacy path only) */}
-          {isFirstSession && !result && !fromClarify && (
+          {/* Feature 5: First-session guidance banner */}
+          {isFirstSession && !result && (
             <div className="mb-6 p-4 border border-fresco-border-light bg-fresco-off-white">
               <p className="text-fresco-xs font-medium text-fresco-black mb-1">Answer each question as honestly as you can</p>
               <p className="text-[11px] text-fresco-graphite-light leading-relaxed">The agents work best when you separate what you've actually observed from what you believe is causing it. Specifics beat generalities — real numbers, real quotes, real friction points.</p>

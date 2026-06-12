@@ -574,7 +574,7 @@ export default function FrescoAppContent() {
         <LeftNavRail onNavigate={handleNavigate} onStartHouse={handleStartHouse} />
       </div>
 
-      <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} onStartHouse={handleStartHouse} />
+      <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} />
 
       <main id="main-content" className="md:ml-[220px] min-h-screen relative">
         <ErrorBoundary

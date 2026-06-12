@@ -4,23 +4,17 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Home, Archive, Settings, User, Layers, Users, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { HOUSE_META } from '@/lib/agents';
-import type { HouseId } from '@/lib/agents';
 
 interface MobileNavProps {
   activeSection: string;
   onNavigate: (section: string) => void;
   userSubscription?: string;
-  onStartHouse?: (houseId: HouseId) => void;
 }
 
-const HOUSES: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
-
-export function MobileNav({ activeSection, onNavigate, userSubscription, onStartHouse }: MobileNavProps) {
+export function MobileNav({ activeSection, onNavigate, userSubscription }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleNavigate = (section: string) => { onNavigate(section); setIsOpen(false); };
-  const handleHouse = (houseId: HouseId) => { onStartHouse?.(houseId); setIsOpen(false); };
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
@@ -61,24 +55,19 @@ export function MobileNav({ activeSection, onNavigate, userSubscription, onStart
                 </div>
               </div>
 
-              {/* Houses — primary action */}
+              {/* Primary action — the single input is the only front door.
+                  House selection retired from navigation (June 2026): the
+                  router picks the analysis, power users override on the
+                  clarify screen. */}
               <div className="p-4 border-b border-fresco-border-light">
-                <p className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide mb-3">Run a house</p>
-                <div className="space-y-1">
-                  {HOUSES.map(houseId => {
-                    const house = HOUSE_META[houseId];
-                    return (
-                      <button key={houseId} onClick={() => handleHouse(houseId)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-fresco-light-gray transition-colors text-left">
-                        <div>
-                          <p className="text-fresco-sm font-medium text-fresco-black">{house.name}</p>
-                          <p className="text-fresco-xs text-fresco-graphite-light">{house.output}</p>
-                        </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-fresco-graphite-light" />
-                      </button>
-                    );
-                  })}
-                </div>
+                <button onClick={() => handleNavigate('home')}
+                  className="w-full flex items-center justify-between px-3 py-3 bg-fresco-black text-white hover:bg-fresco-graphite transition-colors text-left">
+                  <div>
+                    <p className="text-fresco-sm font-medium">New decision</p>
+                    <p className="text-fresco-xs text-white/60">Describe it — Fresco runs the right analysis</p>
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-white/70" />
+                </button>
               </div>
 
               {/* Nav items */}
