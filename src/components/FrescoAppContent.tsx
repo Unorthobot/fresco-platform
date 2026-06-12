@@ -253,6 +253,25 @@ export default function FrescoAppContent() {
     return () => window.removeEventListener('fresco:upgrade', handler);
   }, []);
 
+  // Marketing-site upgrade intent: frescolab.io's "Get Founder" links to
+  // /?upgrade=founder. Open the pricing modal right away and stash the
+  // checkout intent — if the visitor signs up first, the post-login effect
+  // below opens the account-linked checkout automatically. Linking the site
+  // straight to LemonSqueezy would create unlinked purchases (no user_id
+  // for the webhook).
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('upgrade') === 'founder') {
+        sessionStorage.setItem('post_login_action', JSON.stringify({ type: 'checkout', plan: 'pro' }));
+        setShowPricingModal(true);
+        params.delete('upgrade');
+        const rest = params.toString();
+        window.history.replaceState(window.history.state, '', rest ? `/?${rest}` : '/');
+      }
+    } catch { /* ignore malformed URLs */ }
+  }, []);
+
 
 
   // Backfill the guest run counter for anonymous users with existing
