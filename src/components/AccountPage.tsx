@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { User, CreditCard, Calendar, LogOut, Check, Crown, Zap, Camera, Loader2, LogIn } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
+import { checkoutUrlFor } from '@/lib/checkout';
 
 export function AccountPage() {
   const { data: session, status } = useSession();
@@ -67,7 +68,7 @@ export function AccountPage() {
   };
 
   const handleUpgrade = (planKey: 'pro' | 'studio') => {
-    window.open(CHECKOUT_URLS[planKey], '_blank', 'noopener');
+    window.open(checkoutUrlFor(CHECKOUT_URLS[planKey], user), '_blank', 'noopener');
   };
 
   const _unused = async (planKey: 'pro' | 'studio') => {

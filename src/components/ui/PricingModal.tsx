@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Zap, ArrowRight } from 'lucide-react';
+import { useFrescoStore } from '@/lib/store';
+import { checkoutUrlFor } from '@/lib/checkout';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -44,6 +46,7 @@ const PLANS = [
 
 export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProps) {
   const [showArchitecture, setShowArchitecture] = useState(false);
+  const user = useFrescoStore(state => state.user);
 
   const CHECKOUT_URLS: Record<'pro' | 'studio', string> = {
     pro:    'https://frescolab.lemonsqueezy.com/checkout/buy/2cff72c9-78bb-4698-b41d-9bb3abe6ef65',
@@ -51,7 +54,7 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
   };
 
   const handleUpgrade = (plan: 'pro' | 'studio') => {
-    window.open(CHECKOUT_URLS[plan], '_blank', 'noopener');
+    window.open(checkoutUrlFor(CHECKOUT_URLS[plan], user), '_blank', 'noopener');
   };
 
   return (

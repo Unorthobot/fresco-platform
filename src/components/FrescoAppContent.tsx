@@ -26,6 +26,7 @@ import { ArrivalHome } from '@/components/arrival/ArrivalHome';
 import { ClarifyScreen, type ClarifiedAnswer } from '@/components/arrival/ClarifyScreen';
 import type { EvaluateMode, RouterResult } from '@/lib/houseQuestions';
 import { track } from '@/lib/analytics';
+import { checkoutUrlFor } from '@/lib/checkout';
 
 type View = 'home' | 'workspace' | 'session' | 'clarify' | 'archive' | 'settings' | 'account' | 'team';
 
@@ -563,7 +564,7 @@ export default function FrescoAppContent() {
           studio: 'https://frescolab.lemonsqueezy.com/checkout/buy/76f524c3-3cf8-49cf-98c3-2cd56465d460',
         };
         const url = checkoutUrls[action.plan];
-        if (url) window.open(url, '_blank', 'noopener');
+        if (url) window.open(checkoutUrlFor(url, user), '_blank', 'noopener');
       }
     } catch (e) {
       console.error('post_login_action error', e);
