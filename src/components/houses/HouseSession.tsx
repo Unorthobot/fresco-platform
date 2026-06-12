@@ -3200,12 +3200,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 onClick={handleRunWithChallenge}
                 disabled={!canRun}
                 className={cn('fresco-btn w-full', !canRun && 'opacity-40 cursor-not-allowed')}>
-                <Sparkles className="w-4 h-4" /><span>Think it through</span>
+                {/* "Think it through" was the legacy framing; the verdict
+                    flow says what the button does. */}
+                <Sparkles className="w-4 h-4" /><span>{result ? 'Run again' : 'Run the analysis'}</span>
               </button>
             )}
             {!canRun && !isRunning && !runError && (
               <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
-                Start answering to unlock this
+                Answer the first question to unlock this
               </p>
             )}
             {runError && !isRunning && (
@@ -3672,17 +3674,19 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 </div>
 
-                {/* Next house suggestion */}
+                {/* Next analysis suggestion — led by the question it answers,
+                    not the house that runs it. Houses are engine internals;
+                    the user thinks in questions. */}
                 {result.suggestedNextHouse && (
                   <div className="p-4 bg-fresco-light-gray flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">Run this next</p>
-                      <p className="text-fresco-sm font-medium text-fresco-black">{HOUSE_META[result.suggestedNextHouse].name}</p>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-0.5">Next question worth answering</p>
+                      <p className="text-fresco-sm font-medium text-fresco-black">{HOUSE_META[result.suggestedNextHouse].output}</p>
                       <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5">{result.suggestedNextHouseReason}</p>
                     </div>
                     <button onClick={() => onNavigateToHouse?.(result.suggestedNextHouse!, sessionId)}
                       className="flex-shrink-0 flex items-center gap-1.5 text-fresco-xs font-medium text-fresco-black border border-fresco-black px-3 py-1.5 hover:bg-fresco-black hover:text-white transition-colors">
-                      Open <ArrowRight className="w-3 h-3" />
+                      Run it <ArrowRight className="w-3 h-3" />
                     </button>
                   </div>
                 )}
