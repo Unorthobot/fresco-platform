@@ -154,6 +154,14 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
               <div className="flex-1">
                 <p className="text-fresco-sm font-medium text-fresco-black mb-0.5">Includes the Fresco Evaluate Chrome plugin</p>
                 <p className="text-fresco-xs text-fresco-graphite-mid leading-relaxed">Evaluate any page, compare versions, and trace user journeys — directly in your browser, without switching context. Free plan includes 3 plugin evaluations/month. Pro and Studio include unlimited plugin use.</p>
+                {/* The promise was unactionable — the setup page existed but
+                    nothing in the app linked to it. */}
+                <a
+                  href="/connect-extension"
+                  className="inline-flex items-center gap-1 mt-2 text-fresco-xs font-medium text-fresco-black underline underline-offset-4 hover:opacity-70 transition-opacity"
+                >
+                  Set up the plugin →
+                </a>
               </div>
             </div>
 
