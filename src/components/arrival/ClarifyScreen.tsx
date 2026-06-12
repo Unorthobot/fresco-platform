@@ -34,6 +34,7 @@ interface ClarifyScreenProps {
     evaluateMode: EvaluateMode | null;
     answers: Record<string, ClarifiedAnswer>;
     router: RouterResult;
+    url: string;
   }) => void;
   onEditPrompt: (newPrompt: string, reroute: boolean) => void;
   onBack: () => void;
@@ -43,7 +44,8 @@ const HOUSE_OPTIONS: HouseId[] = ['investigate', 'innovate', 'validate', 'evalua
 
 export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt, onBack }: ClarifyScreenProps) {
   const [house, setHouse] = useState<HouseId>(router.house);
-  const [evaluateMode] = useState<EvaluateMode | null>(router.evaluateMode);
+  const [evaluateMode, setEvaluateMode] = useState<EvaluateMode | null>(router.evaluateMode);
+  const [url, setUrl] = useState('');
   const [showHousePicker, setShowHousePicker] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState(false);
@@ -65,6 +67,7 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
   // always win over them.
   useEffect(() => {
     setHouse(router.house);
+    setEvaluateMode(router.evaluateMode);
     setAnswers(prev => {
       const next: Record<string, ClarifiedAnswer> = {};
       for (const [id, ex] of Object.entries(router.extracted)) {
@@ -82,12 +85,12 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
   const extractedIds = canonical.filter(q => router.extracted[q.id]).map(q => q.id);
   // House override invalidates extractions that don't map to the new house.
   const visibleExtracted = extractedIds.filter(id => answers[id]);
-  const followups = house === router.house
+  const followups = house === router.house && evaluateMode === router.evaluateMode
     ? router.followups
     : canonical
         .filter(q => !answers[q.id]?.answer)
         .slice(0, 3)
-        .map(q => ({ questionId: q.id, question: q.question, reason: 'Needed after switching the analysis type.' }));
+        .map(q => ({ questionId: q.id, question: q.question, reason: q.whyItMatters }));
 
   const questionTextOf = (id: string) => canonical.find(q => q.id === id)?.question || id;
 
@@ -110,7 +113,7 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
         .filter(([, a]) => a.answer.trim())
         .map(([id, a]) => [id, { ...a, confirmed: true }])
     );
-    onRun({ prompt, house, evaluateMode, answers: confirmedAll, router });
+    onRun({ prompt, house, evaluateMode, answers: confirmedAll, router, url: url.trim() });
   };
 
   return (
@@ -212,7 +215,7 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                   <button
                     key={h}
                     type="button"
-                    onClick={() => { setHouse(h); setShowHousePicker(false); }}
+                    onClick={() => { setHouse(h); setEvaluateMode(h === 'evaluate' ? (evaluateMode || 'single') : null); setShowHousePicker(false); }}
                     className={cn(
                       'block w-full text-left px-4 py-2.5 text-fresco-sm hover:bg-fresco-light-gray transition-colors',
                       h === house ? 'text-fresco-black font-medium' : 'text-fresco-graphite-mid'
@@ -225,6 +228,36 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Evaluate mode — the legacy flow let users say what kind of
+              evaluation this is; the router guesses but must be overridable */}
+          {house === 'evaluate' && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {([
+                ['single', 'Single page', 'One page or feature'],
+                ['journey', 'Multi-step flow', 'A funnel or sequence'],
+                ['comparison', 'Two versions', 'A/B or current vs target'],
+              ] as const).map(([m, label, desc]) => {
+                const active = (evaluateMode || 'single') === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setEvaluateMode(m)}
+                    className={cn(
+                      'px-3 py-2 border text-left transition-colors',
+                      active
+                        ? 'border-fresco-black bg-fresco-black text-white'
+                        : 'border-fresco-border text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black'
+                    )}
+                  >
+                    <span className="block text-fresco-xs font-medium">{label}</span>
+                    <span className={cn('block text-[10px]', active ? 'text-white/60' : 'text-fresco-graphite-light')}>{desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Extracted answers — confirm cards */}
@@ -323,6 +356,28 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
             </div>
           </div>
         )}
+
+        {/* Optional URL — for Evaluate this is what grounds the analysis in
+            real page data; useful context for the other houses too */}
+        <div className="mb-8">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-2">
+            {house === 'evaluate' ? 'Page URL · strongly recommended' : 'URL · optional'}
+          </p>
+          <input
+            type="text"
+            value={url}
+            onChange={e => setUrl(e.target.value)}
+            placeholder={house === 'evaluate'
+              ? 'thepage.com/pricing — the analysis reads the actual page'
+              : 'A reference page, competitor, or doc link'}
+            className="w-full h-10 px-3 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors"
+          />
+          {house === 'evaluate' && !url.trim() && (
+            <p className="text-fresco-xs text-fresco-graphite-light mt-1.5">
+              Without a URL the verdict relies only on your description of the page.
+            </p>
+          )}
+        </div>
 
         {/* Run */}
         <div className="sticky bottom-0 -mx-4 md:mx-0 bg-fresco-white border-t border-fresco-border-light px-4 md:px-0 py-4">

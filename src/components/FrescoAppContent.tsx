@@ -446,6 +446,7 @@ export default function FrescoAppContent() {
     evaluateMode: EvaluateMode | null;
     answers: Record<string, ClarifiedAnswer>;
     router: RouterResult;
+    url: string;
   }) => {
     // Same gates as the old house start — routing is free, running is not.
     const isAnonymous = status !== 'authenticated';
@@ -499,6 +500,9 @@ export default function FrescoAppContent() {
         localStorage.setItem(`fresco-prompt-${session.id}`, payload.prompt);
         if (payload.evaluateMode) {
           localStorage.setItem(`fresco-evalmode-${session.id}`, payload.evaluateMode);
+        }
+        if (payload.url) {
+          localStorage.setItem(`fresco-url-${session.id}`, payload.url);
         }
         // "Run the analysis" means run — the session auto-starts on mount
         // instead of dropping the user back into the question flow.

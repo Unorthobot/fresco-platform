@@ -2279,7 +2279,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const handleAttach = (stepId: string, content: string) => {
     setAttachmentContext(prev => content ? { ...prev, [stepId]: content } : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== stepId)));
   };
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(() => {
+    try { return localStorage.getItem(`fresco-url-${sessionId}`) || ''; } catch { return ''; }
+  });
   // WP1 — the clarify screen seeds the routed mode and original prompt.
   const [evaluateMode, setEvaluateMode] = useState<'single' | 'journey' | 'comparison'>(() => {
     try {
