@@ -2190,6 +2190,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       return {
         house: houseId, fitLabel: ao.fitLabel ?? meta.output, fitStrength: ao.fitStrength ?? 'Mixed',
         verdict: ao.verdict ?? 'INVESTIGATE FURTHER', verdictRationale: ao.verdictRationale ?? '',
+        confidence: ao.confidence ?? 'low', flipCondition: ao.flipCondition ?? '',
         sentenceOfTruth: ao.sentenceOfTruth, keyIssues: ao.keyIssues ?? [],
         necessaryMoves: ao.necessaryMoves ?? [], suggestedNextHouse: ao.suggestedNextHouse ?? null,
         suggestedNextHouseReason: ao.suggestedNextHouseReason ?? '', outputLabel: ao.outputLabel ?? meta.output,
@@ -3345,7 +3346,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <div>
                   <p className="text-fresco-sm text-fresco-graphite-light mb-3">Answer the questions on the left — your results appear here.</p>
                   <div className="space-y-1 text-left inline-block">
-                    {['Verdict', 'Sentence of Truth', 'What\'s going wrong', 'What to do now'].map(item => (
+                    {['Verdict', 'Sentence of truth', 'Confidence + what would change it', 'Key issues & moves'].map(item => (
                       <div key={item} className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light/50">
                         <div className="w-1 h-1 rounded-full bg-fresco-graphite-light/30" />
                         {item}
@@ -3481,48 +3482,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 {/* ── DECISION TAB ─────────────────────────────────────── */}
                 {outputTab === 'decision' && (
                   <>
-                {/* YOUR INPUT — collapsed recap of what produced this verdict.
-                    Beta feedback: after submission the original prompt felt
-                    gone; keep it one tap away next to the verdict. */}
-                {(() => {
-                  const houseSteps = houseId === 'investigate' ? INVESTIGATE_STEPS
-                    : houseId === 'innovate' ? INNOVATE_STEPS
-                    : houseId === 'validate' ? VALIDATE_STEPS
-                    : evaluateMode === 'journey' ? EVALUATE_STEPS_JOURNEY
-                    : evaluateMode === 'comparison' ? EVALUATE_STEPS_COMPARISON
-                    : EVALUATE_STEPS_SINGLE;
-                  const answered = houseSteps.filter((s: any) => (values[s.id] || '').trim().length > 0);
-                  if (answered.length === 0) return null;
-                  return (
-                    <details className="border border-fresco-border-light bg-white group">
-                      <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-                        <span className="fresco-label">Your input</span>
-                        <span className="text-fresco-xs text-fresco-graphite-light group-open:hidden">
-                          {answered.length} answer{answered.length !== 1 ? 's' : ''} — tap to review
-                        </span>
-                        <ChevronDown className="w-3.5 h-3.5 text-fresco-graphite-light hidden group-open:block rotate-180" />
-                      </summary>
-                      <div className="px-4 pb-4 space-y-3 border-t border-fresco-border-light pt-3">
-                        {answered.map((s: any) => (
-                          <div key={s.id}>
-                            <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">{s.question}</p>
-                            <p className="text-fresco-sm text-fresco-graphite-soft whitespace-pre-wrap leading-relaxed">
-                              {serializeStructuredField(s.inputType || 'textarea', values[s.id] || '')}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  );
-                })()}
-
-                {/* SENTENCE OF TRUTH */}
-                <EditableSentenceOfTruth
-                  value={result.sentenceOfTruth}
-                  onSave={edited => db.setSentenceOfTruth(sessionId, edited)}
-                />
-
-                {/* VERDICT */}
+                {/* VERDICT — leads the output (WP2 spec Moment 4). Sentence of
+                    truth, confidence, and the supporting detail follow it. */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="fresco-label">Verdict</span>
@@ -3618,6 +3579,71 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   )}
                 </div>
 
+                {/* SENTENCE OF TRUTH — the memorable line, right under the verdict */}
+                <EditableSentenceOfTruth
+                  value={result.sentenceOfTruth}
+                  onSave={edited => db.setSentenceOfTruth(sessionId, edited)}
+                />
+
+                {/* CONFIDENCE + WHAT WOULD CHANGE IT (WP2). New engine output —
+                    absent on sessions that predate it, so render only when present. */}
+                {((result as any).confidence || (result as any).flipCondition) && (
+                  <div className="border border-fresco-border-light bg-white p-4">
+                    {(result as any).confidence && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="fresco-label">Confidence</span>
+                        <span className="flex items-center gap-1.5 text-fresco-xs font-medium text-fresco-black capitalize">
+                          {(['low', 'medium', 'high'] as const).map(level => {
+                            const rank = { low: 1, medium: 2, high: 3 };
+                            const on = rank[(result as any).confidence as 'low' | 'medium' | 'high'] >= rank[level];
+                            return <span key={level} className={cn('w-1.5 h-3', on ? 'bg-fresco-black' : 'bg-fresco-border')} />;
+                          })}
+                          <span className="ml-1">{(result as any).confidence}</span>
+                        </span>
+                      </div>
+                    )}
+                    {(result as any).flipCondition && (
+                      <div>
+                        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-1">What would change it</p>
+                        <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">{(result as any).flipCondition}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* YOUR INPUT — collapsed recap of what produced this verdict. */}
+                {(() => {
+                  const houseSteps = houseId === 'investigate' ? INVESTIGATE_STEPS
+                    : houseId === 'innovate' ? INNOVATE_STEPS
+                    : houseId === 'validate' ? VALIDATE_STEPS
+                    : evaluateMode === 'journey' ? EVALUATE_STEPS_JOURNEY
+                    : evaluateMode === 'comparison' ? EVALUATE_STEPS_COMPARISON
+                    : EVALUATE_STEPS_SINGLE;
+                  const answered = houseSteps.filter((s: any) => (values[s.id] || '').trim().length > 0);
+                  if (answered.length === 0) return null;
+                  return (
+                    <details className="border border-fresco-border-light bg-white group">
+                      <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+                        <span className="fresco-label">Your input</span>
+                        <span className="text-fresco-xs text-fresco-graphite-light group-open:hidden">
+                          {answered.length} answer{answered.length !== 1 ? 's' : ''} — tap to review
+                        </span>
+                        <ChevronDown className="w-3.5 h-3.5 text-fresco-graphite-light hidden group-open:block rotate-180" />
+                      </summary>
+                      <div className="px-4 pb-4 space-y-3 border-t border-fresco-border-light pt-3">
+                        {answered.map((s: any) => (
+                          <div key={s.id}>
+                            <p className="text-fresco-xs text-fresco-graphite-light mb-0.5">{s.question}</p>
+                            <p className="text-fresco-sm text-fresco-graphite-soft whitespace-pre-wrap leading-relaxed">
+                              {serializeStructuredField(s.inputType || 'textarea', values[s.id] || '')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })()}
+
                 {/* SEE THIS FROM A DIFFERENT ANGLE — lens picker.
                     Sits between the verdict and the supporting reasoning. The user
                     can flip lenses to compare verdicts without leaving this tab. */}
@@ -3664,33 +3690,52 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 )}
 
-                <div>
-                  <span className="fresco-label block mb-3">Key issues</span>
-                  <div className="space-y-2">
-                    {result.keyIssues.map((issue, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
-                        <div className="w-5 h-5 rounded-full border border-fresco-border flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-fresco-xs text-fresco-graphite-light">{i + 1}</span>
+                {/* Supporting detail — collapsed by default (WP2 progressive
+                    disclosure). The verdict, sentence of truth, and confidence
+                    carry the decision; issues and moves are there when wanted. */}
+                {result.keyIssues.length > 0 && (
+                  <details className="border border-fresco-border-light bg-white group" open>
+                    <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+                      <span className="fresco-label">Key issues</span>
+                      <span className="text-fresco-xs text-fresco-graphite-light">
+                        {result.keyIssues.length}
+                        <ChevronDown className="inline w-3.5 h-3.5 ml-1 text-fresco-graphite-light group-open:rotate-180 transition-transform" />
+                      </span>
+                    </summary>
+                    <div className="px-4 pb-4 space-y-2 border-t border-fresco-border-light pt-3">
+                      {result.keyIssues.map((issue, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
+                          <div className="w-5 h-5 rounded-full border border-fresco-border flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-fresco-xs text-fresco-graphite-light">{i + 1}</span>
+                          </div>
+                          <p className="text-fresco-sm text-fresco-graphite-soft">{issue}</p>
                         </div>
-                        <p className="text-fresco-sm text-fresco-graphite-soft">{issue}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
 
-                <div>
-                  <span className="fresco-label block mb-3">Recommended moves</span>
-                  <div className="space-y-2">
-                    {result.necessaryMoves.map((move, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
-                        <div className="w-5 h-5 rounded-full bg-fresco-black flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-fresco-xs text-white font-medium">{i + 1}</span>
+                {result.necessaryMoves.length > 0 && (
+                  <details className="border border-fresco-border-light bg-white group">
+                    <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+                      <span className="fresco-label">Recommended moves</span>
+                      <span className="text-fresco-xs text-fresco-graphite-light">
+                        {result.necessaryMoves.length}
+                        <ChevronDown className="inline w-3.5 h-3.5 ml-1 text-fresco-graphite-light group-open:rotate-180 transition-transform" />
+                      </span>
+                    </summary>
+                    <div className="px-4 pb-4 space-y-2 border-t border-fresco-border-light pt-3">
+                      {result.necessaryMoves.map((move, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-fresco-light-gray">
+                          <div className="w-5 h-5 rounded-full bg-fresco-black flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-fresco-xs text-white font-medium">{i + 1}</span>
+                          </div>
+                          <p className="text-fresco-sm text-fresco-graphite-soft">{move}</p>
                         </div>
-                        <p className="text-fresco-sm text-fresco-graphite-soft">{move}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
 
                 {/* Next analysis suggestion — led by the question it answers,
                     not the house that runs it. Houses are engine internals;
@@ -3721,8 +3766,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     )}>
                       {currentUsage >= limit ? (
                         <>
-                          <p className="text-fresco-sm font-medium text-white mb-1">You've used all your free runs</p>
-                          <p className="text-fresco-xs text-white/70 mb-3">Upgrade to keep analysing across all four houses.</p>
+                          <p className="text-fresco-sm font-medium text-white mb-1">You've used all your free verdicts</p>
+                          <p className="text-fresco-xs text-white/70 mb-3">Upgrade to Founder for unlimited verdicts.</p>
                           <button onClick={() => setShowPricingModal(true)}
                             className="w-full py-2 bg-white text-fresco-black text-fresco-xs font-medium hover:bg-fresco-light-gray transition-colors">
                             See plans →
@@ -3731,7 +3776,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       ) : (
                         <>
                           <p className="text-fresco-xs text-fresco-graphite-mid">
-                            {limit - currentUsage} of {limit} free house run{limit !== 1 ? 's' : ''} remaining this month.
+                            {limit - currentUsage} of {limit} free verdict{limit !== 1 ? 's' : ''} remaining this month.
                           </p>
                           <button onClick={() => setShowPricingModal(true)}
                             className="text-fresco-xs text-fresco-graphite-mid hover:text-fresco-black transition-colors mt-1 underline underline-offset-2">

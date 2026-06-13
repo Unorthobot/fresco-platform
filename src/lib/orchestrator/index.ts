@@ -30,6 +30,11 @@ export interface HouseResult {
   // Verdict
   verdict: 'GO' | 'PIVOT' | 'INVESTIGATE FURTHER' | 'STOP';
   verdictRationale: string;
+  // How sure the engine is, and the named condition that would flip the
+  // verdict (WP2). flipCondition is a concrete, checkable statement —
+  // e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms."
+  confidence: 'high' | 'medium' | 'low';
+  flipCondition: string;
   // Core outputs
   povStatement?: string;        // Investigate only
   sentenceOfTruth: string;
@@ -262,6 +267,9 @@ Produce the synthesis. Rules:
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to their situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
 - VERDICT RATIONALE: 1–2 sentences. Reference their specific situation.
+- TONE: The verdict and rationale are decisive — state the call plainly. But the reasoning is contextual, not absolute: write "some of your audience may read this as…" rather than "your X reads as…". Decisiveness lives in the verdict; humility lives in the reasoning.
+- CONFIDENCE: "high" | "medium" | "low" — how sure the evidence makes you of this verdict. Low when the input is thin or signals conflict.
+- FLIP CONDITION: one concrete, checkable sentence naming what would change the verdict — the specific evidence or outcome that would move it. e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms." Name a real threshold from their situation, not a generic "more data".
 - SYSTEMS OUTPUT: Extract structured data from agent artifacts. Fill in the systemsOutput fields using what the agents actually found. Do not leave fields as "..." — put real content from the analysis.${investigateExtra}
 
 Also extract the SYSTEMS THINKING outputs from the agent structured_artifacts. The agents have embedded frameworks in their outputs — surface them as structured data.
@@ -271,6 +279,8 @@ Respond ONLY with valid JSON:
   "fitStrength": "Strong | Shaky | Mixed",
   "verdict": "GO | PIVOT | INVESTIGATE FURTHER | STOP",
   "verdictRationale": "1-2 sentences directly answering whether ${houseName} fit exists",
+  "confidence": "high | medium | low",
+  "flipCondition": "One concrete sentence: the specific evidence or outcome that would change this verdict",
   "sentenceOfTruth": "The thing they sensed but hadn't articulated — the uncomfortable truth",
   "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
   "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
@@ -288,6 +298,8 @@ export function buildHouseResult(
     fitStrength: 'Strong' | 'Shaky' | 'Mixed';
     verdict: string;
     verdictRationale: string;
+    confidence?: 'high' | 'medium' | 'low';
+    flipCondition?: string;
     sentenceOfTruth: string;
     keyIssues: string[];
     necessaryMoves: string[];
@@ -314,6 +326,10 @@ export function buildHouseResult(
     fitStrength,
     verdict,
     verdictRationale: mergeResponse.verdictRationale,
+    // Confidence tracks fitStrength when the model doesn't state it.
+    confidence: mergeResponse.confidence
+      || (fitStrength === 'Strong' ? 'high' : fitStrength === 'Shaky' ? 'medium' : 'low'),
+    flipCondition: mergeResponse.flipCondition || '',
     povStatement: mergeResponse.povStatement || undefined,
     sentenceOfTruth: mergeResponse.sentenceOfTruth,
     keyIssues: (mergeResponse.keyIssues || []).slice(0, 5),
@@ -350,6 +366,8 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
     fitStrength: 'Mixed',
     verdict: 'INVESTIGATE FURTHER',
     verdictRationale: 'Multiple perspectives analysed. Review key issues and necessary moves before committing.',
+    confidence: 'low',
+    flipCondition: 'Add specific evidence — real numbers, quotes, or outcomes — and run again for a firmer verdict.',
     sentenceOfTruth: allSignals[0] || 'The real insight lies in the tension between what you know and what you\'re assuming.',
     keyIssues: dedup(allIssues, 5),
     necessaryMoves: dedup(allMoves, 5),
