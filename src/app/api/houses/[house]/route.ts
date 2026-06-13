@@ -12,6 +12,8 @@ import { NextRequest } from 'next/server';
 import { HOUSE_AGENTS, type HouseId } from '@/lib/agents';
 import type { AgentOutput } from '@/lib/orchestrator';
 import { buildMergePrompt, buildHouseResult, mergeAgentOutputsLocally } from '@/lib/orchestrator';
+import { auth } from '@/lib/auth';
+import { checkVerdictQuota, consumeVerdict } from '@/lib/entitlements';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -224,6 +226,26 @@ export async function POST(
     return new Response(JSON.stringify({ error: 'userInput required (min 10 chars)' }), { status: 400 });
   }
 
+  // ── Verdict quota (WP5) ───────────────────────────────────────────────────
+  // Server-side backstop for the free tier's monthly verdict limit. Only
+  // gates signed-in users — guests run on the client-side guest counter and
+  // have no account to meter (they hit the sign-up wall separately). Founder
+  // and studio are unlimited and pass straight through.
+  const session = await auth().catch(() => null);
+  const userId = session?.user?.id;
+  if (userId) {
+    const quota = await checkVerdictQuota(userId);
+    if (!quota.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: `You've used all ${quota.limit} of your free verdicts this month.`,
+          code: 'quota_exceeded',
+        }),
+        { status: 402, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
   // ── Evaluate: classify input type to determine agent emphasis ─────────────
   // Single page → Page Scorecard leads, Journey Trace light
   // Multiple pages/flow → all three, Journey Trace gets full context
@@ -401,6 +423,13 @@ export async function POST(
         }
 
         send({ type: 'verdict', ...verdictData });
+
+        // Meter the verdict against the user's monthly quota — only after a
+        // real verdict reaches the client, so a failed run never costs a
+        // credit. Fire-and-forget: a counter write must not delay delivery.
+        if (userId) {
+          consumeVerdict(userId).catch(() => { /* counter write is best-effort */ });
+        }
 
       } catch (err) {
         console.error('House stream error:', err);

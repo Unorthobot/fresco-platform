@@ -2551,7 +2551,17 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         body: JSON.stringify(body),
         signal: abort.signal,
       });
-      if (!response.ok) throw new Error('Request failed');
+      if (!response.ok) {
+        // Server-side quota wall (WP5): out of free verdicts → pricing modal,
+        // not a generic error. The client gate usually catches this first;
+        // this handles the backstop firing.
+        if (response.status === 402) {
+          setIsRunning(false);
+          setShowPricingModal(true);
+          return;
+        }
+        throw new Error('Request failed');
+      }
 
       if ((response.headers.get('content-type') || '').includes('text/event-stream')) {
         const reader = response.body!.getReader();
@@ -2728,8 +2738,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         }),
       });
       if (!res.ok) {
-        // Surface server errors instead of failing silently. Read the body
-        // for a useful message; fall back to the status code.
+        // Lenses are Founder+ (WP5). A 403 means upgrade, not failure —
+        // open the pricing modal and roll back the pending lens.
+        if (res.status === 403) {
+          setIsReframing(false);
+          setActiveLens(null);
+          setShowPricingModal(true);
+          return;
+        }
+        // Surface other server errors instead of failing silently. Read the
+        // body for a useful message; fall back to the status code.
         let serverMessage = '';
         try {
           const errBody = await res.json();

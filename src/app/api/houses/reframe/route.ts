@@ -5,6 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { HouseId } from '@/lib/agents';
 import type { AgentOutput } from '@/lib/orchestrator';
 import { buildHouseResult, HOUSE_FIT_LABELS } from '@/lib/orchestrator';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { canUseLenses } from '@/lib/entitlements';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -25,6 +28,23 @@ const LENS_INSTRUCTIONS: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   if (!ANTHROPIC_API_KEY) return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+
+  // ── Lens gating (WP5) ─────────────────────────────────────────────────────
+  // Lenses are a Founder+ feature. Block free and unauthenticated users — the
+  // client hides the picker for them, this is the server backstop.
+  const session = await auth().catch(() => null);
+  const userId = session?.user?.id;
+  let subscription: string | null = null;
+  if (userId) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { subscription: true } });
+    subscription = user?.subscription ?? 'free';
+  }
+  if (!canUseLenses(subscription)) {
+    return NextResponse.json(
+      { error: 'Lenses are a Founder feature. Upgrade to re-run from a different angle.', code: 'upgrade_required' },
+      { status: 403 }
+    );
+  }
 
   const body = await request.json();
   const house = body.house as HouseId;
