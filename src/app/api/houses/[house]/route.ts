@@ -343,6 +343,9 @@ export async function POST(
       try {
         const agentOutputs: AgentOutput[] = [];
 
+        // ── Stage: reading (WP3) — perceived progress before the first agent.
+        send({ type: 'stage', stage: 'reading' });
+
         // ── Send page fetch status if URL was provided ────────────────────────
         if (url && url.trim()) {
           send({
@@ -355,6 +358,9 @@ export async function POST(
               : null,
           });
         }
+
+        // ── Stage: analysing (WP3) — agents start running. ───────────────────
+        send({ type: 'stage', stage: 'analysing' });
 
         // ── Sequential execution ─────────────────────────────────────────────
         for (const agent of agents) {
@@ -405,6 +411,9 @@ export async function POST(
             agentOutputs.push(stub);
           }
         }
+
+        // ── Stage: forming (WP3) — synthesising the verdict. ─────────────────
+        send({ type: 'stage', stage: 'forming' });
 
         // ── Synthesis merge ──────────────────────────────────────────────────
         const hasOutput = agentOutputs.some(a => a.signal || a.key_findings.length > 0);

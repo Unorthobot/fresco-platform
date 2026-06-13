@@ -2316,6 +2316,8 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const inputScrollRef = useRef<HTMLDivElement>(null);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
+  // WP3 — server-driven generation stage: reading → analysing → forming.
+  const [stage, setStage] = useState<'reading' | 'analysing' | 'forming' | null>(null);
   const [storedAgentOutputs, setStoredAgentOutputs] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem(`fresco-agent-outputs-${sessionId}`);
@@ -2466,7 +2468,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     // WP0 funnel: first_submit once per session; run start time for TTV.
     runStartedAtRef.current = Date.now();
     trackOnce('first_submit', sessionId, { sessionId, meta: { house: houseId } });
-    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision');
+    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision'); setStage('reading');
     // Once the run starts, clear the handoff + seed markers so a refresh
     // doesn't re-seed. The values are already persisted to localStorage.
     try {
@@ -2582,6 +2584,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               const ev = JSON.parse(line.slice(6));
               if (ev.type === 'error') {
                 serverError = ev.message || 'The analysis failed on the server.';
+              } else if (ev.type === 'stage') {
+                if (ev.stage === 'reading' || ev.stage === 'analysing' || ev.stage === 'forming') {
+                  setStage(ev.stage);
+                }
               } else if (ev.type === 'pageFetch') {
                 if (ev.message) setPageFetchMessage(ev.message);
               } else if (ev.type === 'agent') {
@@ -2610,6 +2616,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 });
               } else if (ev.type === 'verdict') {
                 verdictReceived = true;
+                setStage(null);
                 // WP0 funnel: verdict rendered + time-to-verdict for this run.
                 track('verdict_rendered', {
                   sessionId,
@@ -2665,11 +2672,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       }
     }
     setIsRunning(false);
+    setStage(null);
   }, [canRun, values, url, houseId, sessions, workspaceId, sessionId]);
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    setStage(null);
     setIsRunning(false);
     setAgentEvents([]);
     setPageFetchMessage(null);
@@ -3372,7 +3381,35 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 transition={{ duration: 0.25 }}
                 className="mb-6 space-y-3"
               >
-                <span className="fresco-label block mb-3">Working through it…</span>
+                {/* WP3 — staged progress. The three stages advance on
+                    server-sent stage events; agent partials stream beneath. */}
+                {stage && (
+                  <div className="mb-4 flex items-center gap-2">
+                    {([
+                      { id: 'reading', label: 'Reading input' },
+                      { id: 'analysing', label: 'Running analysis' },
+                      { id: 'forming', label: 'Forming verdict' },
+                    ] as const).map((s, i) => {
+                      const order = { reading: 0, analysing: 1, forming: 2 };
+                      const cur = order[stage];
+                      const done = order[s.id] < cur;
+                      const active = order[s.id] === cur;
+                      return (
+                        <div key={s.id} className="flex items-center gap-2">
+                          <span className={cn(
+                            'font-mono text-[10px] uppercase tracking-[0.12em] transition-colors',
+                            active ? 'text-fresco-black font-medium' : done ? 'text-fresco-graphite-mid' : 'text-fresco-graphite-light/50'
+                          )}>
+                            {active && <Loader2 className="inline w-3 h-3 mr-1 animate-spin" />}
+                            {done && <Check className="inline w-3 h-3 mr-1" />}
+                            {s.label}
+                          </span>
+                          {i < 2 && <span className="text-fresco-graphite-light/40 text-[10px]">→</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {pageFetchMessage && (
                   <div className="mb-3 flex items-center gap-2 text-fresco-xs text-fresco-graphite-mid p-2 bg-fresco-light-gray">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
