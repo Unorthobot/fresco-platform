@@ -38,13 +38,6 @@ const HOUSE_ICONS: Record<HouseId, string> = {
   evaluate:    '/04-evaluate.png',
 };
 
-const HOUSE_NAMES: Record<HouseId, string> = {
-  investigate: 'Investigate',
-  innovate:    'Innovate',
-  validate:    'Validate',
-  evaluate:    'Evaluate',
-};
-
 const HOUSE_OUTPUTS: Record<HouseId, string> = {
   investigate: 'Is the problem real?',
   innovate:    'Will people want this?',
@@ -188,11 +181,11 @@ export function OrchestrationPanel({ workspaceTitle, sessions, onStartHouse }: O
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                       <span className="text-fresco-xs text-fresco-graphite-light uppercase tracking-wide">
-                        {HOUSE_NAMES[result.nextHouse]}
+                        Next question
                       </span>
                     </div>
                     <p className="text-fresco-sm font-medium text-fresco-black">
-                      → {HOUSE_OUTPUTS[result.nextHouse]}
+                      {HOUSE_OUTPUTS[result.nextHouse]}
                     </p>
                     <p className="text-fresco-sm text-fresco-graphite-mid mt-1">{result.recommendation}</p>
                   </div>
@@ -215,11 +208,6 @@ export function OrchestrationPanel({ workspaceTitle, sessions, onStartHouse }: O
                               isTarget  ? 'bg-fresco-graphite-light' :
                                           'bg-fresco-border'
                             }`} />
-                            <span className={`text-fresco-xs ${
-                              isTarget ? 'text-fresco-black font-medium' : 'text-fresco-graphite-light'
-                            }`}>
-                              {h.slice(0, 3)}
-                            </span>
                           </div>
                         );
                       })}
@@ -232,7 +220,7 @@ export function OrchestrationPanel({ workspaceTitle, sessions, onStartHouse }: O
                       onClick={() => onStartHouse?.(result.nextHouse)}
                       className="flex-1 flex items-center justify-center gap-2 h-9 bg-fresco-black text-white text-fresco-sm font-medium hover:bg-fresco-graphite transition-colors rounded-none"
                     >
-                      Run {HOUSE_NAMES[result.nextHouse]}
+                      Run this next
                       <ArrowRight className="w-4 h-4" />
                     </button>
                     <button

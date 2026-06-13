@@ -356,7 +356,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                     className="absolute right-0 top-full mt-2 w-72 bg-fresco-white rounded-none shadow-lg border border-fresco-border z-50 overflow-hidden"
                   >
                     <div className="p-3 border-b border-fresco-border-light bg-fresco-light-gray/50">
-                      <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider">Select a house</span>
+                      <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wider">What are you deciding?</span>
                     </div>
                     <div className="p-2">
                       {(['investigate', 'innovate', 'validate', 'evaluate'] as HouseId[]).map((houseId) => {
@@ -374,8 +374,8 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                               onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                             <div className="flex-1 min-w-0">
-                              <div className="text-fresco-sm font-medium text-fresco-black">{house.name}</div>
-                              <div className="text-fresco-xs text-fresco-graphite-light truncate">→ {house.output}</div>
+                              <div className="text-fresco-sm font-medium text-fresco-black">{house.output}</div>
+                              <div className="text-fresco-xs text-fresco-graphite-light truncate">{house.name} analysis</div>
                             </div>
                             <ArrowRight className="w-4 h-4 text-fresco-graphite-light flex-shrink-0" />
                           </button>
@@ -454,23 +454,18 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
                   {workspaceSessions.length === 0 ? (
                     <div className="border-2 border-dashed border-fresco-border p-10 text-center">
                       <h3 className="text-fresco-lg font-medium text-fresco-black mb-2">What are you trying to decide?</h3>
-                      <p className="text-fresco-sm text-fresco-graphite-mid mb-6 max-w-sm mx-auto">Select a house to begin. Each house runs three specialist agents and returns a verdict.</p>
-                      <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+                      <p className="text-fresco-sm text-fresco-graphite-mid mb-6 max-w-sm mx-auto">Pick the question closest to your decision — Fresco runs the right analysis and returns a verdict.</p>
+                      <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
                         {(['investigate', 'innovate', 'validate', 'evaluate'] as HouseId[]).map((houseId) => {
                           const house = HOUSE_META[houseId];
                           return (
                             <button
                               key={houseId}
                               onClick={() => onStartHouse?.(houseId)}
-                              className="flex flex-col items-center gap-2 p-3 border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all rounded-none"
+                              className="flex flex-col items-start gap-1 p-3 border border-fresco-border hover:bg-fresco-light-gray hover:border-fresco-graphite-light transition-all rounded-none text-left"
                             >
-                              <img
-                                src={house.icon}
-                                alt={house.name}
-                                className="w-5 h-5 icon-themed"
-                                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                              />
-                              <span className="text-fresco-xs font-medium text-fresco-black">{house.name}</span>
+                              <span className="text-fresco-sm font-medium text-fresco-black">{house.output}</span>
+                              <span className="text-fresco-xs text-fresco-graphite-light">{house.name} analysis</span>
                             </button>
                           );
                         })}
@@ -675,7 +670,7 @@ export function WorkspaceOverview({ workspaceId, onBack, onOpenSession, onStartT
               })).filter(h => h.count > 0);
               return (
                 <div>
-                  <span className="fresco-label block mb-3">Houses run</span>
+                  <span className="fresco-label block mb-3">Analyses run</span>
                   <div className="space-y-1.5">
                     {houseRuns.map(({ house, count, verdict }) => (
                       <div key={house} className="flex items-center justify-between py-1.5 border-b border-fresco-border-light last:border-0">

@@ -17,13 +17,6 @@ interface JourneyMapProps {
 
 const HOUSE_ORDER: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
 
-const HOUSE_AGENTS: Record<HouseId, string[]> = {
-  investigate: ['Insight Stack', 'Belief Mapper', 'Position Builder'],
-  innovate:    ['Flow Board', 'Strategy Sketchbook', 'Experiment Brief'],
-  validate:    ['Experience Scorecard', 'Influence Map', 'Results Tracker'],
-  evaluate:    ['Page Scorecard', 'Variant Lens', 'Journey Trace'],
-};
-
 export function JourneyMap({ sessions, onSessionClick, onHouseStart, className }: JourneyMapProps) {
   const sessionsByHouse = useMemo(() => {
     const map: Record<HouseId, Session[]> = {
@@ -45,7 +38,6 @@ export function JourneyMap({ sessions, onSessionClick, onHouseStart, className }
         const latestSession = houseSessions[0];
         const verdict = latestSession?.aiOutputs?.verdict;
         const sentenceOfTruth = latestSession?.sentenceOfTruth?.content;
-        const agents = HOUSE_AGENTS[houseId];
 
         return (
           <motion.div
@@ -72,8 +64,8 @@ export function JourneyMap({ sessions, onSessionClick, onHouseStart, className }
                     }
                   </div>
                   <div>
-                    <p className="text-fresco-sm font-medium text-fresco-black">{house.name}</p>
-                    <p className="text-fresco-xs text-fresco-graphite-light">→ {house.output}</p>
+                    <p className="text-fresco-sm font-medium text-fresco-black">{house.output}</p>
+                    <p className="text-fresco-xs text-fresco-graphite-light">{house.name} analysis</p>
                   </div>
                 </div>
 
@@ -89,18 +81,6 @@ export function JourneyMap({ sessions, onSessionClick, onHouseStart, className }
                     {verdict}
                   </span>
                 )}
-              </div>
-
-              {/* Agent pills */}
-              <div className="px-4 py-3 flex items-center gap-2 border-b border-fresco-border-light/50">
-                {agents.map((agent, ai) => (
-                  <span key={agent} className="flex items-center gap-1">
-                    <span className="text-[10px] text-fresco-graphite-light bg-fresco-light-gray px-2 py-0.5 rounded-full">
-                      {agent}
-                    </span>
-                    {ai < agents.length - 1 && <ArrowRight className="w-2.5 h-2.5 text-fresco-border" />}
-                  </span>
-                ))}
               </div>
 
               {/* Sessions or CTA */}
@@ -148,7 +128,7 @@ export function JourneyMap({ sessions, onSessionClick, onHouseStart, className }
                     <div>
                       <p className="text-fresco-xs font-medium text-fresco-black">{house.description}</p>
                       <p className="text-fresco-xs text-fresco-graphite-light mt-0.5 flex items-center gap-1">
-                        Run {house.name} <ArrowRight className="w-3 h-3" />
+                        Run this <ArrowRight className="w-3 h-3" />
                       </p>
                     </div>
                   </button>

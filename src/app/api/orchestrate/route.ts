@@ -68,10 +68,10 @@ function rulesBasedOrchestration(
       if (prevDone || house === 'investigate') {
         return {
           nextHouse: house,
-          recommendation: `Run ${HOUSE_NAMES[house]} to get your ${HOUSE_OUTPUTS[house]} assessment.`,
+          recommendation: `Find out: ${HOUSE_OUTPUTS[house]}`,
           reasoning: house === 'investigate'
             ? 'Start here. Define the real problem before moving toward solutions.'
-            : `You have ${sessionsWithOutput} completed session${sessionsWithOutput !== 1 ? 's' : ''}. ${HOUSE_NAMES[house]} is the logical next step.`,
+            : `You have ${sessionsWithOutput} completed session${sessionsWithOutput !== 1 ? 's' : ''}. That's the logical next question.`,
           urgency: house === 'investigate' ? 'high' : 'medium',
           houseProgress,
         };
@@ -82,7 +82,7 @@ function rulesBasedOrchestration(
   // All houses done — suggest re-running Investigate with new insight
   return {
     nextHouse: 'investigate',
-    recommendation: 'Run Investigate again — your Evaluate findings may reveal the original problem was framed incorrectly.',
+    recommendation: 'Re-test whether the problem is real — your latest findings may reveal it was framed incorrectly.',
     reasoning: 'You\'ve completed all four houses. The most valuable next move is to loop back to Investigate with the perspective you\'ve now gained.',
     urgency: 'low',
     houseProgress,
@@ -128,10 +128,14 @@ Rules:
 - If Evaluate reveals commercial issues → route to Validate
 - Be specific: reference what the sessions actually revealed
 
+nextHouse is internal routing — the user never sees it. The recommendation
+the user reads must lead with the QUESTION to answer next, never the house
+name ("Find out whether people actually want this" — not "Run Innovate").
+
 Respond ONLY with valid JSON:
 {
   "nextHouse": "investigate|innovate|validate|evaluate",
-  "recommendation": "One direct sentence: which house and why",
+  "recommendation": "One direct sentence framing the next question to answer — no house names",
   "reasoning": "2-3 sentences: what the sessions reveal that makes this the right move",
   "urgency": "high|medium|low"
 }`;
