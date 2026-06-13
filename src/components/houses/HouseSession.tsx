@@ -3139,49 +3139,50 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             </div>
           )}
 
-          {/* House-specific conversation. Router-originated sessions store
-              plain text keyed by the canonical question ids — editing must
-              show those exact fields. The legacy structured forms (Evaluate
-              brief, option cards, metrics tables) JSON.parse their values
-              and render the clarify answers as empty fields. */}
+          {/* Canonical questions, plain textareas — the one question UI for
+              every session (clarify, handoff/next-house, anything). The legacy
+              ConversationFlow (agent badges, "Question N of 4", progress strip,
+              starter phrases, structured forms) is retired: houses are engine
+              internals, the user just answers questions. */}
           <div className="mb-8">
-            {originalPrompt ? (
-              <>
-                <div className="space-y-6">
-                  {questionsFor(houseId, evaluateMode).map(q => (
-                    <div key={q.id}>
-                      <p className="text-fresco-base font-medium text-fresco-black mb-1">{q.question}</p>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-2">
-                        NEEDED FOR · {q.whyItMatters}
-                      </p>
-                      <textarea
-                        value={values[q.id] || ''}
-                        onChange={e => setValue(q.id, e.target.value)}
-                        placeholder="A sentence or two is enough"
-                        className="w-full px-3 py-2.5 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors resize-none leading-relaxed"
-                        style={{ minHeight: 90 }}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <UniversalUrlInput url={url} onUrlChange={setUrl} />
-              </>
-            ) : (
-              <>
-                {houseId === 'investigate' && (
-                  <><ConversationFlow steps={INVESTIGATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
-                )}
-                {houseId === 'innovate' && (
-                  <><ConversationFlow steps={INNOVATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
-                )}
-                {houseId === 'validate' && (
-                  <><ConversationFlow steps={VALIDATE_STEPS} values={values} onChange={setValue} onAttach={handleAttach} /><UniversalUrlInput url={url} onUrlChange={setUrl} /></>
-                )}
-                {houseId === 'evaluate' && (
-                  <EvaluateFlow values={values} onChange={setValue} url={url} onUrlChange={setUrl} mode={evaluateMode} onModeChange={setEvaluateMode} onAttach={handleAttach} />
-                )}
-              </>
+            {houseId === 'evaluate' && (
+              <div className="flex flex-wrap gap-1.5 mb-6">
+                {([
+                  ['single', 'Single page', 'One page or feature'],
+                  ['journey', 'Multi-step flow', 'A funnel or sequence'],
+                  ['comparison', 'Two versions', 'A/B or current vs target'],
+                ] as const).map(([m, label, desc]) => {
+                  const active = evaluateMode === m;
+                  return (
+                    <button key={m} type="button" onClick={() => setEvaluateMode(m)}
+                      className={cn('px-3 py-2 border text-left transition-colors',
+                        active ? 'border-fresco-black bg-fresco-black text-white'
+                          : 'border-fresco-border text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black')}>
+                      <span className="block text-fresco-xs font-medium">{label}</span>
+                      <span className={cn('block text-[10px]', active ? 'text-white/60' : 'text-fresco-graphite-light')}>{desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
             )}
+            <div className="space-y-6">
+              {questionsFor(houseId, evaluateMode).map(q => (
+                <div key={q.id}>
+                  <p className="text-fresco-base font-medium text-fresco-black mb-1">{q.question}</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-2">
+                    NEEDED FOR · {q.whyItMatters}
+                  </p>
+                  <textarea
+                    value={values[q.id] || ''}
+                    onChange={e => setValue(q.id, e.target.value)}
+                    placeholder="A sentence or two is enough"
+                    className="w-full px-3 py-2.5 text-fresco-sm text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors resize-none leading-relaxed"
+                    style={{ minHeight: 90 }}
+                  />
+                </div>
+              ))}
+            </div>
+            <UniversalUrlInput url={url} onUrlChange={setUrl} />
           </div>
         </div>
         </div>
