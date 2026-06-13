@@ -11,7 +11,17 @@ import { useFrescoStore } from '@/lib/store';
 import { getGuestRunCount, GUEST_RUN_LIMIT } from '@/lib/guestRuns';
 import { formatRelativeTime } from '@/lib/utils';
 import type { RouterResult } from '@/lib/houseQuestions';
+import { HOUSE_META, type HouseId } from '@/lib/agents';
 import { ExampleSessionModal } from './ExampleSessionModal';
+
+// Verdict accent tokens — the one chromatic note. Dot only; the label stays
+// monochrome so the log reads calm at a glance.
+const VERDICT_ACCENT: Record<string, string> = {
+  'GO': 'var(--verdict-go-accent)',
+  'PIVOT': 'var(--verdict-pivot-accent)',
+  'STOP': 'var(--verdict-stop-accent)',
+  'INVESTIGATE FURTHER': 'var(--verdict-signal-accent)',
+};
 
 const PLACEHOLDER =
   "e.g. We've spent six weeks redesigning onboarding, but drop-off happens before step 3 even loads. Do we keep going or stop?";
@@ -62,7 +72,11 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
     : Math.min(user?.aiGenerationsThisMonth || 0, monthlyLimit);
   const runsLeft = Math.max(0, (isGuest ? GUEST_RUN_LIMIT : monthlyLimit) - runsUsed);
 
-  const recentSessions = getRecentSessions(4);
+  // Decision log (WP4) — past verdicts, most recent first. A session counts
+  // once it has produced a verdict; in-progress sessions stay out of the log.
+  const decisions = getRecentSessions(20)
+    .filter(s => (s as any).aiOutputs?.verdict || (s as any).aiOutputs?.houseResult?.verdict)
+    .slice(0, 6);
 
   const startVoice = async () => {
     try {
@@ -256,37 +270,66 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
             </div>
           )}
 
-          {/* Recent verdicts — compact, until WP4's decision log */}
-          {recentSessions.length > 0 && (
+          {/* Decision log (WP4 / spec Moment 5) — every verdict you've reached,
+              one row each: the decision, its verdict, which analysis, when.
+              Click to revisit; "run again" re-tests with new evidence. The
+              structural thing a chat can't do. */}
+          {decisions.length > 0 && (
             <div className="mt-12">
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-3">
-                Recent
+                Your decisions
               </p>
               <div className="border border-fresco-border-light bg-fresco-white divide-y divide-fresco-border-light">
-                {recentSessions.map(s => {
+                {decisions.map(s => {
                   const verdict = (s as any).aiOutputs?.verdict || (s as any).aiOutputs?.houseResult?.verdict;
+                  const accent = VERDICT_ACCENT[verdict] || VERDICT_ACCENT['INVESTIGATE FURTHER'];
+                  const houseType = (s as any).houseType as HouseId | undefined;
+                  const houseName = houseType ? HOUSE_META[houseType]?.name : null;
+                  // Lead with the decision the user faced (their prompt), not
+                  // the engine's sentence of truth — this is a log of decisions.
+                  const line = (s as any).routerOutput?.prompt
+                    || (s as any).title
+                    || (s as any).sentenceOfTruth?.content
+                    || 'Untitled decision';
                   return (
-                    <button
+                    <div
                       key={s.id}
-                      type="button"
-                      onClick={() => onNavigateToSession?.(s.id, s.workspaceId)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-fresco-light-gray transition-colors"
+                      className="group flex items-center justify-between px-4 py-3 hover:bg-fresco-light-gray transition-colors"
                     >
-                      <span className="text-fresco-sm text-fresco-black truncate pr-4">
-                        {(s as any).title || (s as any).sentenceOfTruth?.content || 'Untitled session'}
-                      </span>
-                      <span className="flex items-center gap-3 flex-shrink-0">
-                        {verdict && (
-                          <span className="font-mono text-[10px] uppercase tracking-wide text-fresco-graphite-mid">
-                            {verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : verdict}
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToSession?.(s.id, s.workspaceId)}
+                        className="flex items-start gap-3 min-w-0 flex-1 text-left"
+                      >
+                        <span className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ background: accent }} />
+                        <span className="min-w-0">
+                          <span className="block text-fresco-sm text-fresco-black truncate">{line}</span>
+                          <span className="flex items-center gap-2 mt-0.5">
+                            <span className="font-mono text-[10px] uppercase tracking-wide text-fresco-graphite-mid">
+                              {verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : verdict}
+                            </span>
+                            {houseName && (
+                              <>
+                                <span className="text-fresco-graphite-light/40 text-[10px]">·</span>
+                                <span className="text-[10px] text-fresco-graphite-light">{houseName}</span>
+                              </>
+                            )}
+                            <span className="text-fresco-graphite-light/40 text-[10px]">·</span>
+                            <span className="text-[10px] text-fresco-graphite-light flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              {formatRelativeTime(new Date(s.updatedAt))}
+                            </span>
                           </span>
-                        )}
-                        <span className="text-fresco-xs text-fresco-graphite-light flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatRelativeTime(new Date(s.updatedAt))}
                         </span>
-                      </span>
-                    </button>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToSession?.(s.id, s.workspaceId)}
+                        className="flex-shrink-0 ml-3 text-fresco-xs text-fresco-graphite-light opacity-0 group-hover:opacity-100 hover:text-fresco-black transition-all flex items-center gap-1"
+                      >
+                        Open <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
