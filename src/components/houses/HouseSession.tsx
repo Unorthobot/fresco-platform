@@ -12,7 +12,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft, Sparkles, Loader2, ArrowRight,
+  ChevronLeft, Loader2, ArrowRight,
   Copy, Check, Download, X, Mic, MicOff, Upload, ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -3243,9 +3243,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 onClick={handleRunWithChallenge}
                 disabled={!canRun}
                 className={cn('fresco-btn w-full', !canRun && 'opacity-40 cursor-not-allowed')}>
-                {/* "Think it through" was the legacy framing; the verdict
-                    flow says what the button does. */}
-                <Sparkles className="w-4 h-4" /><span>{result ? 'Run again' : 'Run the analysis'}</span>
+                {/* Matches the clarify "Run the analysis →" button exactly —
+                    same outlined fresco-btn, arrow suffix, no icon prefix. */}
+                <span>{result ? 'Run again' : 'Run the analysis'}</span><ArrowRight className="w-4 h-4" />
               </button>
             )}
             {!canRun && !isRunning && !runError && (
