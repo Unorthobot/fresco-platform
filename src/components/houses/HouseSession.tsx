@@ -2468,7 +2468,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     // WP0 funnel: first_submit once per session; run start time for TTV.
     runStartedAtRef.current = Date.now();
     trackOnce('first_submit', sessionId, { sessionId, meta: { house: houseId } });
-    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision'); setStage('reading');
+    setIsRunning(true); setResult(null); setRunError(null); setAgentEvents([]); setStoredAgentOutputs([]); setPageFetchMessage(null); setOutputTab('decision'); setStage('reading'); setInputsExpanded(false);
     // Once the run starts, clear the handoff + seed markers so a refresh
     // doesn't re-seed. The values are already persisted to localStorage.
     try {
@@ -2984,6 +2984,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   // primary answer for sessions that predate the router.
   const railPrompt = originalPrompt || (values[primaryField] || '').trim() || workspace?.title || null;
   const collapseInputs = (isRunning || !!result) && !inputsExpanded;
+  // Editing post-verdict: "View & edit inputs" returns the full-width input
+  // screen (output hidden) — the same view as before the first run, so
+  // "Run again" is identical to "Run the analysis". A half-width split here
+  // was fragile and read as "the output panel just got wider".
+  const editing = !!result && inputsExpanded;
 
   return (
     <>
@@ -3010,9 +3015,11 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         // inputs are expanded to edit/re-run post-verdict, so the run button
         // matches the original "Run the analysis" exactly (the 440px middle
         // state made "Run again" a different, narrower button).
+        // Explicit values both ways — framer-motion ignores animating to
+        // undefined, which left the column stuck at 300px when un-collapsing.
         animate={isDesktop ? {
-          flexBasis: collapseInputs ? '300px' : undefined,
-          maxWidth: collapseInputs ? '300px' : undefined,
+          flexBasis: collapseInputs ? '300px' : 'auto',
+          maxWidth: collapseInputs ? '300px' : '100%',
         } : {}}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
         className={cn("md:flex-1 flex flex-col md:overflow-hidden", (result || collapseInputs) && "md:border-r border-fresco-border-light md:flex-shrink-0")}
@@ -3264,7 +3271,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         // plays out in a 360px strip beside dead space.
         animate={isDesktop ? { flex: (result || collapseInputs) ? '1 1 0%' : '0 0 360px', minWidth: 320 } : {}}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
-        className="flex flex-col border-t border-fresco-border-light bg-fresco-off-white md:overflow-hidden md:border-t-0 md:border-l"
+        // Hidden while editing inputs — the input screen takes the full width
+        // so re-running is the same experience as the first run.
+        className={cn("flex flex-col border-t border-fresco-border-light bg-fresco-off-white md:overflow-hidden md:border-t-0 md:border-l", editing && "hidden")}
       >
         <div className="md:flex-1 md:overflow-y-auto" ref={outputScrollRef}>
         <div className="px-6 pt-6 pb-6">
