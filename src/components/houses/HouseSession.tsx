@@ -3006,13 +3006,17 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           called unusable below 700px. On mobile the panels stack and the
           document scrolls naturally. */}
       <motion.div
+        // Collapsed → slim 300px rail. Otherwise full width — including when
+        // inputs are expanded to edit/re-run post-verdict, so the run button
+        // matches the original "Run the analysis" exactly (the 440px middle
+        // state made "Run again" a different, narrower button).
         animate={isDesktop ? {
-          flexBasis: collapseInputs ? '300px' : result ? '440px' : undefined,
-          maxWidth: collapseInputs ? '300px' : result ? '440px' : undefined,
+          flexBasis: collapseInputs ? '300px' : undefined,
+          maxWidth: collapseInputs ? '300px' : undefined,
         } : {}}
         transition={{ duration: 0.35, ease: 'easeInOut' }}
         className={cn("md:flex-1 flex flex-col md:overflow-hidden", (result || collapseInputs) && "md:border-r border-fresco-border-light md:flex-shrink-0")}
-        style={{ minWidth: isDesktop && (result || collapseInputs) ? (collapseInputs ? 280 : 360) : undefined }}
+        style={{ minWidth: isDesktop && collapseInputs ? 280 : undefined }}
       >
         {/* Scrollable content */}
         <div className="md:flex-1 md:overflow-y-auto" ref={inputScrollRef}>
@@ -3187,9 +3191,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         </div>
         </div>
 
-        {/* #3 — Sticky Run footer. On mobile the page itself scrolls, so the
-            footer pins to the viewport bottom; left padding keeps it clear of
-            the fixed hamburger button. */}
+        {/* #3 — Sticky Run footer. Hidden in the collapsed rail post-verdict
+            (re-run goes through "View & edit inputs", which restores the
+            full-width run button) — but kept during a run so Stop stays
+            reachable. On mobile the page scrolls, so the footer pins to the
+            viewport bottom; left padding clears the fixed hamburger. */}
+        {(!collapseInputs || isRunning) && (
         <div className="sticky bottom-0 z-40 md:static border-t border-fresco-border-light bg-fresco-white pl-20 pr-4 md:px-8 py-4">
           <div className="max-w-[640px] mx-auto">
             <AnimatePresence>
@@ -3247,6 +3254,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             )}
           </div>
         </div>
+        )}
       </motion.div>
 
       {/* ── RIGHT: Output ──────────────────────────────────────────────────── */}
