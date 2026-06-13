@@ -114,6 +114,13 @@ export default function FrescoAppContent() {
 
   // Update view based on active state
   useEffect(() => {
+    // While the clarify screen is up, "Run the analysis" creates the
+    // workspace + session, which sets activeWorkspaceId/activeSessionId in
+    // the store. Those changes fire this effect — and because activeSection
+    // is still 'home' (clarify is a view, not a section), it would force
+    // currentView back to 'home' for a frame (the home flash) before the
+    // explicit navigation lands. Leave the view alone while clarifying.
+    if (clarify) return;
     if (activeSection === 'archive') {
       setCurrentView('archive');
     } else if (activeSection === 'settings') {
@@ -132,7 +139,7 @@ export default function FrescoAppContent() {
     } else {
       setCurrentView('home');
     }
-  }, [activeSessionId, activeWorkspaceId, activeSection]);
+  }, [activeSessionId, activeWorkspaceId, activeSection, clarify]);
 
   // Handle deleted session - navigate back to workspace or home
   useEffect(() => {
