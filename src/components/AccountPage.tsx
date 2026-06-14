@@ -257,7 +257,7 @@ export function AccountPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">Verdicts (this month)</p>
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-none">
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white capitalize">{currentPlan}</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{currentPlan === 'free' ? 'Free' : 'Founder'}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Current Plan</p>
               </div>
             </div>
@@ -280,12 +280,12 @@ export function AccountPage() {
             }`}>
               <div className="flex items-center gap-2 mb-1">
                 {currentPlan !== 'free' && <Crown className="w-4 h-4 text-amber-500" />}
-                <p className="font-medium text-gray-900 dark:text-white capitalize">{currentPlan === 'pro' ? 'Founder' : currentPlan} Plan</p>
+                <p className="font-medium text-gray-900 dark:text-white">{currentPlan === 'free' ? 'Free' : 'Founder'} Plan</p>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {currentPlan === 'free' ? '3 verdicts a month · full engine, full reasoning' :
-                 currentPlan === 'pro' ? 'Unlimited verdicts · decision memory · all lenses' :
-                 'Everything in Founder + team features'}
+                {currentPlan === 'free'
+                  ? '3 verdicts a month · full engine, full reasoning'
+                  : 'Unlimited verdicts · decision memory · all lenses'}
               </p>
             </div>
 

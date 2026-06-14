@@ -23,7 +23,9 @@ export function SettingsPage() {
 
   // ── Plan & usage ──────────────────────────────────────────────────────────
   const tier = user?.subscription || 'free';
-  const planLabel = tier === 'pro' ? 'Founder' : tier === 'studio' ? 'Studio' : 'Free';
+  // 'studio' is the grandfathered internal tier — surface it as Founder, the
+  // only public paid name (functionally equivalent: unlimited verdicts + lenses).
+  const planLabel = tier === 'free' ? 'Free' : 'Founder';
   const monthlyLimit = getUsageLimits().aiGenerationsPerMonth; // -1 = unlimited
   const currentMonth = new Date().toISOString().slice(0, 7);
   const usedThisMonth = user?.aiGenerationsResetDate === currentMonth ? (user?.aiGenerationsThisMonth || 0) : 0;
