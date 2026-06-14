@@ -2,25 +2,40 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sun, Moon, Bell, Shield, Download, Trash2, Check, Zap } from 'lucide-react';
+import { Sun, Moon, Shield, Download, Trash2, Check } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
+import { useDBWrite } from '@/lib/useDBSync';
 import { useTheme } from '@/lib/theme';
+import { downloadJSON } from '@/lib/export';
 import { cn } from '@/lib/utils';
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
-  return (
-    <button onClick={() => onChange(!checked)} className={cn('relative w-11 h-6 rounded-full transition-colors', checked ? 'bg-fresco-black dark:bg-white' : 'bg-fresco-border dark:bg-gray-600')}>
-      <motion.div animate={{ x: checked ? 22 : 2 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} className="absolute top-1 w-4 h-4 bg-white dark:bg-fresco-black rounded-full shadow-sm" />
-    </button>
-  );
-}
-
 export function SettingsPage() {
-  const { sessions, workspaces, settings, updateSettings } = useFrescoStore();
+  const { sessions, workspaces } = useFrescoStore();
+  const db = useDBWrite();
   const { theme, setTheme } = useTheme();
   const [saved, setSaved] = useState(false);
-  
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+  const handleExport = () => {
+    downloadJSON(
+      { exportedAt: new Date().toISOString(), workspaces, sessions },
+      `fresco-export-${new Date().toISOString().slice(0, 10)}.json`
+    );
+  };
+
+  const handleDeleteAll = async () => {
+    setDeleting(true);
+    // Deleting each workspace cascades its sessions in the store and fires the
+    // DB delete for authenticated users.
+    for (const w of [...workspaces]) {
+      await db.deleteWorkspace(w.id);
+    }
+    setDeleting(false);
+    setConfirmDelete(false);
+  };
 
   return (
     <div className="min-h-screen fresco-grid-bg-subtle">
@@ -41,14 +56,14 @@ export function SettingsPage() {
               {theme === 'light' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               Appearance
             </h2>
-            <div className="flex items-center justify-between py-4 border-b border-fresco-border-light">
+            <div className="flex items-center justify-between py-4">
               <div>
                 <p className="text-fresco-base text-fresco-black">Theme</p>
                 <p className="text-fresco-sm text-fresco-graphite-light">Switch between light and dark mode</p>
               </div>
               <div className="flex gap-2">
-                <button 
-                  onClick={() => { setTheme('light'); showSaved(); }} 
+                <button
+                  onClick={() => { setTheme('light'); showSaved(); }}
                   className={cn(
                     'flex items-center gap-2 px-4 py-2 text-fresco-sm rounded-fresco transition-colors',
                     theme === 'light' ? 'bg-fresco-black text-white' : 'border border-fresco-border text-fresco-graphite-mid hover:bg-fresco-light-gray dark:hover:bg-gray-700'
@@ -57,8 +72,8 @@ export function SettingsPage() {
                   <Sun className="w-4 h-4" />
                   Light
                 </button>
-                <button 
-                  onClick={() => { setTheme('dark'); showSaved(); }} 
+                <button
+                  onClick={() => { setTheme('dark'); showSaved(); }}
                   className={cn(
                     'flex items-center gap-2 px-4 py-2 text-fresco-sm rounded-fresco transition-colors',
                     theme === 'dark' ? 'bg-white text-fresco-black' : 'border border-fresco-border text-fresco-graphite-mid hover:bg-fresco-light-gray dark:hover:bg-gray-700'
@@ -68,25 +83,6 @@ export function SettingsPage() {
                   Dark
                 </button>
               </div>
-            </div>
-            <div className="flex items-center justify-between py-4">
-              <div>
-                <p className="text-fresco-base text-fresco-black">Notifications</p>
-                <p className="text-fresco-sm text-fresco-graphite-light">Enable browser notifications</p>
-              </div>
-              <Toggle checked={settings.notifications} onChange={(v) => { updateSettings({ notifications: v }); showSaved(); }} />
-            </div>
-          </div>
-
-          {/* AI Preferences */}
-          <div className="fresco-card p-6">
-            <h2 className="text-fresco-lg font-medium text-fresco-black mb-6 flex items-center gap-2"><Zap className="w-5 h-5" />AI</h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-fresco-base text-fresco-black">Auto-generate insights</p>
-                <p className="text-fresco-sm text-fresco-graphite-light">Generate insights as you type</p>
-              </div>
-              <Toggle checked={settings.autoGenerate} onChange={(v) => { updateSettings({ autoGenerate: v }); showSaved(); }} />
             </div>
           </div>
 
@@ -98,16 +94,40 @@ export function SettingsPage() {
                 <p className="text-fresco-base text-fresco-black">Export All Data</p>
                 <p className="text-fresco-sm text-fresco-graphite-light">{workspaces.length} workspaces, {sessions.length} sessions</p>
               </div>
-              <button className="fresco-btn fresco-btn-sm"><Download className="w-4 h-4" />Export</button>
+              <button onClick={handleExport} className="fresco-btn fresco-btn-sm"><Download className="w-4 h-4" />Export</button>
             </div>
             <div className="flex items-center justify-between py-4">
               <div>
                 <p className="text-fresco-base text-red-600 dark:text-red-400">Delete All Data</p>
-                <p className="text-fresco-sm text-fresco-graphite-light">This cannot be undone</p>
+                <p className="text-fresco-sm text-fresco-graphite-light">
+                  {confirmDelete ? 'This permanently deletes every workspace and session.' : 'This cannot be undone'}
+                </p>
               </div>
-              <button className="fresco-btn fresco-btn-sm fresco-btn-danger">
-                <Trash2 className="w-4 h-4" />Delete
-              </button>
+              {confirmDelete ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="px-3 py-2 text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteAll}
+                    disabled={deleting}
+                    className="fresco-btn fresco-btn-sm fresco-btn-danger disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />{deleting ? 'Deleting…' : 'Confirm delete'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={workspaces.length === 0 && sessions.length === 0}
+                  className="fresco-btn fresco-btn-sm fresco-btn-danger disabled:opacity-40"
+                >
+                  <Trash2 className="w-4 h-4" />Delete
+                </button>
+              )}
             </div>
           </div>
 
