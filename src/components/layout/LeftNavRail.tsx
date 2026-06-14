@@ -4,10 +4,11 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Folder, Archive, Settings, User, Users, Plus, ChevronDown, Trash2, X, Edit3 } from 'lucide-react';
+import { Home, Folder, Archive, Settings, User, Users, Plus, ChevronDown, Trash2, X, Edit3, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFrescoStore, useWorkspaces, useActiveWorkspace } from '@/lib/store';
 import { useDBWrite } from '@/lib/useDBSync';
+import { useTheme } from '@/lib/theme';
 import { canUseTeams } from '@/lib/teamAccess';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { UsageIndicator } from '@/components/ui/UsageIndicator';
@@ -28,6 +29,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
   const { activeSection, setActiveSection, setActiveWorkspace, setActiveSession, createWorkspace,
     canCreateWorkspace, getUsageLimits, deleteWorkspace, user } = useFrescoStore();
   const db = useDBWrite();
+  const { theme, setTheme } = useTheme();
   const [showWorkspaces, setShowWorkspaces] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [hoveredWorkspace, setHoveredWorkspace] = useState<string | null>(null);
@@ -208,6 +210,16 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
               <Users className="w-4 h-4" /><span>Team</span>
             </button>
           )}
+          {/* Quick theme toggle — reachable everywhere without cluttering the
+              arrival canvas. Full control still lives in Settings. */}
+          <button
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            className="fresco-nav-item"
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          >
+            {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            <span>{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
+          </button>
           <button onClick={() => handleNavClick('settings')} className={cn('fresco-nav-item', isActive('settings') && 'active')}>
             <Settings className="w-4 h-4" /><span>Settings</span>
           </button>
