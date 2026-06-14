@@ -12,6 +12,7 @@ import { getGuestRunCount, GUEST_RUN_LIMIT } from '@/lib/guestRuns';
 import { formatRelativeTime } from '@/lib/utils';
 import type { RouterResult } from '@/lib/houseQuestions';
 import { HOUSE_META, type HouseId } from '@/lib/agents';
+import { getRevisitCadence, isDueToRevisit, type RevisitCadence } from '@/lib/reminders';
 import { ExampleSessionModal } from './ExampleSessionModal';
 
 // Verdict accent tokens — the one chromatic note. Dot only; the label stays
@@ -55,11 +56,13 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const [extracting, setExtracting] = useState(false);
+  const [cadence, setCadence] = useState<RevisitCadence>('off');
 
   useEffect(() => {
     try {
       setIsFirstRun(!localStorage.getItem('fresco-has-run'));
       setGuestRunsUsed(getGuestRunCount());
+      setCadence(getRevisitCadence());
     } catch { /* SSR/storage guard */ }
   }, []);
 
@@ -291,6 +294,7 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                     || (s as any).title
                     || (s as any).sentenceOfTruth?.content
                     || 'Untitled decision';
+                  const dueToRevisit = isDueToRevisit(s.updatedAt as any, cadence);
                   return (
                     <div
                       key={s.id}
@@ -319,6 +323,12 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                               <Clock className="w-2.5 h-2.5" />
                               {formatRelativeTime(new Date(s.updatedAt))}
                             </span>
+                            {dueToRevisit && (
+                              <>
+                                <span className="text-fresco-graphite-light/40 text-[10px]">·</span>
+                                <span className="font-mono text-[10px] uppercase tracking-wide text-fresco-black">due to revisit ↻</span>
+                              </>
+                            )}
                           </span>
                         </span>
                       </button>

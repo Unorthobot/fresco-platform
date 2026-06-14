@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sun, Moon, Shield, Download, Trash2, Check, Crown, Puzzle, ArrowRight } from 'lucide-react';
+import { Sun, Moon, Shield, Download, Trash2, Check, Crown, Puzzle, ArrowRight, Bell } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
 import { useDBWrite } from '@/lib/useDBSync';
 import { useTheme } from '@/lib/theme';
 import { downloadJSON } from '@/lib/export';
+import { getRevisitCadence, setRevisitCadence, CADENCE_OPTIONS, type RevisitCadence } from '@/lib/reminders';
 import { cn } from '@/lib/utils';
 
 export function SettingsPage() {
@@ -16,6 +17,7 @@ export function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [cadence, setCadence] = useState<RevisitCadence>(() => getRevisitCadence());
 
   const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
@@ -112,6 +114,31 @@ export function SettingsPage() {
                   <Moon className="w-4 h-4" />
                   Dark
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Reminders */}
+          <div className="fresco-card p-6">
+            <h2 className="text-fresco-lg font-medium text-fresco-black mb-6 flex items-center gap-2"><Bell className="w-5 h-5" />Reminders</h2>
+            <div className="flex items-center justify-between py-4">
+              <div>
+                <p className="text-fresco-base text-fresco-black">Revisit decisions</p>
+                <p className="text-fresco-sm text-fresco-graphite-light">Flag past decisions on your home as due for a fresh look</p>
+              </div>
+              <div className="flex gap-2">
+                {CADENCE_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setCadence(opt.value); setRevisitCadence(opt.value); showSaved(); }}
+                    className={cn(
+                      'px-3 py-2 text-fresco-sm rounded-fresco transition-colors',
+                      cadence === opt.value ? 'bg-fresco-black text-white' : 'border border-fresco-border text-fresco-graphite-mid hover:bg-fresco-light-gray dark:hover:bg-gray-700'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
