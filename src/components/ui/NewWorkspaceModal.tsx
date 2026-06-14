@@ -2,13 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
-
-interface Team {
-  id: string;
-  name: string;
-}
+import { X } from 'lucide-react';
 
 interface NewWorkspaceModalProps {
   isOpen: boolean;
@@ -17,38 +11,24 @@ interface NewWorkspaceModalProps {
   userSubscription?: string;
 }
 
-export function NewWorkspaceModal({ isOpen, onClose, onConfirm, userSubscription }: NewWorkspaceModalProps) {
+// Team collaboration retired June 2026 — workspaces are personal only.
+// The teamId param is kept on onConfirm for signature compatibility but is
+// never supplied.
+export function NewWorkspaceModal({ isOpen, onClose, onConfirm }: NewWorkspaceModalProps) {
   const [title, setTitle] = useState('');
-  const [shareWithTeam, setShareWithTeam] = useState(false);
-  const [team, setTeam] = useState<Team | null>(null);
-  const [loadingTeam, setLoadingTeam] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const isStudio = userSubscription === 'studio';
-
-  // Fetch team if studio user
-  useEffect(() => {
-    if (isOpen && isStudio && !team) {
-      setLoadingTeam(true);
-      fetch('/api/teams')
-        .then(r => r.json())
-        .then(d => { if (d.team) setTeam(d.team); })
-        .finally(() => setLoadingTeam(false));
-    }
-  }, [isOpen, isStudio, team]);
 
   // Focus input on open
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
       setTitle('');
-      setShareWithTeam(false);
     }
   }, [isOpen]);
 
   const handleSubmit = () => {
     const t = title.trim() || 'New Workspace';
-    onConfirm(t, shareWithTeam && team ? team.id : undefined);
+    onConfirm(t);
     onClose();
   };
 
@@ -79,8 +59,7 @@ export function NewWorkspaceModal({ isOpen, onClose, onConfirm, userSubscription
             </div>
 
             {/* Body */}
-            <div className="px-6 py-5 space-y-5">
-              {/* Title */}
+            <div className="px-6 py-5">
               <div>
                 <label className="text-fresco-xs uppercase tracking-widest text-fresco-graphite-light block mb-2">
                   Workspace name
@@ -95,56 +74,6 @@ export function NewWorkspaceModal({ isOpen, onClose, onConfirm, userSubscription
                   className="w-full px-4 py-2.5 border border-fresco-border rounded-none text-fresco-base bg-transparent focus:outline-none focus:ring-2 focus:ring-fresco-black text-fresco-black placeholder:text-fresco-graphite-light"
                 />
               </div>
-
-              {/* Team toggle — only for Studio users with a team */}
-              {isStudio && (
-                <div>
-                  <label className="text-fresco-xs uppercase tracking-widest text-fresco-graphite-light block mb-3">
-                    Visibility
-                  </label>
-                  <div className="flex gap-3">
-                    {/* Personal */}
-                    <button
-                      onClick={() => setShareWithTeam(false)}
-                      className={cn(
-                        'flex-1 flex items-center gap-3 px-4 py-3 border-2 rounded-none transition-all text-left',
-                        !shareWithTeam
-                          ? 'border-fresco-black bg-fresco-light-gray'
-                          : 'border-fresco-border hover:border-fresco-graphite-light'
-                      )}
-                    >
-                      <User className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" />
-                      <div>
-                        <p className="text-fresco-sm font-medium text-fresco-black">Personal</p>
-                        <p className="text-fresco-xs text-fresco-graphite-light">Only you</p>
-                      </div>
-                    </button>
-
-                    {/* Team */}
-                    <button
-                      onClick={() => setShareWithTeam(true)}
-                      disabled={!team && !loadingTeam}
-                      className={cn(
-                        'flex-1 flex items-center gap-3 px-4 py-3 border-2 rounded-none transition-all text-left',
-                        shareWithTeam
-                          ? 'border-fresco-black bg-fresco-light-gray'
-                          : 'border-fresco-border hover:border-fresco-graphite-light',
-                        !team && !loadingTeam && 'opacity-40 cursor-not-allowed'
-                      )}
-                    >
-                      <Users className="w-4 h-4 text-fresco-graphite-mid flex-shrink-0" />
-                      <div>
-                        <p className="text-fresco-sm font-medium text-fresco-black">
-                          {loadingTeam ? 'Loading…' : team ? team.name : 'No team yet'}
-                        </p>
-                        <p className="text-fresco-xs text-fresco-graphite-light">
-                          {team ? 'All members' : 'Create a team first'}
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Footer */}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Home, Archive, Settings, User, Layers, Users, ArrowRight } from 'lucide-react';
+import { Menu, X, Home, Archive, Settings, User, Layers, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MobileNavProps {
@@ -11,7 +11,7 @@ interface MobileNavProps {
   userSubscription?: string;
 }
 
-export function MobileNav({ activeSection, onNavigate, userSubscription }: MobileNavProps) {
+export function MobileNav({ activeSection, onNavigate }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleNavigate = (section: string) => { onNavigate(section); setIsOpen(false); };
@@ -20,7 +20,6 @@ export function MobileNav({ activeSection, onNavigate, userSubscription }: Mobil
     { id: 'home', label: 'Home', icon: Home },
     { id: 'workspaces', label: 'Workspaces', icon: Layers },
     { id: 'archive', label: 'Archive', icon: Archive },
-    ...(userSubscription === 'studio' ? [{ id: 'team', label: 'Team', icon: Users }] : []),
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'account', label: 'Account', icon: User },
   ];

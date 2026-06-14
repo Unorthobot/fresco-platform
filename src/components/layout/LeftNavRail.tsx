@@ -199,13 +199,9 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
           </div>
         </div>
 
-        {/* Bottom nav */}
+        {/* Bottom nav. Team collaboration retired June 2026 — the public
+            ladder is Free + Founder (solo). */}
         <div className="py-3 px-3 border-t border-fresco-border-light space-y-0.5">
-          {user?.subscription === 'studio' && (
-            <button onClick={() => handleNavClick('team')} className={cn('fresco-nav-item', isActive('team') && 'active')}>
-              <Users className="w-4 h-4" /><span>Team</span>
-            </button>
-          )}
           <button onClick={() => handleNavClick('settings')} className={cn('fresco-nav-item', isActive('settings') && 'active')}>
             <Settings className="w-4 h-4" /><span>Settings</span>
           </button>
