@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sun, Moon, Shield, Download, Trash2, Check } from 'lucide-react';
+import { Sun, Moon, Shield, Download, Trash2, Check, Crown, Puzzle, ArrowRight } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
 import { useDBWrite } from '@/lib/useDBSync';
 import { useTheme } from '@/lib/theme';
@@ -10,7 +10,7 @@ import { downloadJSON } from '@/lib/export';
 import { cn } from '@/lib/utils';
 
 export function SettingsPage() {
-  const { sessions, workspaces } = useFrescoStore();
+  const { sessions, workspaces, user, getUsageLimits } = useFrescoStore();
   const db = useDBWrite();
   const { theme, setTheme } = useTheme();
   const [saved, setSaved] = useState(false);
@@ -18,6 +18,13 @@ export function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
 
   const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+  // ── Plan & usage ──────────────────────────────────────────────────────────
+  const tier = user?.subscription || 'free';
+  const planLabel = tier === 'pro' ? 'Founder' : tier === 'studio' ? 'Studio' : 'Free';
+  const monthlyLimit = getUsageLimits().aiGenerationsPerMonth; // -1 = unlimited
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const usedThisMonth = user?.aiGenerationsResetDate === currentMonth ? (user?.aiGenerationsThisMonth || 0) : 0;
 
   const handleExport = () => {
     downloadJSON(
@@ -49,6 +56,29 @@ export function SettingsPage() {
       <div className="px-6 md:px-12 py-12">
         <div className="max-w-2xl space-y-8">
           {saved && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-fresco-light-gray dark:bg-gray-800 text-fresco-black dark:text-white text-fresco-sm rounded-fresco flex items-center gap-2"><Check className="w-4 h-4" />Saved</motion.div>}
+
+          {/* Plan & usage */}
+          <div className="fresco-card p-6">
+            <h2 className="text-fresco-lg font-medium text-fresco-black mb-6 flex items-center gap-2"><Crown className="w-5 h-5" />Plan</h2>
+            <div className="flex items-center justify-between py-4">
+              <div>
+                <p className="text-fresco-base text-fresco-black">{planLabel}</p>
+                <p className="text-fresco-sm text-fresco-graphite-light">
+                  {monthlyLimit === -1
+                    ? 'Unlimited verdicts'
+                    : `${Math.max(0, monthlyLimit - usedThisMonth)} of ${monthlyLimit} verdicts left this month`}
+                </p>
+              </div>
+              {tier === 'free' && (
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('fresco:upgrade'))}
+                  className="fresco-btn fresco-btn-sm"
+                >
+                  Upgrade <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* Appearance */}
           <div className="fresco-card p-6">
@@ -83,6 +113,25 @@ export function SettingsPage() {
                   Dark
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Browser extension */}
+          <div className="fresco-card p-6">
+            <h2 className="text-fresco-lg font-medium text-fresco-black mb-6 flex items-center gap-2"><Puzzle className="w-5 h-5" />Browser extension</h2>
+            <div className="flex items-center justify-between py-4 border-b border-fresco-border-light">
+              <div>
+                <p className="text-fresco-base text-fresco-black">Fresco Evaluate</p>
+                <p className="text-fresco-sm text-fresco-graphite-light">Evaluate any page, compare versions, and trace journeys in your browser</p>
+              </div>
+              <a href="/connect-extension" className="fresco-btn fresco-btn-sm">Set up <ArrowRight className="w-4 h-4" /></a>
+            </div>
+            <div className="flex items-center justify-between py-4">
+              <div>
+                <p className="text-fresco-base text-fresco-black">Extension keys</p>
+                <p className="text-fresco-sm text-fresco-graphite-light">View and revoke the keys connected to your account</p>
+              </div>
+              <a href="/account/extensions" className="text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black underline underline-offset-4 transition-colors">Manage</a>
             </div>
           </div>
 
