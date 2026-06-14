@@ -8,6 +8,7 @@ import { Home, Folder, Archive, Settings, User, Users, Plus, ChevronDown, Trash2
 import { cn } from '@/lib/utils';
 import { useFrescoStore, useWorkspaces, useActiveWorkspace } from '@/lib/store';
 import { useDBWrite } from '@/lib/useDBSync';
+import { canUseTeams } from '@/lib/teamAccess';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { UsageIndicator } from '@/components/ui/UsageIndicator';
 import { NewWorkspaceModal } from '@/components/ui/NewWorkspaceModal';
@@ -199,9 +200,14 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
           </div>
         </div>
 
-        {/* Bottom nav. Team collaboration retired June 2026 — the public
-            ladder is Free + Founder (solo). */}
+        {/* Bottom nav */}
         <div className="py-3 px-3 border-t border-fresco-border-light space-y-0.5">
+          {/* Team retired June 2026 — kept for one grandfathered account. */}
+          {canUseTeams(user?.email) && (
+            <button onClick={() => handleNavClick('team')} className={cn('fresco-nav-item', isActive('team') && 'active')}>
+              <Users className="w-4 h-4" /><span>Team</span>
+            </button>
+          )}
           <button onClick={() => handleNavClick('settings')} className={cn('fresco-nav-item', isActive('settings') && 'active')}>
             <Settings className="w-4 h-4" /><span>Settings</span>
           </button>
@@ -263,7 +269,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
       <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)}
         reason="workspaces" currentUsage={workspaces.length} limit={getUsageLimits().workspaces} />
       <NewWorkspaceModal isOpen={showNewWorkspaceModal} onClose={() => setShowNewWorkspaceModal(false)}
-        onConfirm={handleConfirmCreateWorkspace} userSubscription={user?.subscription} />
+        onConfirm={handleConfirmCreateWorkspace} userSubscription={user?.subscription} userEmail={user?.email} />
     </>
   );
 }

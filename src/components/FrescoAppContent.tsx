@@ -605,7 +605,7 @@ export default function FrescoAppContent() {
         <LeftNavRail onNavigate={handleNavigate} onStartHouse={handleStartHouse} />
       </div>
 
-      <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} />
+      <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} userEmail={user?.email} />
 
       <main id="main-content" className="md:ml-[220px] min-h-screen relative">
         <ErrorBoundary
@@ -701,6 +701,7 @@ export default function FrescoAppContent() {
               <TeamPage
                 userId={user?.id || ''}
                 userSubscription={user?.subscription || 'free'}
+                userEmail={user?.email}
                 onUpgrade={() => setShowUpgradeModal(true)}
               />
             </motion.div>
@@ -757,6 +758,7 @@ export default function FrescoAppContent() {
         onClose={() => setShowNewWorkspaceModal(false)}
         onConfirm={handleConfirmNewWorkspace}
         userSubscription={user?.subscription}
+        userEmail={user?.email}
       />
 
       <PricingModal
