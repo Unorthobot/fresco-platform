@@ -267,11 +267,6 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
             </button>
           </div>
 
-          {/* Quiet expectation-setting line, mirrors the verdict disclaimer. */}
-          <p className="mt-3 text-center text-[11px] text-fresco-graphite-light">
-            Fresco&apos;s verdict is a decision aid, not a guarantee — the call is yours.
-          </p>
-
           {routeError && (
             <p className="mt-2 text-fresco-xs text-red-600">{routeError}</p>
           )}
@@ -399,6 +394,14 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
           )}
         </motion.div>
       </div>
+
+      {/* Footer disclaimer — surfaces in-UI what the Terms state, kept out of
+          the input→chips flow so it reads as quiet fine print. */}
+      <footer className="px-4 md:px-8 pb-6 text-center">
+        <p className="text-[11px] text-fresco-graphite-light">
+          Fresco&apos;s verdict is a decision aid, not a guarantee — the call is yours.
+        </p>
+      </footer>
 
       <ExampleSessionModal isOpen={showExample} onClose={() => setShowExample(false)} />
     </div>
