@@ -267,6 +267,11 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
             </button>
           </div>
 
+          {/* Quiet expectation-setting line, mirrors the verdict disclaimer. */}
+          <p className="mt-3 text-center text-[11px] text-fresco-graphite-light">
+            Fresco&apos;s verdict is a decision aid, not a guarantee — the call is yours.
+          </p>
+
           {routeError && (
             <p className="mt-2 text-fresco-xs text-red-600">{routeError}</p>
           )}
