@@ -201,9 +201,6 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-4xl"
         >
-          {/* Input stays focused/centred — the front door — even though the
-              explainer and log below span the wider column. */}
-          <div className="max-w-2xl mx-auto">
           <h1 className="text-fresco-2xl md:text-fresco-3xl font-medium text-fresco-black tracking-tight mb-6 text-center">
             What decision are you trying to make?
           </h1>
@@ -299,7 +296,6 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
               </button>
             </div>
           )}
-          </div>
 
           {/* How it works — empty state only. Once a verdict exists, the
               decision log below takes this slot. */}
