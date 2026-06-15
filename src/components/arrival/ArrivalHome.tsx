@@ -50,11 +50,11 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
   const textRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Voice input — same MediaRecorder → /api/transcribe path the session
-  // screens use (Nombulelo praised it; spec keeps it as a quiet icon).
+  // Voice input — browser Web Speech API (live transcription, no server key).
+  // Quiet icon per spec. Falls back to a clear message where unsupported
+  // (Safari/Firefox) rather than silently swallowing the recording.
   const [recording, setRecording] = useState(false);
-  const recRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
   const [extracting, setExtracting] = useState(false);
   const [cadence, setCadence] = useState<RevisitCadence>('off');
 
@@ -81,41 +81,44 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
     .filter(s => (s as any).aiOutputs?.verdict || (s as any).aiOutputs?.houseResult?.verdict)
     .slice(0, 6);
 
-  const startVoice = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const rec = new MediaRecorder(stream);
-      recRef.current = rec;
-      chunksRef.current = [];
-      rec.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      rec.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-          try {
-            const res = await fetch('/api/transcribe', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ audio: reader.result }),
-            });
-            if (res.ok) {
-              const { text } = await res.json();
-              if (text) setInput(prev => (prev ? `${prev}\n\n${text}` : text));
-            }
-          } catch { /* leave input as-is */ }
-        };
-      };
-      rec.start();
-      setRecording(true);
-    } catch {
-      setRouteError('Microphone access denied.');
+  const startVoice = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setRouteError('Voice input isn’t supported in this browser. Try Chrome or Edge, or type your decision.');
+      return;
     }
+
+    // Anchor on whatever is already typed so dictation appends cleanly.
+    const base = input;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(base ? `${base}\n\n${transcript}`.trimEnd() : transcript.trimStart());
+    };
+    recognition.onerror = (event: any) => {
+      if (event.error === 'not-allowed') {
+        setRouteError('Microphone access denied.');
+      }
+      setRecording(false);
+    };
+    recognition.onend = () => setRecording(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setRouteError(null);
+    setRecording(true);
   };
 
   const stopVoice = () => {
-    recRef.current?.stop();
+    recognitionRef.current?.stop();
     setRecording(false);
   };
 
