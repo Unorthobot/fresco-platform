@@ -188,7 +188,11 @@ async function runMerge(house: HouseId, agentOutputs: AgentOutput[], userInput: 
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
+      // Must fit the whole merge JSON: verdict + issues + moves + the large
+      // systemsOutput block. At 2000 the output truncated to invalid JSON,
+      // which silently dropped to the local fallback (no systemsOutput,
+      // forced INVESTIGATE FURTHER). Give it real headroom.
+      max_tokens: 8000,
       messages: [{ role: 'user', content: mergePrompt }],
     }),
   });
