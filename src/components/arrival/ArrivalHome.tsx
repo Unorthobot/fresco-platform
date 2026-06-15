@@ -217,7 +217,7 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                 }
               }}
               placeholder={PLACEHOLDER}
-              className="w-full px-4 pt-4 pb-12 text-fresco-base text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors resize-none leading-relaxed"
+              className="block w-full px-4 pt-4 pb-12 text-fresco-base text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors resize-none leading-relaxed"
               style={{ minHeight: 150 }}
               disabled={isRouting}
             />
