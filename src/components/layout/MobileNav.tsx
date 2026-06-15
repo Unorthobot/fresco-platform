@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Home, Archive, Settings, User, Layers, Users, ArrowRight } from 'lucide-react';
+import { Menu, X, Home, Archive, Settings, User, Layers, Users, ArrowRight, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/lib/theme';
 import { canUseTeams } from '@/lib/teamAccess';
 
 interface MobileNavProps {
@@ -15,6 +16,7 @@ interface MobileNavProps {
 
 export function MobileNav({ activeSection, onNavigate, userEmail }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const handleNavigate = (section: string) => { onNavigate(section); setIsOpen(false); };
 
@@ -88,6 +90,14 @@ export function MobileNav({ activeSection, onNavigate, userEmail }: MobileNavPro
                       {item.label}
                     </button>
                   ))}
+                  {/* Quick theme toggle — parity with the desktop nav rail */}
+                  <button
+                    onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-fresco-sm text-fresco-graphite-mid hover:bg-fresco-light-gray hover:text-fresco-black transition-colors text-left"
+                  >
+                    {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                    {theme === 'light' ? 'Dark mode' : 'Light mode'}
+                  </button>
                 </div>
               </div>
             </motion.nav>
