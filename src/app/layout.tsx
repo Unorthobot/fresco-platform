@@ -7,12 +7,33 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
+const TITLE = 'Fresco — A decision engine for startup founders';
+const DESCRIPTION =
+  'Run the decision you\'re facing through structured analysis and get a clear verdict — GO, PIVOT, STOP, or NEEDS MORE SIGNAL — with the reasoning that produced it.';
+
 export const metadata: Metadata = {
-  title: 'Fresco — A decision engine for startup founders',
-  description: 'Run the decision you\'re facing through structured analysis and get a clear verdict — GO, PIVOT, STOP, or NEEDS MORE SIGNAL — with the reasoning that produced it.',
+  // Absolute base so the file-based opengraph-image/twitter-image routes
+  // resolve to absolute URLs (required by X, Slack, etc.).
+  metadataBase: new URL('https://app.frescolab.io'),
+  title: TITLE,
+  description: DESCRIPTION,
   icons: {
     icon: '/fresco-logo.png',
     apple: '/fresco-logo.png',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'Fresco',
+    url: 'https://app.frescolab.io',
+    title: TITLE,
+    description: DESCRIPTION,
+    // og:image is supplied automatically by app/opengraph-image.tsx
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+    // twitter:image is supplied automatically by app/twitter-image.tsx
   },
 };
 
