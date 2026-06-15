@@ -4,9 +4,16 @@
 // Syncs Zustand store with database for authenticated users
 // Falls back to localStorage for guests
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useFrescoStore } from '@/lib/store';
+import {
+  isGuestOwned,
+  stashGuestImport,
+  readGuestImport,
+  clearGuestImport,
+  type PendingGuestImport,
+} from '@/lib/guestImport';
 
 export function useDBSync() {
   const { data: session, status } = useSession();
@@ -14,144 +21,163 @@ export function useDBSync() {
   const hasSynced = useRef(false);
 
   const [isSyncComplete, setIsSyncComplete] = useState(false);
+  const [pendingGuestImport, setPendingGuestImport] = useState<PendingGuestImport | null>(null);
   const isAuthenticated = status === 'authenticated' && !!session?.user?.id;
 
-  // On login: load workspaces + sessions from DB into store
+  // Fetch the account's workspaces + sessions and replace the local store with
+  // them. This deliberately drops anything not owned by the account (guest work
+  // is stashed separately before this runs — see the login effect below).
+  const reloadFromDB = useCallback(async (): Promise<boolean> => {
+    const res = await fetch('/api/workspaces');
+    if (!res.ok) return false;
+    const dbWorkspaces = await res.json();
+
+    const allSessions: any[] = [];
+    for (const ws of dbWorkspaces) {
+      const sRes = await fetch(`/api/workspaces/${ws.id}/sessions`);
+      if (sRes.ok) {
+        const wsSessions = await sRes.json();
+        allSessions.push(...wsSessions);
+      }
+    }
+
+    useFrescoStore.setState({
+      workspaces: dbWorkspaces.map((ws: any) => ({
+        id: ws.id,
+        title: ws.title,
+        description: ws.description || '',
+        tags: [],
+        createdAt: new Date(ws.createdAt),
+        updatedAt: new Date(ws.updatedAt),
+        userId: ws.userId,
+        teamId: ws.teamId || undefined,
+        team: ws.team || null,
+      })),
+      sessions: allSessions.map((s: any) => ({
+        id: s.id,
+        workspaceId: s.workspaceId,
+        toolkitType: s.toolkitType,
+        houseType: s.houseType || undefined,
+        category: s.houseType || s.category || 'investigate',
+        thinkingLens: s.thinkingLens || 'automatic',
+        status: 'draft',
+        // Preserve the full aiOutputs JSON from DB (includes houseResult for house sessions)
+        aiOutputs: s.aiOutputs || null,
+        steps: s.stepResponses ? Object.entries(s.stepResponses).map(([k, v]: any) => ({
+          id: `${s.id}-step-${k}`,
+          stepNumber: parseInt(k),
+          label: '',
+          prompt: '',
+          response: v as string,
+          content: v as string,
+          sessionId: s.id,
+        })) : [],
+        insights: s.aiOutputs?.insights?.map((content: string, i: number) => ({
+          id: `${s.id}-insight-${i}`,
+          content,
+          isAiGenerated: true,
+          createdAt: new Date(s.createdAt),
+          sessionId: s.id,
+        })) || [],
+        sentenceOfTruth: s.sentenceOfTruth ? {
+          id: `${s.id}-sot`,
+          content: s.sentenceOfTruth,
+          isLocked: s.isLocked || false,
+          isAiGenerated: true,
+          createdAt: new Date(s.createdAt),
+          updatedAt: new Date(s.updatedAt),
+          sessionId: s.id,
+        } : undefined,
+        necessaryMoves: s.aiOutputs?.necessaryMoves?.map((content: string, i: number) => ({
+          id: `${s.id}-move-${i}`,
+          orderNum: i + 1,
+          content,
+          isCompleted: false,
+          createdAt: new Date(s.createdAt),
+          sessionId: s.id,
+        })) || [],
+        decision: s.decision || null,
+        decisionRationale: s.decisionRationale || null,
+        decisionConfidence: s.decisionConfidence || null,
+        createdAt: new Date(s.createdAt),
+        updatedAt: new Date(s.updatedAt),
+        userId: session?.user?.id ?? '',
+      })),
+    });
+    return true;
+  }, [session]);
+
+  // Upload guest rows to the DB as the authenticated user's own. Only ever
+  // called on explicit consent (importGuestWork) — never silently — so one
+  // person's pre-sign-in decision can't land in another's account.
+  const migrateGuestRows = useCallback(async (data: PendingGuestImport) => {
+    for (const ws of data.workspaces) {
+      try {
+        await fetch('/api/workspaces', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: ws.id, title: ws.title, description: ws.description }),
+        });
+      } catch { /* duplicate or network error — continue with the rest */ }
+    }
+    for (const s of data.sessions) {
+      try {
+        await fetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: s.id, workspaceId: s.workspaceId,
+            toolkitType: s.toolkitType, houseType: (s as any).houseType || null,
+          }),
+        });
+        await fetch(`/api/sessions/${s.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            thinkingLens: s.thinkingLens,
+            stepResponses: Object.fromEntries(
+              (s.steps || []).map((st: any) => [String(st.stepNumber), st.response || st.content || ''])
+            ),
+            aiOutputs: (s as any).aiOutputs?.houseResult
+              ? (s as any).aiOutputs
+              : {
+                  insights: (s.insights || []).map((i: any) => i.content).filter(Boolean),
+                  necessaryMoves: (s.necessaryMoves || []).map((m: any) => m.content).filter(Boolean),
+                },
+            sentenceOfTruth: s.sentenceOfTruth?.content || null,
+            isLocked: s.sentenceOfTruth?.isLocked || false,
+          }),
+        });
+      } catch { /* continue — partial migration beats data loss */ }
+    }
+  }, []);
+
+  // On login: stash any guest work, load the account's own data clean, then
+  // surface a consent prompt if there's guest work waiting to be imported.
   useEffect(() => {
     if (!isAuthenticated || hasSynced.current) return;
 
     const loadFromDB = async () => {
       try {
-        // ── Migrate guest work to the DB before loading ──────────────────
-        // Work created before sign-up lives only in the local store. Without
-        // this step, the setState below would silently discard it — beta
-        // testers lost entire sessions to that. Upload guest rows first so
-        // the DB load below returns them as the user's own.
+        // Move guest rows OUT of the live store into a dedicated stash before
+        // loading the account. They are NOT uploaded here — import is gated on
+        // explicit consent (see importGuestWork). Stashing keeps them safe
+        // across a tab close without writing them into this account silently.
         const local = useFrescoStore.getState();
-        const guestWorkspaces = local.workspaces.filter(
-          w => !w.userId || w.userId === 'guest' || w.userId === 'demo-user'
-        );
+        const guestWorkspaces = local.workspaces.filter(w => isGuestOwned((w as any).userId));
         const guestSessions = local.sessions.filter(
           s => guestWorkspaces.some(w => w.id === s.workspaceId)
         );
-        for (const ws of guestWorkspaces) {
-          try {
-            await fetch('/api/workspaces', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: ws.id, title: ws.title, description: ws.description }),
-            });
-          } catch { /* duplicate or network error — continue with the rest */ }
-        }
-        for (const s of guestSessions) {
-          try {
-            await fetch('/api/sessions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                id: s.id, workspaceId: s.workspaceId,
-                toolkitType: s.toolkitType, houseType: (s as any).houseType || null,
-              }),
-            });
-            await fetch(`/api/sessions/${s.id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                thinkingLens: s.thinkingLens,
-                stepResponses: Object.fromEntries(
-                  (s.steps || []).map((st: any) => [String(st.stepNumber), st.response || st.content || ''])
-                ),
-                aiOutputs: (s as any).aiOutputs?.houseResult
-                  ? (s as any).aiOutputs
-                  : {
-                      insights: (s.insights || []).map((i: any) => i.content).filter(Boolean),
-                      necessaryMoves: (s.necessaryMoves || []).map((m: any) => m.content).filter(Boolean),
-                    },
-                sentenceOfTruth: s.sentenceOfTruth?.content || null,
-                isLocked: s.sentenceOfTruth?.isLocked || false,
-              }),
-            });
-          } catch { /* continue — partial migration beats data loss */ }
+        if (guestWorkspaces.length || guestSessions.length) {
+          stashGuestImport({ workspaces: guestWorkspaces, sessions: guestSessions });
         }
 
-        const res = await fetch('/api/workspaces');
-        if (!res.ok) return;
-        const dbWorkspaces = await res.json();
+        const ok = await reloadFromDB();
+        if (!ok) return;
 
-        // Load sessions for each workspace
-        const allSessions: any[] = [];
-        for (const ws of dbWorkspaces) {
-          const sRes = await fetch(`/api/workspaces/${ws.id}/sessions`);
-          if (sRes.ok) {
-            const wsSessions = await sRes.json();
-            allSessions.push(...wsSessions);
-          }
-        }
-
-        // Replace local store with DB data
-        useFrescoStore.setState({
-          workspaces: dbWorkspaces.map((ws: any) => ({
-            id: ws.id,
-            title: ws.title,
-            description: ws.description || '',
-            tags: [],
-            createdAt: new Date(ws.createdAt),
-            updatedAt: new Date(ws.updatedAt),
-            userId: ws.userId,
-            teamId: ws.teamId || undefined,
-            team: ws.team || null,
-          })),
-          sessions: allSessions.map((s: any) => ({
-            id: s.id,
-            workspaceId: s.workspaceId,
-            toolkitType: s.toolkitType,
-            houseType: s.houseType || undefined,
-            category: s.houseType || s.category || 'investigate',
-            thinkingLens: s.thinkingLens || 'automatic',
-            status: 'draft',
-            // Preserve the full aiOutputs JSON from DB (includes houseResult for house sessions)
-            aiOutputs: s.aiOutputs || null,
-            steps: s.stepResponses ? Object.entries(s.stepResponses).map(([k, v]: any) => ({
-              id: `${s.id}-step-${k}`,
-              stepNumber: parseInt(k),
-              label: '',
-              prompt: '',
-              response: v as string,
-              content: v as string,
-              sessionId: s.id,
-            })) : [],
-            insights: s.aiOutputs?.insights?.map((content: string, i: number) => ({
-              id: `${s.id}-insight-${i}`,
-              content,
-              isAiGenerated: true,
-              createdAt: new Date(s.createdAt),
-              sessionId: s.id,
-            })) || [],
-            sentenceOfTruth: s.sentenceOfTruth ? {
-              id: `${s.id}-sot`,
-              content: s.sentenceOfTruth,
-              isLocked: s.isLocked || false,
-              isAiGenerated: true,
-              createdAt: new Date(s.createdAt),
-              updatedAt: new Date(s.updatedAt),
-              sessionId: s.id,
-            } : undefined,
-            necessaryMoves: s.aiOutputs?.necessaryMoves?.map((content: string, i: number) => ({
-              id: `${s.id}-move-${i}`,
-              orderNum: i + 1,
-              content,
-              isCompleted: false,
-              createdAt: new Date(s.createdAt),
-              sessionId: s.id,
-            })) || [],
-            decision: s.decision || null,
-            decisionRationale: s.decisionRationale || null,
-            decisionConfidence: s.decisionConfidence || null,
-            createdAt: new Date(s.createdAt),
-            updatedAt: new Date(s.updatedAt),
-            userId: session!.user!.id!,
-          })),
-        });
+        // Resume the prompt from the stash (covers both a fresh sign-in and a
+        // reload where the user closed the tab before deciding last time).
+        setPendingGuestImport(readGuestImport());
 
         hasSynced.current = true;
         sessionStorage.setItem("fresco_was_authed", "1");
@@ -162,7 +188,25 @@ export function useDBSync() {
     };
 
     loadFromDB();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, reloadFromDB]);
+
+  // Consent: import the stashed guest work into the account, then reload.
+  const importGuestWork = useCallback(async () => {
+    const data = readGuestImport();
+    if (data) {
+      await migrateGuestRows(data);
+      clearGuestImport();
+      await reloadFromDB();
+    }
+    setPendingGuestImport(null);
+  }, [migrateGuestRows, reloadFromDB]);
+
+  // Decline: drop the stashed guest work. Nothing was written to the DB, so
+  // this simply discards it — the account view already shows only its own data.
+  const discardGuestWork = useCallback(() => {
+    clearGuestImport();
+    setPendingGuestImport(null);
+  }, []);
 
   // On logout: clear store — but ONLY for a deliberate sign-out. A JWT that
   // expires mid-session (or a webview that drops cookies) also flips status
@@ -178,6 +222,10 @@ export function useDBSync() {
       sessionStorage.removeItem('fresco_was_authed');
       sessionStorage.removeItem('fresco_explicit_signout');
       setIsSyncComplete(false);
+      // Clear any undecided guest-import stash too, so it can't carry over to
+      // the next person who signs in on this (possibly shared) browser.
+      clearGuestImport();
+      setPendingGuestImport(null);
       useFrescoStore.setState({
         workspaces: [],
         sessions: [],
@@ -190,7 +238,7 @@ export function useDBSync() {
     }
   }, [status]);
 
-  return { isAuthenticated, isSyncComplete };
+  return { isAuthenticated, isSyncComplete, pendingGuestImport, importGuestWork, discardGuestWork };
 }
 
 

@@ -20,6 +20,7 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { Onboarding, useOnboarding } from '@/components/ui/Onboarding';
 import { NewWorkspaceModal } from '@/components/ui/NewWorkspaceModal';
 import { PricingModal } from '@/components/ui/PricingModal';
+import { GuestImportPrompt } from '@/components/ui/GuestImportPrompt';
 import { type ToolkitType } from '@/types';
 import type { HouseId } from '@/lib/agents';
 import { ArrivalHome } from '@/components/arrival/ArrivalHome';
@@ -42,7 +43,7 @@ export default function FrescoAppContent() {
   const [clarifyStarting, setClarifyStarting] = useState(false);
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const { data: session, status } = useSession();
-  const { isSyncComplete } = useDBSync();
+  const { isSyncComplete, pendingGuestImport, importGuestWork, discardGuestWork } = useDBSync();
   const db = useDBWrite();
 
   const {
@@ -764,6 +765,13 @@ export default function FrescoAppContent() {
       <PricingModal
         isOpen={showPricingModal}
         onClose={() => setShowPricingModal(false)}
+      />
+
+      <GuestImportPrompt
+        pending={pendingGuestImport}
+        accountEmail={session?.user?.email}
+        onImport={importGuestWork}
+        onDiscard={discardGuestWork}
       />
     </div>
   );
