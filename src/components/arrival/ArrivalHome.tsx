@@ -33,6 +33,27 @@ const EXAMPLE_CHIPS = [
   'Is this idea worth a month?',
 ];
 
+// First-run explainer (empty state only). Wording mirrors the marketing site's
+// "How it works" — the current decision-engine framing, not the retired
+// house/agents vocabulary the old in-app block used.
+const HOW_IT_WORKS = [
+  {
+    num: '01',
+    title: 'Describe the decision.',
+    body: 'In your own words. Paste your notes, talk it out, upload the doc. Fresco works with what you have.',
+  },
+  {
+    num: '02',
+    title: "Answer what the engine can't infer.",
+    body: "A few sharp questions — only the ones your description didn't already cover. No frameworks to learn. No setup.",
+  },
+  {
+    num: '03',
+    title: 'Get the verdict.',
+    body: 'GO, PIVOT, STOP, or NEEDS MORE SIGNAL. The reasoning underneath. The issues that drove it. The moves that follow from it.',
+  },
+];
+
 interface ArrivalHomeProps {
   onRouted: (input: string, result: RouterResult) => void;
   onNavigateToSession?: (sessionId: string, workspaceId: string) => void;
@@ -273,6 +294,28 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
               >
                 See an example session
               </button>
+            </div>
+          )}
+
+          {/* How it works — empty state only. Once a verdict exists, the
+              decision log below takes this slot. */}
+          {decisions.length === 0 && (
+            <div className="mt-16">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-6">
+                How it works
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {HOW_IT_WORKS.map(step => (
+                  <div key={step.num}>
+                    <p className="font-mono text-[10px] tracking-[0.14em] text-fresco-graphite-light mb-3">{step.num}</p>
+                    <h3 className="text-fresco-base font-medium text-fresco-black mb-2">{step.title}</h3>
+                    <p className="text-fresco-sm text-fresco-graphite-mid leading-relaxed">{step.body}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="font-mono text-[10px] tracking-wide text-fresco-graphite-light mt-8">
+                About fifteen minutes, end to end.
+              </p>
             </div>
           )}
 
