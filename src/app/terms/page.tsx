@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'The terms and conditions governing your use of the Fresco platform.',
 };
 
-const LAST_UPDATED = 'March 14, 2026';
+const LAST_UPDATED = 'June 15, 2026';
 const CONTACT_EMAIL = 'info@frescolab.io';
 const APP_URL = 'https://app.frescolab.io';
 
@@ -42,7 +42,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="Description of service">
-            <p>Fresco is a thinking and strategy platform that provides structured houses with specialist agents, AI-assisted analysis, and workspace tools to help individuals and teams develop clearer thinking and better decisions.</p>
+            <p>Fresco is a decision engine for startup founders. It runs the decision you describe through structured AI-assisted analysis and returns a verdict — GO, PIVOT, STOP, or NEEDS MORE SIGNAL — together with the reasoning behind it, alongside workspace tools to record and revisit your decisions over time.</p>
             <p>The Service is provided on a subscription basis. A free tier may be available with limited functionality. Paid plans unlock additional features as described on the pricing page.</p>
           </Section>
 

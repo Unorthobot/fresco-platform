@@ -157,7 +157,7 @@ function LoginForm() {
         </div>
 
         <p className="mt-6 text-center text-xs text-gray-400">
-          By continuing, you agree to our <a href="#" className="underline">Terms</a> and <a href="#" className="underline">Privacy Policy</a>
+          By continuing, you agree to our <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline">Terms</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>
         </p>
       </motion.div>
     </div>
