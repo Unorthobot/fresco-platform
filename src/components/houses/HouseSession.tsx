@@ -3669,7 +3669,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 {/* Quiet disclaimer — a verdict is a decision aid, not a guarantee.
                     Surfaces in the UI what the Terms already say in writing. */}
                 <p className="text-[11px] text-fresco-graphite-light leading-relaxed">
-                  A structured second opinion — the call is yours. Pressure-test it before you act.
+                  Fresco can be wrong — treat this verdict as input, not instruction. Pressure-test it before you act.
                 </p>
 
                 {/* YOUR INPUT — collapsed recap of what produced this verdict. */}

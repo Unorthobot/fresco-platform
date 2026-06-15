@@ -399,7 +399,7 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
           the input→chips flow so it reads as quiet fine print. */}
       <footer className="px-4 md:px-8 pb-6 text-center">
         <p className="text-[11px] text-fresco-graphite-light">
-          Fresco&apos;s verdict is a decision aid, not a guarantee — the call is yours.
+          Fresco can be wrong — treat the verdict as input, not instruction.
         </p>
       </footer>
 
