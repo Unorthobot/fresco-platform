@@ -31,6 +31,7 @@ const EXAMPLE_CHIPS = [
   'Should we build this feature?',
   'Pivot or stay the course?',
   'Is this idea worth a month?',
+  'Should we raise our prices?',
 ];
 
 // First-run explainer (empty state only). Wording mirrors the marketing site's
