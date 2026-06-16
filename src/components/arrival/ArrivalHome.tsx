@@ -80,6 +80,15 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
   const [extracting, setExtracting] = useState(false);
   const [cadence, setCadence] = useState<RevisitCadence>('off');
 
+  // Auto-grow the textarea with its content (up to a cap) so a comprehensive
+  // decision never gets pushed under the controls overlaid at the bottom.
+  useEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 360)}px`;
+  }, [input]);
+
   useEffect(() => {
     try {
       setIsFirstRun(!localStorage.getItem('fresco-has-run'));
@@ -218,8 +227,8 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                 }
               }}
               placeholder={PLACEHOLDER}
-              className="block w-full px-4 pt-4 pb-12 text-fresco-base text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors resize-none leading-relaxed"
-              style={{ minHeight: 150 }}
+              className="block w-full px-4 pt-4 pb-14 text-fresco-base text-fresco-black bg-fresco-white border border-fresco-border focus:outline-none focus:border-fresco-black transition-colors resize-none leading-relaxed"
+              style={{ minHeight: 150, maxHeight: 360, overflowY: 'auto' }}
               disabled={isRouting}
             />
             {/* Quiet icons inside the field — voice + doc upload */}
