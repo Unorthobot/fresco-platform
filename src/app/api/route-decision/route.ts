@@ -12,8 +12,9 @@ import {
 // POST /api/route-decision — WP1 routing call (spec Moment 2).
 // One fast classify + extract + gap pass. Guests allowed: routing spends
 // no run (the quota gate stays at run time), it just shapes the session.
-// Time budget <3s perceived — Haiku, temperature 0, hard 8s timeout with
-// a graceful investigate fallback so the UI never hangs.
+// Haiku, temperature 0, with a graceful investigate fallback so the UI never
+// hangs. Abort is generous (22s) — multi-field extraction on descriptive
+// prompts takes 6–9s and a tight cap silently degraded the result.
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 export const maxDuration = 30;
@@ -197,8 +198,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(fallbackResult(input));
   }
 
+  // Extracting several canonical fields from a descriptive prompt routinely
+  // takes 6–9s on Haiku. At an 8s abort, the richer the input the more likely
+  // it timed out → fell back to seeding ONLY `situation` (raw prompt), which
+  // read to users as "it stopped inferring my input". Give it real headroom;
+  // maxDuration (30s) and the graceful fallback still cap a true hang.
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), 22000);
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
