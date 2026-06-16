@@ -2328,6 +2328,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [activeLens, setActiveLens] = useState<string | null>(null);
   const [isReframing, setIsReframing] = useState(false);
   const [result, setResult] = useState<HouseResult | null>(() => getPersistedResult());
+  // The deep systems analysis (Analysis tab) streams in a beat after the
+  // verdict. True between the verdict arriving and the 'systems' event landing.
+  const [systemsPending, setSystemsPending] = useState(false);
   // WP2 pulled forward for clarify-originated sessions: once the run starts
   // the question stack gets out of the way (spec Moment 4 — the single
   // highest-priority UI change). A slim rail holds the decision + an
@@ -2617,6 +2620,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               } else if (ev.type === 'verdict') {
                 verdictReceived = true;
                 setStage(null);
+                // The systems analysis streams next; flag the Analysis tab as
+                // still loading until the 'systems' event lands.
+                setSystemsPending(true);
                 // WP0 funnel: verdict rendered + time-to-verdict for this run.
                 track('verdict_rendered', {
                   sessionId,
@@ -2645,6 +2651,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 }
                 // Flag that this browser has run at least one session (used for guest empty state)
                 try { localStorage.setItem('fresco-has-run', '1'); } catch {}
+              } else if (ev.type === 'systems') {
+                // Deferred deep analysis — merge into the result so the
+                // Analysis tab's archetype/causal/sensitivity sections fill in.
+                setSystemsPending(false);
+                setResult(prev => {
+                  if (!prev) return prev;
+                  const merged = { ...prev, systemsOutput: ev.systemsOutput } as HouseResult;
+                  persistResult(merged);
+                  return merged;
+                });
               }
             } catch { /* skip */ }
           }
@@ -2659,6 +2675,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               : 'The connection dropped before the verdict arrived. Your answers are saved — try running again.'
           );
         }
+        // Stream closed — if the systems pass never landed (failed/timed out),
+        // stop the Analysis tab spinner so it doesn't hang forever.
+        setSystemsPending(false);
       } else {
         const data = await response.json();
         if (data.verdict) { setResult(data); await persistResult(data); inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -4005,6 +4024,17 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       </div>
                     ));
                   })()}
+
+                  {/* The deep systems analysis streams a beat after the verdict.
+                      Show its arrival rather than an empty tab. */}
+                  {systemsPending && !(result as any).systemsOutput && (
+                    <div className="pt-2 flex items-start gap-3 text-fresco-graphite-light">
+                      <Loader2 className="w-4 h-4 animate-spin flex-shrink-0 mt-0.5" />
+                      <p className="text-fresco-sm leading-relaxed">
+                        Deepening the analysis — mapping the archetype, causal loops, and leverage points. This takes a few more seconds.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Data visualisations — house-specific */}
                   {houseId === 'validate' && values['scores'] && (() => {

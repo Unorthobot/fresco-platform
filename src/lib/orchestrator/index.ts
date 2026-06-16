@@ -205,7 +205,7 @@ export function determineNextHouse(
 
 // ─── Merge prompt ──────────────────────────────────────────────────────────────
 
-export function buildMergePrompt(house: HouseId, agentOutputs: AgentOutput[], userInput: string): string {
+export function buildMergePrompt(house: HouseId, agentOutputs: AgentOutput[], userInput: string, mode: 'verdict' | 'systems' = 'verdict'): string {
   const houseName = house.charAt(0).toUpperCase() + house.slice(1);
   const fitLabel = HOUSE_FIT_LABELS[house];
 
@@ -246,34 +246,55 @@ ${a.structured_artifact ? `Structured artifact: ${a.structured_artifact}` : ''}`
   };
   const systemsOutputShape = SYSTEMS_OUTPUT_SHAPES[house] || '"notes": ""';
 
-  return `You are FRESCO's ${houseName} synthesis engine. Three specialist agents have run sequentially on the user's input. Each one built on the previous agent's findings.
-
-Your job: synthesise their combined outputs into a single integrated result.
+  // SYSTEMS pass — generated separately from the verdict so the verdict can
+  // stream first. Asks for only the (large) systemsOutput block.
+  if (mode === 'systems') {
+    return `You are FRESCO's ${houseName} systems-analysis engine. Three specialist agents analysed the founder's input; their structured artifacts embed systems-thinking frameworks. Extract them into structured data.
 
 USER INPUT:
 ${userInput}
 
-SEQUENTIAL AGENT OUTPUTS (in execution order):
+AGENT OUTPUTS:
+${agentSummaries}
+
+Extract the systems-thinking outputs from the agent artifacts using real content from the analysis — never leave fields as "...". Any prose is written TO the founder in the second person ("you"/"your"), never the third person.
+
+Respond ONLY with valid JSON:
+{
+  "systemsOutput": {
+    ${systemsOutputShape}
+  }
+}`;
+  }
+
+  // VERDICT pass — the fast synthesis the Decision tab needs. Deliberately
+  // excludes systemsOutput (generated in the 'systems' pass) so it streams
+  // without waiting on the heavy block.
+  return `You are FRESCO's ${houseName} synthesis engine. Three specialist agents analysed the founder's input from different angles.
+
+Your job: synthesise their combined outputs into a single integrated verdict.
+
+USER INPUT:
+${userInput}
+
+AGENT OUTPUTS:
 ${agentSummaries}
 
 Produce the synthesis. Rules:
-- VOICE: Write directly TO the founder in the second person — "you", "your". Never refer to them in the third person ("the user", "the founder", "they", "the customer"). Their input was written in the first person; the output must answer in kind. This applies to every field, including the systemsOutput text.
+- VOICE: Write directly TO the founder in the second person — "you", "your". Never refer to them in the third person ("the user", "the founder", "they", "the customer"). Their input was written in the first person; the output must answer in kind.
 - FIT_STRENGTH and VERDICT are linked — they must be consistent:
   - Strong → GO (clear signal, proceed with confidence)
   - Shaky → PIVOT or STOP (significant concerns; PIVOT if a better path exists, STOP if the direction is fundamentally wrong)
   - Mixed → INVESTIGATE FURTHER (mixed signals, more information needed)
   - Never combine Strong with STOP, PIVOT, or INVESTIGATE FURTHER
   - Never combine Shaky with GO
-- SENTENCE OF TRUTH: ONE sharp statement — the thing the user sensed but hadn't articulated. Not a summary. An insight.
-- KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to their situation.
+- SENTENCE OF TRUTH: ONE sharp statement — the thing you sensed but hadn't articulated. Not a summary. An insight.
+- KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to your situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
-- VERDICT RATIONALE: 1–2 sentences. Reference their specific situation.
+- VERDICT RATIONALE: 1–2 sentences. Reference your specific situation.
 - TONE: The verdict and rationale are decisive — state the call plainly. But the reasoning is contextual, not absolute: write "some of your audience may read this as…" rather than "your X reads as…". Decisiveness lives in the verdict; humility lives in the reasoning.
 - CONFIDENCE: "high" | "medium" | "low" — how sure the evidence makes you of this verdict. Low when the input is thin or signals conflict.
-- FLIP CONDITION: one concrete, checkable sentence naming what would change the verdict — the specific evidence or outcome that would move it. e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms." Name a real threshold from their situation, not a generic "more data".
-- SYSTEMS OUTPUT: Extract structured data from agent artifacts. Fill in the systemsOutput fields using what the agents actually found. Do not leave fields as "..." — put real content from the analysis.${investigateExtra}
-
-Also extract the SYSTEMS THINKING outputs from the agent structured_artifacts. The agents have embedded frameworks in their outputs — surface them as structured data.
+- FLIP CONDITION: one concrete, checkable sentence naming what would change the verdict — the specific evidence or outcome that would move it. e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms." Name a real threshold from your situation, not a generic "more data".${investigateExtra}
 
 Respond ONLY with valid JSON:
 {
@@ -282,12 +303,9 @@ Respond ONLY with valid JSON:
   "verdictRationale": "1-2 sentences directly answering whether ${houseName} fit exists",
   "confidence": "high | medium | low",
   "flipCondition": "One concrete sentence: the specific evidence or outcome that would change this verdict",
-  "sentenceOfTruth": "The thing they sensed but hadn't articulated — the uncomfortable truth",
+  "sentenceOfTruth": "The thing you sensed but hadn't articulated — the uncomfortable truth",
   "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
-  "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
-  "systemsOutput": {
-    ${systemsOutputShape}
-  }${investigateJsonField}
+  "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"]${investigateJsonField}
 }`;
 }
 

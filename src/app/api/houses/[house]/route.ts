@@ -177,8 +177,17 @@ async function runAgent(
   };
 }
 
-async function runMerge(house: HouseId, agentOutputs: AgentOutput[], userInput: string) {
-  const mergePrompt = buildMergePrompt(house, agentOutputs, userInput);
+// Two passes share this. 'verdict' is small + fast (Decision tab); 'systems'
+// generates only the large systemsOutput block (Analysis tab) and runs after
+// the verdict has already streamed, so it never blocks the verdict.
+async function runMerge(
+  house: HouseId,
+  agentOutputs: AgentOutput[],
+  userInput: string,
+  mode: 'verdict' | 'systems',
+  maxTokens: number,
+) {
+  const mergePrompt = buildMergePrompt(house, agentOutputs, userInput, mode);
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -188,19 +197,15 @@ async function runMerge(house: HouseId, agentOutputs: AgentOutput[], userInput: 
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      // Must fit the whole merge JSON: verdict + issues + moves + the large
-      // systemsOutput block. At 2000 the output truncated to invalid JSON,
-      // which silently dropped to the local fallback (no systemsOutput,
-      // forced INVESTIGATE FURTHER). Give it real headroom.
-      max_tokens: 8000,
+      max_tokens: maxTokens,
       messages: [{ role: 'user', content: mergePrompt }],
     }),
   });
-  if (!response.ok) throw new Error(`Merge error: ${response.status}`);
+  if (!response.ok) throw new Error(`Merge (${mode}) error: ${response.status}`);
   const data = await response.json();
   const text = data.content?.[0]?.text || '';
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Merge returned no JSON');
+  if (!jsonMatch) throw new Error(`Merge (${mode}) returned no JSON`);
   return JSON.parse(jsonMatch[0]);
 }
 
@@ -366,28 +371,33 @@ export async function POST(
         // ── Stage: analysing (WP3) — agents start running. ───────────────────
         send({ type: 'stage', stage: 'analysing' });
 
-        // ── Sequential execution ─────────────────────────────────────────────
-        for (const agent of agents) {
+        // ── Parallel execution ───────────────────────────────────────────────
+        // Agents run concurrently instead of in series — the dominant latency
+        // win. (They previously chained on each other's output; the merge still
+        // synthesises all of them, so concurrency keeps the depth while cutting
+        // the wait from the sum of the agents to the slowest single one.)
+        const modeContextFor = () =>
+          house === 'evaluate' && evaluateMode !== 'single'
+            ? `\n\nEVALUATION MODE: ${evaluateMode === 'comparison'
+                ? 'COMPARISON — the user is comparing two versions or approaches. The Variant Lens perspective is primary.'
+                : 'JOURNEY — the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
+            : '';
+
+        const settled = await Promise.all(agents.map(async (agent) => {
           try {
-            // For Evaluate: append mode context so agents know the primary lens
-            const modeContext = house === 'evaluate' && evaluateMode !== 'single'
-              ? `\n\nEVALUATION MODE: ${evaluateMode === 'comparison'
-                  ? 'COMPARISON — the user is comparing two versions or approaches. The Variant Lens perspective is primary.'
-                  : 'JOURNEY — the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
-              : '';
-
-            const output = await runAgent(
-              agent,
-              userInput.trim() + modeContext,
-              agentOutputs,
-              context,
-              pageContent,
-              pageFetchStatus,
-              url
-            );
-            agentOutputs.push(output);
-
-            // Stream this agent's result immediately
+            return await runAgent(agent, userInput.trim() + modeContextFor(), [], context, pageContent, pageFetchStatus, url);
+          } catch (err) {
+            console.error(`Agent ${agent.id} failed:`, err);
+            return {
+              agentId: agent.id, displayName: agent.displayName,
+              summary: '', key_findings: [], signal: '', confidence: 'low',
+              risks: [], recommendations: [],
+            } as AgentOutput;
+          }
+        }));
+        for (const output of settled) {
+          agentOutputs.push(output);
+          if (output.signal || output.key_findings.length > 0) {
             send({
               type: 'agent',
               displayName: output.displayName,
@@ -395,46 +405,32 @@ export async function POST(
               summary: output.summary,
               confidence: output.confidence,
               structured_artifact: output.structured_artifact || null,
-              // Full fields for lens reframe
               key_findings: output.key_findings,
               risks: output.risks,
               recommendations: output.recommendations,
             });
-          } catch (err) {
-            console.error(`Agent ${agent.id} failed:`, err);
-            const stub: AgentOutput = {
-              agentId: agent.id,
-              displayName: agent.displayName,
-              summary: '',
-              key_findings: [],
-              signal: '',
-              confidence: 'low',
-              risks: [],
-              recommendations: [],
-            };
-            agentOutputs.push(stub);
           }
         }
 
-        // ── Stage: forming (WP3) — synthesising the verdict. ─────────────────
+        // ── Stage: forming — the fast verdict pass (Decision tab). ───────────
         send({ type: 'stage', stage: 'forming' });
 
-        // ── Synthesis merge ──────────────────────────────────────────────────
         const hasOutput = agentOutputs.some(a => a.signal || a.key_findings.length > 0);
         let verdictData;
-
         if (hasOutput) {
           try {
-            const mergeResponse = await runMerge(house, agentOutputs, userInput.trim());
+            const mergeResponse = await runMerge(house, agentOutputs, userInput.trim(), 'verdict', 2000);
             verdictData = buildHouseResult(house, mergeResponse);
           } catch (mergeErr) {
-            console.error('Merge failed, using local:', mergeErr);
+            console.error('Verdict merge failed, using local:', mergeErr);
             verdictData = mergeAgentOutputsLocally(house, agentOutputs);
           }
         } else {
           verdictData = mergeAgentOutputsLocally(house, agentOutputs);
         }
 
+        // Verdict streams now — the Decision tab renders without waiting on the
+        // heavy systems analysis below.
         send({ type: 'verdict', ...verdictData });
 
         // Meter the verdict against the user's monthly quota — only after a
@@ -442,6 +438,21 @@ export async function POST(
         // credit. Fire-and-forget: a counter write must not delay delivery.
         if (userId) {
           consumeVerdict(userId).catch(() => { /* counter write is best-effort */ });
+        }
+
+        // ── Deferred systems pass (Analysis tab) ─────────────────────────────
+        // Runs AFTER the verdict has already streamed, so the large
+        // systemsOutput block never delays the verdict. Best-effort: if it
+        // fails or times out, the Decision tab still stands.
+        if (hasOutput) {
+          try {
+            const sys = await runMerge(house, agentOutputs, userInput.trim(), 'systems', 6000);
+            if (sys && sys.systemsOutput) {
+              send({ type: 'systems', systemsOutput: sys.systemsOutput });
+            }
+          } catch (sysErr) {
+            console.error('Systems pass failed (non-fatal):', sysErr);
+          }
         }
 
       } catch (err) {
