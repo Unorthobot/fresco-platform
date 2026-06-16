@@ -3685,6 +3685,52 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 )}
 
+                {/* THE BET — the asymmetry/reversibility of acting on this
+                    verdict. Renders only the fields the engine could honestly
+                    fill (no invented numbers); absent entirely on thin input. */}
+                {(result as any).theBet && (() => {
+                  const bet = (result as any).theBet;
+                  const revLabel = bet.reversibility === 'reversible' ? 'Reversible'
+                    : bet.reversibility === 'hard-to-reverse' ? 'Hard to reverse' : null;
+                  return (
+                    <div className="border border-fresco-border-light bg-white p-4">
+                      <p className="fresco-label mb-3">The bet</p>
+                      {(revLabel || bet.reversibilityNote) && (
+                        <div className="flex items-start gap-2 mb-3">
+                          {revLabel && (
+                            <span className={cn(
+                              'flex-shrink-0 font-mono text-[10px] uppercase tracking-wide px-2 py-0.5 border',
+                              bet.reversibility === 'hard-to-reverse'
+                                ? 'border-fresco-black text-fresco-black'
+                                : 'border-fresco-border text-fresco-graphite-mid'
+                            )}>
+                              {revLabel}
+                            </span>
+                          )}
+                          {bet.reversibilityNote && (
+                            <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">{bet.reversibilityNote}</p>
+                          )}
+                        </div>
+                      )}
+                      <div className="space-y-1.5">
+                        {bet.costIfWrong && (
+                          <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">
+                            <span className="font-medium text-fresco-black">If you&rsquo;re wrong: </span>{bet.costIfWrong}
+                          </p>
+                        )}
+                        {bet.costIfYouWait && (
+                          <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">
+                            <span className="font-medium text-fresco-black">If you wait: </span>{bet.costIfYouWait}
+                          </p>
+                        )}
+                      </div>
+                      {bet.asymmetry && (
+                        <p className="text-fresco-sm text-fresco-black leading-relaxed mt-3 pt-3 border-t border-fresco-border-light">{bet.asymmetry}</p>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Quiet disclaimer — a verdict is a decision aid, not a guarantee.
                     Surfaces in the UI what the Terms already say in writing. */}
                 <p className="text-[11px] text-fresco-graphite-light leading-relaxed">

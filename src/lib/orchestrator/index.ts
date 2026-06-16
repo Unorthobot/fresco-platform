@@ -40,6 +40,16 @@ export interface HouseResult {
   sentenceOfTruth: string;
   keyIssues: string[];
   necessaryMoves: string[];
+  // "The bet" — the asymmetry/reversibility framing of acting on this verdict.
+  // All fields optional: the model returns only what the input can honestly
+  // support (no invented figures), and the whole block may be absent.
+  theBet?: {
+    reversibility?: 'reversible' | 'hard-to-reverse' | null;
+    reversibilityNote?: string;
+    costIfWrong?: string;
+    costIfYouWait?: string;
+    asymmetry?: string;
+  };
   // Systems thinking outputs — house-specific
   systemsOutput?: {
     // Investigate: Iceberg + Current State Simulation
@@ -294,7 +304,8 @@ Produce the synthesis. Rules:
 - VERDICT RATIONALE: 1–2 sentences. Reference your specific situation.
 - TONE: The verdict and rationale are decisive — state the call plainly. But the reasoning is contextual, not absolute: write "some of your audience may read this as…" rather than "your X reads as…". Decisiveness lives in the verdict; humility lives in the reasoning.
 - CONFIDENCE: "high" | "medium" | "low" — how sure the evidence makes you of this verdict. Low when the input is thin or signals conflict.
-- FLIP CONDITION: one concrete, checkable sentence naming what would change the verdict — the specific evidence or outcome that would move it. e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms." Name a real threshold from your situation, not a generic "more data".${investigateExtra}
+- FLIP CONDITION: one concrete, checkable sentence naming what would change the verdict — the specific evidence or outcome that would move it. e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms." Name a real threshold from your situation, not a generic "more data".
+- THE BET: Frame the decision as a bet. reversibility — is acting a one-way door or recoverable? reversibilityNote — one sentence. costIfWrong / costIfYouWait — the asymmetry between acting on a wrong verdict and waiting. asymmetry — one line naming which way the odds lean. Use concrete figures ONLY if the founder stated real numbers; never invent costs, revenue, runway, or probabilities. If the input is too thin to assess a field honestly, return null for that field — do not pad. When confidence is "low", keep this conservative or return null for every field.${investigateExtra}
 
 Respond ONLY with valid JSON:
 {
@@ -305,7 +316,8 @@ Respond ONLY with valid JSON:
   "flipCondition": "One concrete sentence: the specific evidence or outcome that would change this verdict",
   "sentenceOfTruth": "The thing you sensed but hadn't articulated — the uncomfortable truth",
   "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
-  "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"]${investigateJsonField}
+  "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
+  "theBet": { "reversibility": "reversible | hard-to-reverse | null", "reversibilityNote": "one sentence, or null", "costIfWrong": "what acting on a wrong verdict costs you, or null", "costIfYouWait": "what delay costs you, or null", "asymmetry": "one-line read of which way the odds lean, or null" }${investigateJsonField}
 }`;
 }
 
@@ -324,8 +336,28 @@ export function buildHouseResult(
     necessaryMoves: string[];
     povStatement?: string;
     systemsOutput?: Record<string, any>;
+    theBet?: Record<string, any>;
   }
 ): HouseResult {
+  // Normalise "the bet": coerce the model's "null"/empty strings to absent,
+  // validate reversibility, and drop the whole block if nothing survives.
+  const normaliseBet = (raw: any): HouseResult['theBet'] => {
+    if (!raw || typeof raw !== 'object') return undefined;
+    const clean = (v: unknown) => {
+      const s = typeof v === 'string' ? v.trim() : '';
+      return s && s.toLowerCase() !== 'null' ? s : undefined;
+    };
+    const rev = clean(raw.reversibility)?.toLowerCase();
+    const bet = {
+      reversibility: rev === 'reversible' || rev === 'hard-to-reverse' ? (rev as 'reversible' | 'hard-to-reverse') : null,
+      reversibilityNote: clean(raw.reversibilityNote),
+      costIfWrong: clean(raw.costIfWrong),
+      costIfYouWait: clean(raw.costIfYouWait),
+      asymmetry: clean(raw.asymmetry),
+    };
+    const hasContent = bet.reversibility || bet.reversibilityNote || bet.costIfWrong || bet.costIfYouWait || bet.asymmetry;
+    return hasContent ? bet : undefined;
+  };
   const fitStrength = mergeResponse.fitStrength || 'Mixed';
   const rawVerdict = (mergeResponse.verdict as HouseResult['verdict']) || 'INVESTIGATE FURTHER';
 
@@ -353,6 +385,7 @@ export function buildHouseResult(
     sentenceOfTruth: mergeResponse.sentenceOfTruth,
     keyIssues: (mergeResponse.keyIssues || []).slice(0, 5),
     necessaryMoves: (mergeResponse.necessaryMoves || []).slice(0, 5),
+    theBet: normaliseBet((mergeResponse as any).theBet),
     systemsOutput: (mergeResponse as any).systemsOutput || undefined,
     suggestedNextHouse: routing.nextHouse,
     suggestedNextHouseReason: routing.reason,
