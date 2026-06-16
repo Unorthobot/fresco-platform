@@ -1,8 +1,9 @@
 'use client';
 
 // WP1 — first-run "See an example session" (spec Moment 1). Read-only,
-// spends no run. STUB CONTENT: the structure is final; the copy below is
-// placeholder until the anonymised Sorted session transcript is supplied.
+// spends no run. A representative anonymised decision — deliberately a
+// different scenario from the one on the marketing site so the two never
+// read as the same example.
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -12,25 +13,24 @@ interface ExampleSessionModalProps {
   onClose: () => void;
 }
 
-// ── STUB — replace with the anonymised Sorted session ─────────────────────
 const EXAMPLE = {
   prompt:
-    'We connect car owners with independent mechanics. Bookings grew 40% last quarter but mechanic sign-ups have stalled — we have 20 mechanics and most are at capacity. Do we spend the next month building tools to recruit more mechanics, or double down on the demand side?',
-  house: 'VALIDATE',
+    'We build project management software for construction firms — there are four of us. Customers keep asking for a mobile app, Gantt charts, and a QuickBooks integration. I want all three, but we can only ship one well this quarter. Which do we build, and how should I even decide?',
+  house: 'INNOVATE',
   verdict: 'PIVOT',
   sentenceOfTruth:
-    'Your bottleneck is supply trust, not supply tooling — mechanics aren\'t joining because the commission terms feel risky, not because sign-up is hard.',
+    'Which feature is the wrong question — until your field crews stop defaulting to WhatsApp and spreadsheets, anything you ship lands in a tool half your users have already left.',
   rationale:
-    'The evidence points at economics, not friction: capacity is full, demand is proven, and the stalled sign-ups correlate with the commission change — not with any product gap a recruiting tool would fix.',
+    'Two of your three options serve the office, but adoption isn\'t dying in the office — it\'s dying on site. The mobile app is the only one that touches where the work actually happens.',
   keyIssues: [
-    'Mechanic acquisition stalled after the commission restructure, not before',
-    'Recruiting tooling solves a friction problem the evidence doesn\'t show',
-    'Demand growth makes the supply gap more expensive every week',
+    'Gantt charts and QuickBooks serve the office, where adoption isn\'t the problem',
+    'Field crews fall back to WhatsApp because the product isn\'t usable on site',
+    'Shipping for the office widens the office/field gap that\'s driving churn',
   ],
   moves: [
-    'Call the last 10 mechanics who didn\'t complete sign-up — ask one question: what stopped you?',
-    'Test a revised commission structure with 5 prospective mechanics before building anything',
-    'Set a two-week decision point: if 15 of 20 accept revised terms, the verdict flips to GO on supply tooling',
+    'Shadow two crews on a job site for a day — watch every time they reach for WhatsApp instead of you',
+    'Ship a thin mobile view — today\'s tasks plus photo upload — before Gantt or QuickBooks',
+    'Define adoption as field crews logging in 3×/week; if a mobile pilot hits that within a month, the verdict flips to GO on going mobile-first',
   ],
 };
 // ──────────────────────────────────────────────────────────────────────────
