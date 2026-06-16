@@ -19,9 +19,11 @@ const LOOP_TYPE_LABELS = {
 export function CausalLoopDiagram({ nodes, edges, dominantLoop, loopType }: CausalLoopProps) {
   if (!nodes?.length || !edges?.length) return null;
 
-  // Layout nodes in a circle
-  const W = 420, H = 320, cx = W / 2, cy = H / 2;
-  const r = Math.min(cx, cy) - 64;
+  // Layout nodes in a circle. Canvas is wide and the SVG scales to the full
+  // container width (see <svg> below), so the ring spreads across the panel
+  // instead of sitting cramped in the centre.
+  const W = 760, H = 460, cx = W / 2, cy = H / 2;
+  const r = Math.min(cx, cy) - 58;
   const n = nodes.length;
 
   const positions: Record<string, { x: number; y: number }> = {};
@@ -41,7 +43,7 @@ export function CausalLoopDiagram({ nodes, edges, dominantLoop, loopType }: Caus
     // Offset endpoints toward center to avoid overlapping nodes
     const dx = to.x - from.x, dy = to.y - from.y;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const nodeR = 38;
+    const nodeR = 46;
     const sx = from.x + (dx / dist) * nodeR;
     const sy = from.y + (dy / dist) * nodeR;
     const ex = to.x - (dx / dist) * nodeR;
@@ -57,7 +59,7 @@ export function CausalLoopDiagram({ nodes, edges, dominantLoop, loopType }: Caus
 
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} className="overflow-visible">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto overflow-visible">
         <defs>
           <marker id={markerId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
             <path d="M0,0 L6,3 L0,6 Z" fill="#888" />
@@ -100,12 +102,12 @@ export function CausalLoopDiagram({ nodes, edges, dominantLoop, loopType }: Caus
           const words = node.label.split(' ');
           return (
             <g key={node.id}>
-              <circle cx={pos.x} cy={pos.y} r="38"
+              <circle cx={pos.x} cy={pos.y} r="46"
                 fill="white" stroke="#000000" strokeWidth="1.5" />
               {(() => {
                 // Label fitting — wrap into up to 3 lines. Each line targets
                 // ~12 chars to fit in a 76px-wide circle at 9px font.
-                const maxCharsPerLine = 12;
+                const maxCharsPerLine = 14;
                 const lines: string[] = [];
                 let current = '';
                 for (const word of words) {
@@ -128,12 +130,12 @@ export function CausalLoopDiagram({ nodes, edges, dominantLoop, loopType }: Caus
                   }
                 }
                 if (current) lines.push(current);
-                const lineHeight = 11;
+                const lineHeight = 12;
                 const totalHeight = (lines.length - 1) * lineHeight;
                 return lines.map((line, li) => (
                   <text key={li} x={pos.x} y={pos.y - totalHeight / 2 + li * lineHeight}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize="9" fontFamily="Inter, sans-serif"
+                    fontSize="10" fontFamily="Inter, sans-serif"
                     fill="#000000" fontWeight="500">
                     {line}
                   </text>

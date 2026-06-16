@@ -3247,13 +3247,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               <div className="flex items-center gap-2">
                 <button
                   disabled
-                  className="fresco-btn flex-1 opacity-60 cursor-default">
-                  <Loader2 className="w-4 h-4 animate-spin" /><span>Working through it…</span>
+                  className="fresco-btn flex-1 min-w-0 opacity-60 cursor-default">
+                  <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" /><span className="truncate">Working through it…</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleStop}
-                  className="px-4 py-3 border border-fresco-border text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black hover:border-fresco-black transition-colors">
+                  className="flex-shrink-0 px-4 py-3 border border-fresco-border text-fresco-sm text-fresco-graphite-mid hover:text-fresco-black hover:border-fresco-black transition-colors">
                   Stop
                 </button>
               </div>
@@ -3496,10 +3496,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </motion.div>
                   );
                 })()}
-                {isRunning && agentEvents.length < 3 && (
-                  <div className="p-3 bg-fresco-light-gray border-l-2 border-fresco-border">
-                    <div className="h-2 w-20 bg-fresco-border rounded mb-2 animate-pulse" />
-                    <div className="h-2 w-full bg-fresco-border rounded animate-pulse" />
+                {isRunning && agentEvents.length === 0 && (
+                  <div className="flex items-center gap-2.5 p-3 text-fresco-xs text-fresco-graphite-light">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+                    <span>Analysing your decision from several angles at once…</span>
                   </div>
                 )}
               </motion.div>
