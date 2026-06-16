@@ -149,7 +149,11 @@ async function runAgent(
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      // Agents run on Haiku (~3x faster than Sonnet) to keep the verdict snappy.
+      // The verdict synthesis and the deep systems pass stay on Sonnet, so the
+      // user-facing reasoning is still Sonnet-quality — only these intermediate
+      // per-lens passes trade a little depth for speed.
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1200,
       system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person — "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.`,
       messages: [{ role: 'user', content: userMessage }],
