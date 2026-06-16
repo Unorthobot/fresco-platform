@@ -257,6 +257,7 @@ SEQUENTIAL AGENT OUTPUTS (in execution order):
 ${agentSummaries}
 
 Produce the synthesis. Rules:
+- VOICE: Write directly TO the founder in the second person — "you", "your". Never refer to them in the third person ("the user", "the founder", "they", "the customer"). Their input was written in the first person; the output must answer in kind. This applies to every field, including the systemsOutput text.
 - FIT_STRENGTH and VERDICT are linked — they must be consistent:
   - Strong → GO (clear signal, proceed with confidence)
   - Shaky → PIVOT or STOP (significant concerns; PIVOT if a better path exists, STOP if the direction is fundamentally wrong)

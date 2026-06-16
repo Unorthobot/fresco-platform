@@ -151,7 +151,7 @@ async function runAgent(
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1200,
-      system: agent.systemPrompt,
+      system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person — "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.`,
       messages: [{ role: 'user', content: userMessage }],
     }),
   });
