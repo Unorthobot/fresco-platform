@@ -108,6 +108,41 @@ async function fetchPageContent(url: string): Promise<{ content: string; title: 
   }
 }
 
+// Anthropic call with retry on transient failures (429 rate-limit, 529
+// overloaded, 5xx, network). Running the agents concurrently makes these
+// bursty; a couple of backed-off retries recovers them instead of silently
+// dropping to the local fallback verdict. Returns the message text.
+async function anthropicMessage(payload: object, label: string, retries = 2): Promise<string> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY!,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.content?.[0]?.text || '';
+      }
+      const transient = res.status === 429 || res.status === 529 || (res.status >= 500 && res.status < 600);
+      if (!transient || attempt === retries) throw new Error(`${label} error: ${res.status}`);
+      const retryAfter = parseInt(res.headers.get('retry-after') || '', 10);
+      const wait = Number.isFinite(retryAfter) ? retryAfter * 1000 : 600 * 2 ** attempt + Math.random() * 300;
+      await new Promise(r => setTimeout(r, wait));
+    } catch (e) {
+      lastErr = e;
+      if (attempt === retries) throw e;
+      await new Promise(r => setTimeout(r, 600 * 2 ** attempt));
+    }
+  }
+  throw lastErr;
+}
+
 async function runAgent(
   agent: { id: string; displayName: string; systemPrompt: string },
   userInput: string,
@@ -141,29 +176,15 @@ async function runAgent(
 
   const userMessage = `${contextSection}${pageSection}${priorSection}\n\nUSER INPUT:\n${userInput}\n\nReturn your JSON analysis.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      // Agents run on Haiku (~3x faster than Sonnet) to keep the verdict snappy.
-      // The verdict synthesis and the deep systems pass stay on Sonnet, so the
-      // user-facing reasoning is still Sonnet-quality — only these intermediate
-      // per-lens passes trade a little depth for speed.
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1200,
-      system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person — "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.`,
-      messages: [{ role: 'user', content: userMessage }],
-    }),
-  });
-
-  if (!response.ok) throw new Error(`Agent ${agent.id} error: ${response.status}`);
-
-  const data = await response.json();
-  const text = data.content?.[0]?.text || '';
+  // Agents run on Haiku (~3x faster than Sonnet) to keep the verdict snappy.
+  // The verdict synthesis and the deep systems pass stay on Sonnet, so the
+  // user-facing reasoning is still Sonnet-quality.
+  const text = await anthropicMessage({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1200,
+    system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person — "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.`,
+    messages: [{ role: 'user', content: userMessage }],
+  }, `Agent ${agent.id}`);
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error(`Agent ${agent.id} returned no JSON`);
 
@@ -192,22 +213,11 @@ async function runMerge(
   maxTokens: number,
 ) {
   const mergePrompt = buildMergePrompt(house, agentOutputs, userInput, mode);
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: mergePrompt }],
-    }),
-  });
-  if (!response.ok) throw new Error(`Merge (${mode}) error: ${response.status}`);
-  const data = await response.json();
-  const text = data.content?.[0]?.text || '';
+  const text = await anthropicMessage({
+    model: 'claude-sonnet-4-6',
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: mergePrompt }],
+  }, `Merge (${mode})`);
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error(`Merge (${mode}) returned no JSON`);
   return JSON.parse(jsonMatch[0]);
@@ -419,17 +429,24 @@ export async function POST(
         // ── Stage: forming — the fast verdict pass (Decision tab). ───────────
         send({ type: 'stage', stage: 'forming' });
 
+        // Every agent failed (even after retries) — almost always transient
+        // rate-limit/overload. Surface a real, retryable error instead of the
+        // local fallback, which produces a misleading "NEEDS MORE SIGNAL"
+        // verdict with no issues/moves. No verdict is sent, so no quota is spent.
         const hasOutput = agentOutputs.some(a => a.signal || a.key_findings.length > 0);
+        if (!hasOutput) {
+          send({ type: 'error', message: 'The analysis engine was busy and couldn’t finish. Your answers are saved — run again in a moment.' });
+          return;
+        }
+
         let verdictData;
-        if (hasOutput) {
-          try {
-            const mergeResponse = await runMerge(house, agentOutputs, userInput.trim(), 'verdict', 2000);
-            verdictData = buildHouseResult(house, mergeResponse);
-          } catch (mergeErr) {
-            console.error('Verdict merge failed, using local:', mergeErr);
-            verdictData = mergeAgentOutputsLocally(house, agentOutputs);
-          }
-        } else {
+        try {
+          const mergeResponse = await runMerge(house, agentOutputs, userInput.trim(), 'verdict', 2000);
+          verdictData = buildHouseResult(house, mergeResponse);
+        } catch (mergeErr) {
+          // Agents succeeded but synthesis failed — local merge still carries
+          // the real agent findings, so it's an acceptable degradation here.
+          console.error('Verdict merge failed, using local:', mergeErr);
           verdictData = mergeAgentOutputsLocally(house, agentOutputs);
         }
 
