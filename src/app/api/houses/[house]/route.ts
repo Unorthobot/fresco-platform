@@ -385,31 +385,30 @@ export async function POST(
         // ── Stage: analysing (WP3) — agents start running. ───────────────────
         send({ type: 'stage', stage: 'analysing' });
 
-        // ── Parallel execution ───────────────────────────────────────────────
-        // Agents run concurrently instead of in series — the dominant latency
-        // win. (They previously chained on each other's output; the merge still
-        // synthesises all of them, so concurrency keeps the depth while cutting
-        // the wait from the sum of the agents to the slowest single one.)
-        const modeContextFor = () =>
-          house === 'evaluate' && evaluateMode !== 'single'
-            ? `\n\nEVALUATION MODE: ${evaluateMode === 'comparison'
-                ? 'COMPARISON — the user is comparing two versions or approaches. The Variant Lens perspective is primary.'
-                : 'JOURNEY — the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
-            : '';
+        // ── Sequential execution ─────────────────────────────────────────────
+        // Agents run one at a time (not concurrently). Firing all three at once
+        // burst-tripped Anthropic's rate-limit/overload and dropped agents into
+        // the fallback; on Haiku each agent is fast (~10s), so the sum is still
+        // well under the old Sonnet timings. Each agent also chains on the
+        // prior outputs, and streams to the client as it lands.
+        const modeContext = house === 'evaluate' && evaluateMode !== 'single'
+          ? `\n\nEVALUATION MODE: ${evaluateMode === 'comparison'
+              ? 'COMPARISON — the user is comparing two versions or approaches. The Variant Lens perspective is primary.'
+              : 'JOURNEY — the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
+          : '';
 
-        const settled = await Promise.all(agents.map(async (agent) => {
+        for (const agent of agents) {
+          let output: AgentOutput;
           try {
-            return await runAgent(agent, userInput.trim() + modeContextFor(), [], context, pageContent, pageFetchStatus, url);
+            output = await runAgent(agent, userInput.trim() + modeContext, agentOutputs, context, pageContent, pageFetchStatus, url);
           } catch (err) {
             console.error(`Agent ${agent.id} failed:`, err);
-            return {
+            output = {
               agentId: agent.id, displayName: agent.displayName,
               summary: '', key_findings: [], signal: '', confidence: 'low',
               risks: [], recommendations: [],
-            } as AgentOutput;
+            };
           }
-        }));
-        for (const output of settled) {
           agentOutputs.push(output);
           if (output.signal || output.key_findings.length > 0) {
             send({
