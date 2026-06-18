@@ -3685,6 +3685,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                 )}
 
+                {/* WHAT'S WORKING — the genuine asset to protect. Paired with
+                    the bet below (the asset, then the risk). Absent when the
+                    engine has nothing genuine to point to — no flattery. */}
+                {(result as any).whatsWorking && (
+                  <div className="border border-fresco-border-light bg-white p-4">
+                    <p className="fresco-label mb-2">What&rsquo;s working</p>
+                    <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">{(result as any).whatsWorking}</p>
+                  </div>
+                )}
+
                 {/* THE BET — the asymmetry/reversibility of acting on this
                     verdict. Renders only the fields the engine could honestly
                     fill (no invented numbers); absent entirely on thin input. */}

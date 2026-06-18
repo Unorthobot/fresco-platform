@@ -38,6 +38,10 @@ export interface HouseResult {
   // Core outputs
   povStatement?: string;        // Investigate only
   sentenceOfTruth: string;
+  // "What's working" — the genuine asset the verdict should protect, framed as
+  // what not to lose (not praise). Absent when there's no real strength yet:
+  // the engine won't manufacture a positive to flatter.
+  whatsWorking?: string;
   keyIssues: string[];
   necessaryMoves: string[];
   // "The bet" — the asymmetry/reversibility framing of acting on this verdict.
@@ -299,6 +303,7 @@ Produce the synthesis. Rules:
   - Never combine Strong with STOP, PIVOT, or INVESTIGATE FURTHER
   - Never combine Shaky with GO
 - SENTENCE OF TRUTH: ONE sharp statement — the thing you sensed but hadn't articulated. Not a summary. An insight.
+- WHAT'S WORKING: Name the genuine asset this decision should protect — the real thing you'd be foolish to lose — framed as what to keep, not praise. e.g. "Your distribution is real; don't lose it in the pivot." One sentence. If nothing is genuinely working yet, return null — never manufacture a strength to flatter.
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to your situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
 - VERDICT RATIONALE: 1–2 sentences. Reference your specific situation.
@@ -315,6 +320,7 @@ Respond ONLY with valid JSON:
   "confidence": "high | medium | low",
   "flipCondition": "One concrete sentence: the specific evidence or outcome that would change this verdict",
   "sentenceOfTruth": "The thing you sensed but hadn't articulated — the uncomfortable truth",
+  "whatsWorking": "the genuine asset to protect, framed as what not to lose — or null if nothing genuine yet",
   "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
   "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
   "theBet": { "reversibility": "reversible | hard-to-reverse | null", "reversibilityNote": "one sentence, or null", "costIfWrong": "what acting on a wrong verdict costs you, or null", "costIfYouWait": "what delay costs you, or null", "asymmetry": "one-line read of which way the odds lean, or null" }${investigateJsonField}
@@ -332,6 +338,7 @@ export function buildHouseResult(
     confidence?: 'high' | 'medium' | 'low';
     flipCondition?: string;
     sentenceOfTruth: string;
+    whatsWorking?: string;
     keyIssues: string[];
     necessaryMoves: string[];
     povStatement?: string;
@@ -339,6 +346,11 @@ export function buildHouseResult(
     theBet?: Record<string, any>;
   }
 ): HouseResult {
+  // Coerce the model's "null"/empty string to absent — no manufactured strength.
+  const cleanWorking = (() => {
+    const s = typeof mergeResponse.whatsWorking === 'string' ? mergeResponse.whatsWorking.trim() : '';
+    return s && s.toLowerCase() !== 'null' ? s : undefined;
+  })();
   // Normalise "the bet": coerce the model's "null"/empty strings to absent,
   // validate reversibility, and drop the whole block if nothing survives.
   const normaliseBet = (raw: any): HouseResult['theBet'] => {
@@ -383,6 +395,7 @@ export function buildHouseResult(
     flipCondition: mergeResponse.flipCondition || '',
     povStatement: mergeResponse.povStatement || undefined,
     sentenceOfTruth: mergeResponse.sentenceOfTruth,
+    whatsWorking: cleanWorking,
     keyIssues: (mergeResponse.keyIssues || []).slice(0, 5),
     necessaryMoves: (mergeResponse.necessaryMoves || []).slice(0, 5),
     theBet: normaliseBet((mergeResponse as any).theBet),
