@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Zap, ArrowRight } from 'lucide-react';
+import { X, Check, Zap } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
 import { checkoutUrlFor } from '@/lib/checkout';
 
@@ -11,13 +11,6 @@ interface PricingModalProps {
   onClose: () => void;
   triggerHouse?: string; // which house triggered the upgrade (for context)
 }
-
-const HOUSES = [
-  { name: 'Investigate', output: 'Is the problem real?', agents: ['Insight Stack', 'Belief Mapper', 'Position Builder'] },
-  { name: 'Innovate',    output: 'Will people want this?',  agents: ['Flow Board', 'Strategy Sketchbook', 'Experiment Brief'] },
-  { name: 'Validate',    output: 'Will it sell?', agents: ['Experience Scorecard', 'Influence Map', 'Results Tracker'] },
-  { name: 'Evaluate',    output: 'How is it actually doing?', agents: ['Page Scorecard', 'Variant Lens', 'Journey Trace'] },
-];
 
 // Public ladder matches frescolab.io: Free + Founder. Founder is the public
 // name of the `pro` tier (same entitlements: unlimited verdicts, all
@@ -45,7 +38,6 @@ const PLANS = [
 ];
 
 export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProps) {
-  const [showArchitecture, setShowArchitecture] = useState(false);
   const user = useFrescoStore(state => state.user);
 
   const CHECKOUT_URLS: Record<'pro' | 'studio', string> = {
@@ -90,46 +82,9 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
 
             {/* Free tier context */}
             <div className="px-8 py-4 bg-fresco-light-gray border-b border-fresco-border-light">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-fresco-sm font-medium text-fresco-black">Free plan</p>
-                  <p className="text-fresco-xs text-fresco-graphite-mid">3 verdicts a month · Full engine, full reasoning · Chrome plugin included</p>
-                </div>
-                <button
-                  onClick={() => setShowArchitecture(v => !v)}
-                  className="text-fresco-xs text-fresco-graphite-mid hover:text-fresco-black transition-colors flex items-center gap-1"
-                >
-                  What happens in a run? <ArrowRight className={`w-3 h-3 transition-transform ${showArchitecture ? 'rotate-90' : ''}`} />
-                </button>
-              </div>
-
-              <AnimatePresence>
-                {showArchitecture && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-4 overflow-hidden"
-                  >
-                    <p className="text-fresco-xs text-fresco-graphite-mid mb-3">
-                      Each verdict runs your input through three specialist analysis passes, then synthesises them into a single call — GO, PIVOT, STOP, or NEEDS MORE SIGNAL. One run = one complete analysis.
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {HOUSES.map(h => (
-                        <div key={h.name} className="bg-fresco-white p-3 border border-fresco-border-light">
-                          <p className="text-fresco-xs font-medium text-fresco-black mb-0.5">{h.name}</p>
-                          <p className="text-fresco-xs text-fresco-graphite-light mb-2">→ {h.output}</p>
-                          <div className="flex flex-col gap-0.5">
-                            {h.agents.map(a => (
-                              <p key={a} className="text-[10px] text-fresco-graphite-light">{a}</p>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <p className="text-fresco-sm font-medium text-fresco-black">Free plan</p>
+              <p className="text-fresco-xs text-fresco-graphite-mid">3 verdicts a month · Full engine, full reasoning · Chrome plugin included</p>
+              <p className="text-fresco-xs text-fresco-graphite-light mt-1">Every verdict runs the full analysis and ends in one call — GO, PIVOT, STOP, or NEEDS MORE SIGNAL.</p>
             </div>
 
             {/* Plugin callout */}
