@@ -27,13 +27,15 @@ export const metadata: Metadata = {
     url: 'https://app.frescolab.io',
     title: TITLE,
     description: DESCRIPTION,
-    // og:image is supplied automatically by app/opengraph-image.tsx
+    // Clean image URL (no ?hash) served by app/opengraph-image/route.tsx —
+    // X won't reliably card a query-string image URL.
+    images: [{ url: 'https://app.frescolab.io/opengraph-image', width: 1200, height: 630, alt: TITLE }],
   },
   twitter: {
     card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
-    // twitter:image is supplied automatically by app/twitter-image.tsx
+    images: ['https://app.frescolab.io/opengraph-image'],
   },
 };
 

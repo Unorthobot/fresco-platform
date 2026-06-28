@@ -1,15 +1,14 @@
 import { ImageResponse } from 'next/og';
 
-// Dynamically generated social share card (1200×630). Next wires this up as
-// both og:image and twitter:image, so links to app.frescolab.io render a
-// branded preview on X, Slack, iMessage, etc. — no static asset to maintain.
+// Social share card (1200×630), served from a plain route handler so the URL
+// stays clean — `/opengraph-image`, no auto-appended ?<hash>. X is finicky
+// about query-string image URLs for cards (LinkedIn/Slack tolerate them); the
+// clean path is what the marketing site already points to and what previews
+// reliably on X. Referenced explicitly from layout metadata.
 
 export const runtime = 'edge';
-export const alt = 'Fresco — a decision engine for startup founders';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
 
-export default function OpengraphImage() {
+export async function GET() {
   return new ImageResponse(
     (
       <div
@@ -43,6 +42,6 @@ export default function OpengraphImage() {
         </div>
       </div>
     ),
-    { ...size },
+    { width: 1200, height: 630 },
   );
 }
