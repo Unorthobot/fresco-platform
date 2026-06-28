@@ -87,26 +87,6 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
               <p className="text-fresco-xs text-fresco-graphite-light mt-1">Every verdict runs the full analysis and ends in one call — GO, PIVOT, STOP, or NEEDS MORE SIGNAL.</p>
             </div>
 
-            {/* Plugin callout */}
-            <div className="px-8 py-4 border-b border-fresco-border-light flex items-start gap-4">
-              <div className="w-8 h-8 bg-fresco-black flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="0"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-              </div>
-              <div className="flex-1">
-                <p className="text-fresco-sm font-medium text-fresco-black mb-0.5">Includes the Fresco Evaluate Chrome plugin</p>
-                <p className="text-fresco-xs text-fresco-graphite-mid leading-relaxed">Evaluate any page, compare versions, and trace user journeys — directly in your browser, without switching context. Every plan includes the Chrome extension.</p>
-                {/* Quiet utility link — kept reachable (Settings also links it)
-                    but visually subordinate so it doesn't compete with the
-                    modal's one primary action, "Get Founder". */}
-                <a
-                  href="/connect-extension"
-                  className="inline-block mt-1.5 text-fresco-xs text-fresco-graphite-light underline underline-offset-4 hover:text-fresco-graphite-mid transition-colors"
-                >
-                  Set up the plugin
-                </a>
-              </div>
-            </div>
-
             {/* Plan cards */}
             <div>
               {PLANS.map(plan => {
@@ -148,6 +128,24 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
                   </div>
                 );
               })}
+            </div>
+
+            {/* Plugin callout — every plan includes it; placed after the plan
+                so the primary CTA ("Get Founder") comes first. */}
+            <div className="px-8 py-4 border-t border-fresco-border-light flex items-start gap-4">
+              <div className="w-8 h-8 bg-fresco-black flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="0"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-fresco-sm font-medium text-fresco-black mb-0.5">Includes the Fresco Evaluate Chrome plugin</p>
+                <p className="text-fresco-xs text-fresco-graphite-mid leading-relaxed">Evaluate any page, compare versions, and trace user journeys — directly in your browser, without switching context. Every plan includes the Chrome extension.</p>
+                <a
+                  href="/connect-extension"
+                  className="inline-block mt-1.5 text-fresco-xs text-fresco-graphite-light underline underline-offset-4 hover:text-fresco-graphite-mid transition-colors"
+                >
+                  Set up the plugin
+                </a>
+              </div>
             </div>
 
             <div className="px-8 py-4 border-t border-fresco-border-light flex items-center justify-between">
