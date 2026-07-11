@@ -109,10 +109,11 @@ async function fetchPageContent(url: string): Promise<{ content: string; title: 
 }
 
 // Anthropic call with retry on transient failures (429 rate-limit, 529
-// overloaded, 5xx, network). Running the agents concurrently makes these
-// bursty; a couple of backed-off retries recovers them instead of silently
-// dropping to the local fallback verdict. Returns the message text.
-async function anthropicMessage(payload: object, label: string, retries = 2): Promise<string> {
+// overloaded, 5xx, network). Rate-limit windows are per-minute, so sub-second
+// backoffs never cleared them — waits are seconds-scale (Retry-After when
+// given, else 4s/8s/16s). maxDuration is 300s, so there's room to outwait a
+// bad window rather than fail the run. Returns the message text.
+async function anthropicMessage(payload: object, label: string, retries = 3): Promise<string> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -132,12 +133,14 @@ async function anthropicMessage(payload: object, label: string, retries = 2): Pr
       const transient = res.status === 429 || res.status === 529 || (res.status >= 500 && res.status < 600);
       if (!transient || attempt === retries) throw new Error(`${label} error: ${res.status}`);
       const retryAfter = parseInt(res.headers.get('retry-after') || '', 10);
-      const wait = Number.isFinite(retryAfter) ? retryAfter * 1000 : 600 * 2 ** attempt + Math.random() * 300;
+      const wait = Number.isFinite(retryAfter)
+        ? Math.min(retryAfter * 1000, 30_000)
+        : 4000 * 2 ** attempt + Math.random() * 1000;
       await new Promise(r => setTimeout(r, wait));
     } catch (e) {
       lastErr = e;
       if (attempt === retries) throw e;
-      await new Promise(r => setTimeout(r, 600 * 2 ** attempt));
+      await new Promise(r => setTimeout(r, 2000 * 2 ** attempt));
     }
   }
   throw lastErr;
@@ -397,12 +400,14 @@ export async function POST(
               : 'JOURNEY — the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
           : '';
 
+        let lastAgentError = '';
         for (const agent of agents) {
           let output: AgentOutput;
           try {
             output = await runAgent(agent, userInput.trim() + modeContext, agentOutputs, context, pageContent, pageFetchStatus, url);
           } catch (err) {
             console.error(`Agent ${agent.id} failed:`, err);
+            lastAgentError = err instanceof Error ? err.message : String(err);
             output = {
               agentId: agent.id, displayName: agent.displayName,
               summary: '', key_findings: [], signal: '', confidence: 'low',
@@ -434,7 +439,11 @@ export async function POST(
         // verdict with no issues/moves. No verdict is sent, so no quota is spent.
         const hasOutput = agentOutputs.some(a => a.signal || a.key_findings.length > 0);
         if (!hasOutput) {
-          send({ type: 'error', message: 'The analysis engine was busy and couldn’t finish. Your answers are saved — run again in a moment.' });
+          // Client appends its own "Your answers are saved — try running
+          // again." — don't duplicate it here. `detail` carries the last
+          // upstream failure (e.g. "Agent x error: 429") for diagnosis; the
+          // client ignores fields it doesn't know.
+          send({ type: 'error', message: 'The analysis engine was busy and couldn’t finish.', detail: lastAgentError });
           return;
         }
 
