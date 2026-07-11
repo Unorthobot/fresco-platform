@@ -9,7 +9,7 @@ import { Mic, MicOff, Paperclip, Loader2, ArrowRight, Clock } from 'lucide-react
 import { useSession } from 'next-auth/react';
 import { useFrescoStore } from '@/lib/store';
 import { getGuestRunCount, GUEST_RUN_LIMIT } from '@/lib/guestRuns';
-import { formatRelativeTime } from '@/lib/utils';
+import { cn, formatRelativeTime } from '@/lib/utils';
 import type { RouterResult } from '@/lib/houseQuestions';
 import { HOUSE_META, type HouseId } from '@/lib/agents';
 import { getRevisitCadence, isDueToRevisit, type RevisitCadence } from '@/lib/reminders';
@@ -23,6 +23,12 @@ const VERDICT_ACCENT: Record<string, string> = {
   'STOP': 'var(--verdict-stop-accent)',
   'INVESTIGATE FURTHER': 'var(--verdict-signal-accent)',
 };
+
+const fmtVerdict = (v?: string) => (v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : v || '');
+
+// Outcome check-in: after this many days, a decision with no recorded outcome
+// asks "did it hold?" — one tap closes the loop and builds outcome history.
+const OUTCOME_ASK_DAYS = 30;
 
 const PLACEHOLDER =
   "e.g. We've spent six weeks redesigning onboarding, but drop-off happens before step 3 even loads. Do we keep going or stop?";
@@ -166,6 +172,20 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
     } finally {
       setExtracting(false);
     }
+  };
+
+  // One-tap outcome record. Store first (log updates immediately); the DB
+  // write is best-effort — guest sessions have no DB row and 404 harmlessly.
+  const recordOutcome = async (s: any, outcome: 'held' | 'didnt') => {
+    const ao = { ...(s.aiOutputs || {}), outcome, outcomeAt: new Date().toISOString() };
+    useFrescoStore.getState().updateSession(s.id, { aiOutputs: ao } as any);
+    try {
+      await fetch(`/api/sessions/${s.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiOutputs: ao }),
+      });
+    } catch { /* best-effort */ }
   };
 
   const handleSubmit = async () => {
@@ -351,11 +371,18 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                     || (s as any).sentenceOfTruth?.content
                     || 'Untitled decision';
                   const dueToRevisit = isDueToRevisit(s.updatedAt as any, cadence);
+                  const ao = (s as any).aiOutputs || {};
+                  // Verdict flip — a re-run changed the call; show the graduation.
+                  const flippedFrom = ao.previousVerdict && ao.previousVerdict !== verdict ? ao.previousVerdict : null;
+                  const outcome = ao.outcome as 'held' | 'didnt' | undefined;
+                  const ageDays = (Date.now() - new Date(s.updatedAt).getTime()) / 86_400_000;
+                  const askOutcome = !outcome && ageDays >= OUTCOME_ASK_DAYS;
                   return (
                     <div
                       key={s.id}
-                      className="group flex items-center justify-between px-4 py-3 hover:bg-fresco-light-gray transition-colors"
+                      className="group px-4 py-3 hover:bg-fresco-light-gray transition-colors"
                     >
+                      <div className="flex items-center justify-between">
                       <button
                         type="button"
                         onClick={() => onNavigateToSession?.(s.id, s.workspaceId)}
@@ -366,7 +393,10 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                           <span className="block text-fresco-sm text-fresco-black truncate">{line}</span>
                           <span className="flex items-center gap-2 mt-0.5">
                             <span className="font-mono text-[10px] uppercase tracking-wide text-fresco-graphite-mid">
-                              {verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : verdict}
+                              {flippedFrom && (
+                                <span className="text-fresco-graphite-light">{fmtVerdict(flippedFrom)} → </span>
+                              )}
+                              {fmtVerdict(verdict)}
                             </span>
                             {houseName && (
                               <>
@@ -379,7 +409,15 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                               <Clock className="w-2.5 h-2.5" />
                               {formatRelativeTime(new Date(s.updatedAt))}
                             </span>
-                            {dueToRevisit && (
+                            {outcome && (
+                              <>
+                                <span className="text-fresco-graphite-light/40 text-[10px]">·</span>
+                                <span className={cn('font-mono text-[10px] uppercase tracking-wide', outcome === 'held' ? 'text-fresco-black' : 'text-fresco-graphite-mid')}>
+                                  {outcome === 'held' ? 'held ✓' : 'didn’t hold'}
+                                </span>
+                              </>
+                            )}
+                            {dueToRevisit && !askOutcome && (
                               <>
                                 <span className="text-fresco-graphite-light/40 text-[10px]">·</span>
                                 <span className="font-mono text-[10px] uppercase tracking-wide text-fresco-black">due to revisit ↻</span>
@@ -395,6 +433,30 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                       >
                         Open <ArrowRight className="w-3 h-3" />
                       </button>
+                      </div>
+                      {/* Outcome check-in — closes the loop on an old call.
+                          Sits outside the nav button (no nested interactives). */}
+                      {askOutcome && (
+                        <div className="flex items-center gap-2 mt-1.5 pl-5">
+                          <span className="text-[10px] text-fresco-graphite-light">
+                            You made this call {formatRelativeTime(new Date(s.updatedAt))} — did it hold?
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => recordOutcome(s, 'held')}
+                            className="px-2 py-0.5 text-[10px] border border-fresco-border text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
+                          >
+                            It held
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => recordOutcome(s, 'didnt')}
+                            className="px-2 py-0.5 text-[10px] border border-fresco-border text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
+                          >
+                            It didn&rsquo;t
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

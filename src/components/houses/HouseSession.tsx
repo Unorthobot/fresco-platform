@@ -82,6 +82,27 @@ const VERDICT_COLOURS: Record<string, { accent: string; tint: string }> = {
 // Helper — returns verdict accent/tint with INVESTIGATE FURTHER fallback
 const verdictColour = (v?: string) => VERDICT_COLOURS[v || ''] || VERDICT_COLOURS['INVESTIGATE FURTHER'];
 
+// Progressive reveal for the live agent signal — turns the wait into
+// "watching it think" instead of a spinner. The unrevealed remainder is
+// rendered invisibly so the box doesn't reflow as text appears.
+function TypewriterText({ text, className }: { text: string; className?: string }) {
+  const [len, setLen] = useState(0);
+  useEffect(() => {
+    setLen(0);
+    if (!text) return;
+    const id = setInterval(() => {
+      setLen(l => (l >= text.length ? (clearInterval(id), l) : l + 2));
+    }, 24);
+    return () => clearInterval(id);
+  }, [text]);
+  return (
+    <p className={className}>
+      {text.slice(0, len)}
+      <span className="opacity-0" aria-hidden>{text.slice(len)}</span>
+    </p>
+  );
+}
+
 // Maps each agent to its thinking phase. Makes the Stanford d-School double
 // diamond structure visible in the UI — diverge (explore widely) vs converge
 // (synthesise a position). Investigate and Innovate follow the classic double
@@ -2331,6 +2352,19 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   // The deep systems analysis (Analysis tab) streams in a beat after the
   // verdict. True between the verdict arriving and the 'systems' event landing.
   const [systemsPending, setSystemsPending] = useState(false);
+
+  // Tab-title heartbeat — a run takes ~30–50s, so people tab away. The title
+  // shows "Analysing…" while it works and the verdict itself when it lands,
+  // so the tab summons you back. Restored on leave.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isRunning) {
+      document.title = 'Analysing… — Fresco';
+    } else if (result) {
+      document.title = `● ${result.verdict === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : result.verdict} — Fresco`;
+    }
+    return () => { document.title = 'Fresco — A decision engine for startup founders'; };
+  }, [isRunning, result]);
   // WP2 pulled forward for clarify-originated sessions: once the run starts
   // the question stack gets out of the way (spec Moment 4 — the single
   // highest-priority UI change). A slim rail holds the decision + an
@@ -2340,6 +2374,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [userVerdict, setUserVerdict] = useState<string | null>(null);
   const [showVerdictOverride, setShowVerdictOverride] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
+  // Verdict reveal — true only when a verdict just streamed in (not when a
+  // persisted result remounts), so the stamp animation plays exactly once
+  // per run. runStamp keys the animated blocks so re-runs replay it.
+  const [revealVerdict, setRevealVerdict] = useState(false);
+  const [runStamp, setRunStamp] = useState(0);
+  const [firstVerdictNote, setFirstVerdictNote] = useState(false);
   const [outputTab, setOutputTab] = useState<'decision' | 'analysis'>('decision');
   const [showTabTooltip, setShowTabTooltip] = useState(false);
   // Feature 5: first session detection — drives progressive question guidance
@@ -2620,6 +2660,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               } else if (ev.type === 'verdict') {
                 verdictReceived = true;
                 setStage(null);
+                // Sequenced reveal — plays only for a fresh verdict, keyed so
+                // re-runs replay it. First-ever verdict gets a one-time note.
+                setRevealVerdict(true);
+                setRunStamp(s => s + 1);
+                try {
+                  if (!localStorage.getItem('fresco-first-verdict')) {
+                    localStorage.setItem('fresco-first-verdict', '1');
+                    setFirstVerdictNote(true);
+                  }
+                } catch { /* storage unavailable */ }
                 // The systems analysis streams next; flag the Analysis tab as
                 // still loading until the 'systems' event lands.
                 setSystemsPending(true);
@@ -2732,6 +2782,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     const autoTitle = data.sentenceOfTruth
       ? data.sentenceOfTruth.replace(/^["'""]|["'""]$/g, '').slice(0, 60) + (data.sentenceOfTruth.length > 60 ? '…' : '')
       : null;
+    // Verdict flip — when a re-run lands a DIFFERENT verdict, remember the old
+    // one so the decision log can show the graduation (e.g. MORE SIGNAL → GO).
+    // A same-verdict persist (incl. the deferred systems pass moments after
+    // the verdict) preserves whatever flip was already recorded.
+    const prevAo = (useFrescoStore.getState().sessions.find(s => s.id === sessionId) as any)?.aiOutputs;
+    const prevVerdict = prevAo?.houseResult?.verdict || prevAo?.verdict;
+    const previousVerdict = prevVerdict && prevVerdict !== data.verdict ? prevVerdict : prevAo?.previousVerdict;
     useFrescoStore.getState().updateSession(sessionId, {
       ...(autoTitle ? { title: autoTitle } : {}),
       aiOutputs: {
@@ -2739,6 +2796,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         verdictRationale: data.verdictRationale, keyIssues: data.keyIssues, necessaryMoves: data.necessaryMoves,
         sentenceOfTruth: data.sentenceOfTruth, suggestedNextHouse: data.suggestedNextHouse,
         suggestedNextHouseReason: data.suggestedNextHouseReason, outputLabel: data.outputLabel,
+        ...(previousVerdict ? { previousVerdict } : {}),
       },
     } as any);
   };
@@ -3492,7 +3550,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                           ) : null;
                         })()}
                       </div>
-                      <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">{ev.signal}</p>
+                      <TypewriterText text={ev.signal} className="text-fresco-sm text-fresco-graphite-soft leading-relaxed" />
                     </motion.div>
                   );
                 })()}
@@ -3571,8 +3629,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </div>
                   {/* Verdict card: white body. Colour only on the 4px left
                       border and the pill — keeps the verdict readable and
-                      treats colour as accent, not alarm. */}
-                  <div
+                      treats colour as accent, not alarm. When a verdict has
+                      just streamed in (revealVerdict), the card fades, the
+                      headline lands with a single settle, and the sentence of
+                      truth follows a beat later — one decisive gesture. A
+                      persisted result renders statically. */}
+                  <motion.div
+                    key={`vcard-${runStamp}`}
+                    initial={revealVerdict ? { opacity: 0 } : false}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.25 }}
                     className="border border-fresco-border bg-white p-4"
                     style={{
                       borderLeftWidth: 4,
@@ -3582,9 +3648,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     {/* Plain English verdict headline */}
                     <div className="mb-4">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="text-fresco-lg font-medium text-fresco-black leading-snug">
+                        <motion.p
+                          initial={revealVerdict ? { opacity: 0, scale: 1.04, y: 3 } : false}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          transition={{ delay: 0.15, duration: 0.3, ease: 'easeOut' }}
+                          className="text-fresco-lg font-medium text-fresco-black leading-snug"
+                        >
                           {verdictPlain?.headline}
-                        </p>
+                        </motion.p>
                         <span
                           className="text-[10px] font-medium uppercase tracking-wider bg-fresco-light-gray border border-fresco-border px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 flex items-center gap-1.5 text-fresco-black"
                         >
@@ -3604,7 +3675,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed mt-4 pt-4 border-t border-fresco-border-light">
                       {result.verdictRationale}
                     </p>
-                  </div>
+                  </motion.div>
                   {/* User override */}
                   {showVerdictOverride && !userVerdict && (
                     <div className="mt-2 p-3 border border-fresco-border bg-fresco-light-gray">
@@ -3649,15 +3720,40 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                         placeholder="Why are you overriding? (optional)"
                         className="w-full text-fresco-xs bg-white border border-fresco-border px-2 py-1.5 focus:outline-none focus:border-fresco-black transition-colors placeholder:text-fresco-graphite-light"
                       />
+                      {/* The engine defers with grace at the exact moment of
+                          disagreement — the call was always the founder's. */}
+                      <p className="text-fresco-xs text-fresco-graphite-light mt-2">
+                        Noted — your call. That&rsquo;s how it should be.
+                      </p>
                     </div>
                   )}
                 </div>
 
+                {/* One-time note on the very first verdict — ties the moment
+                    to decision memory. Never repeats. */}
+                {firstVerdictNote && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.1, duration: 0.4 }}
+                    className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light"
+                  >
+                    That&rsquo;s your first verdict on the record.
+                  </motion.p>
+                )}
+
                 {/* SENTENCE OF TRUTH — the memorable line, right under the verdict */}
-                <EditableSentenceOfTruth
-                  value={result.sentenceOfTruth}
-                  onSave={edited => db.setSentenceOfTruth(sessionId, edited)}
-                />
+                <motion.div
+                  key={`sot-${runStamp}`}
+                  initial={revealVerdict ? { opacity: 0, y: 6 } : false}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55, duration: 0.35 }}
+                >
+                  <EditableSentenceOfTruth
+                    value={result.sentenceOfTruth}
+                    onSave={edited => db.setSentenceOfTruth(sessionId, edited)}
+                  />
+                </motion.div>
 
                 {/* CONFIDENCE + WHAT WOULD CHANGE IT (WP2). New engine output —
                     absent on sessions that predate it, so render only when present. */}

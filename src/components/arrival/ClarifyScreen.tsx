@@ -266,8 +266,12 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
             <h2 className="text-fresco-lg font-medium text-fresco-black mb-1">
               Here&rsquo;s what I took from your description
             </h2>
+            {/* A complete brief is worth acknowledging — it rewards the
+                behaviour that produces the best verdicts. */}
             <p className="text-fresco-sm text-fresco-graphite-light mb-4">
-              Tap to confirm, or edit anything I got wrong.
+              {followups.length === 0
+                ? 'You gave the engine everything it needs — no questions left. Confirm, or edit anything it got wrong.'
+                : 'Tap to confirm, or edit anything I got wrong.'}
             </p>
             <div className="space-y-3">
               {visibleExtracted.map(id => {
