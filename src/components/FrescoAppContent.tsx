@@ -38,6 +38,18 @@ export default function FrescoAppContent() {
   const [upgradeReason, setUpgradeReason] = useState<'workspaces' | 'guest_limit'>('workspaces');
   const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
+  // Collapsible left nav (desktop) — recovers ~160px for the output panel,
+  // where the Analysis tab's diagrams benefit most. Persisted so a laptop
+  // user sets it once. Read in an effect to avoid a hydration mismatch.
+  const [navCollapsed, setNavCollapsed] = useState(false);
+  useEffect(() => {
+    try { setNavCollapsed(localStorage.getItem('fresco-nav-collapsed') === '1'); } catch { /* storage unavailable */ }
+  }, []);
+  const toggleNavCollapsed = () => setNavCollapsed(v => {
+    const next = !v;
+    try { localStorage.setItem('fresco-nav-collapsed', next ? '1' : '0'); } catch { /* storage unavailable */ }
+    return next;
+  });
   // WP1 — clarify state: the routed prompt awaiting confirmation.
   const [clarify, setClarify] = useState<{ prompt: string; router: RouterResult } | null>(null);
   const [clarifyStarting, setClarifyStarting] = useState(false);
@@ -603,12 +615,17 @@ export default function FrescoAppContent() {
       <a href="#main-content" className="skip-link">Skip to main content</a>
 
       <div className="hidden md:block">
-        <LeftNavRail onNavigate={handleNavigate} onStartHouse={handleStartHouse} />
+        <LeftNavRail
+          onNavigate={handleNavigate}
+          onStartHouse={handleStartHouse}
+          collapsed={navCollapsed}
+          onToggleCollapse={toggleNavCollapsed}
+        />
       </div>
 
       <MobileNav activeSection={activeSection} onNavigate={handleNavigate} userSubscription={user?.subscription} userEmail={user?.email} />
 
-      <main id="main-content" className="md:ml-[220px] min-h-screen relative">
+      <main id="main-content" className={`${navCollapsed ? 'md:ml-[56px]' : 'md:ml-[220px]'} min-h-screen relative transition-[margin] duration-200`}>
         <ErrorBoundary
           onReset={() => {
             // Force-navigate home and clear any stale IDs

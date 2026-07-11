@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Folder, Archive, Settings, User, Users, Plus, ChevronDown, Trash2, X, Edit3, Sun, Moon } from 'lucide-react';
+import { Home, Folder, Archive, Settings, User, Users, Plus, ChevronDown, Trash2, X, Edit3, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFrescoStore, useWorkspaces, useActiveWorkspace } from '@/lib/store';
 import { useDBWrite } from '@/lib/useDBSync';
@@ -18,9 +18,13 @@ import type { HouseId } from '@/lib/agents';
 interface LeftNavRailProps {
   onNavigate?: (section: string) => void;
   onStartHouse?: (houseId: HouseId) => void;
+  /** Icon-only slim rail (desktop). State lives in FrescoAppContent so the
+      main content margin tracks it; persisted in localStorage. */
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
+export function LeftNavRail({ onNavigate, collapsed = false, onToggleCollapse }: LeftNavRailProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const isAuthenticated = status === 'authenticated';
@@ -92,15 +96,78 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
 
   const isActive = (section: string) => activeSection === section;
 
+  // Icon-only button for the slim rail — square hit target, tooltip title.
+  const railIcon = (active?: boolean) => cn(
+    'flex items-center justify-center w-9 h-9 transition-colors',
+    active
+      ? 'text-fresco-black bg-fresco-light-gray'
+      : 'text-fresco-graphite-mid hover:text-fresco-black hover:bg-fresco-light-gray'
+  );
+
   return (
     <>
+      {collapsed ? (
+      <nav className="fixed left-0 top-0 w-[56px] h-screen bg-fresco-white border-r border-fresco-border-light flex flex-col items-center z-50">
+        <div className="h-14 w-full flex items-center justify-center border-b border-fresco-border-light">
+          <img src="/fresco-logo.png" alt="Fresco" className="w-5 h-5 icon-theme" />
+        </div>
+        <div className="flex-1 py-3 flex flex-col items-center gap-1 w-full">
+          <button onClick={onToggleCollapse} title="Expand navigation" className={railIcon()}>
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+          <button onClick={() => handleNavClick('home')} title="Home" className={railIcon(isActive('home'))}>
+            <Home className="w-4 h-4" />
+          </button>
+          <button onClick={() => handleNavClick('archive')} title="Archive" className={railIcon(isActive('archive'))}>
+            <Archive className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="py-3 flex flex-col items-center gap-1 w-full border-t border-fresco-border-light">
+          {canUseTeams(user?.email) && (
+            <button onClick={() => handleNavClick('team')} title="Team" className={railIcon(isActive('team'))}>
+              <Users className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            className={railIcon()}
+          >
+            {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          </button>
+          <button onClick={() => handleNavClick('settings')} title="Settings" className={railIcon(isActive('settings'))}>
+            <Settings className="w-4 h-4" />
+          </button>
+          {isAuthenticated ? (
+            <button onClick={() => handleNavClick('account')} title={session?.user?.name || 'Account'} className={railIcon(isActive('account'))}>
+              {session?.user?.image ? (
+                <img src={session.user.image} alt="Profile" className="w-4 h-4 rounded-full object-cover" />
+              ) : (
+                <User className="w-4 h-4" />
+              )}
+            </button>
+          ) : (
+            <button onClick={() => router.push('/login')} title="Sign in" className="flex items-center justify-center w-9 h-9 text-amber-600 hover:bg-amber-50 transition-colors">
+              <User className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </nav>
+      ) : (
       <nav className="fixed left-0 top-0 w-[220px] h-screen bg-fresco-white border-r border-fresco-border-light flex flex-col z-50">
         {/* Logo */}
-        <div className="h-14 px-5 flex items-center border-b border-fresco-border-light">
+        <div className="h-14 px-5 flex items-center justify-between border-b border-fresco-border-light">
           <div className="flex items-center gap-2.5">
             <img src="/fresco-logo.png" alt="Fresco" className="w-5 h-5 icon-theme" />
             <span className="text-fresco-base font-semibold text-fresco-black tracking-tight">Fresco</span>
           </div>
+          <button
+            onClick={onToggleCollapse}
+            title="Collapse navigation"
+            className="p-1 text-fresco-graphite-light hover:text-fresco-black transition-colors"
+          >
+            <PanelLeftClose className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Main nav */}
@@ -246,6 +313,7 @@ export function LeftNavRail({ onNavigate }: LeftNavRailProps) {
           <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-fresco-xs text-fresco-graphite-light hover:text-fresco-graphite-mid transition-colors">Terms</a>
         </div>
       </nav>
+      )}
 
       {/* Delete confirm modal */}
       <AnimatePresence>
