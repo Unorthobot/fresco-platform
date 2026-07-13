@@ -153,6 +153,27 @@ async function anthropicMessage(payload: { messages: Array<{ role: string; conte
   throw lastErr;
 }
 
+// JSON-parsing layer over anthropicMessage. Prefill guarantees the reply
+// STARTS as JSON, but a malformed/truncated object can still fail to parse —
+// and agents aren't deterministic, so one fresh attempt usually fixes it.
+async function anthropicJson(
+  payload: { messages: Array<{ role: string; content: string }> } & Record<string, unknown>,
+  label: string,
+): Promise<any> {
+  let lastErr = `${label} returned no JSON`;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const text = await anthropicMessage(payload, label);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) { lastErr = `${label} returned no JSON`; continue; }
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch {
+      lastErr = `${label} returned invalid JSON`;
+    }
+  }
+  throw new Error(lastErr);
+}
+
 async function runAgent(
   agent: { id: string; displayName: string; systemPrompt: string },
   userInput: string,
@@ -189,7 +210,7 @@ async function runAgent(
   // Agents run on Haiku (~3x faster than Sonnet) to keep the verdict snappy.
   // The verdict synthesis and the deep systems pass stay on Sonnet, so the
   // user-facing reasoning is still Sonnet-quality.
-  const text = await anthropicMessage({
+  const parsed = await anthropicJson({
     model: 'claude-haiku-4-5-20251001',
     // Roomy cap: in journey/comparison mode with fetched page content the
     // agent JSON regularly outgrew 1200 and truncated into "no JSON".
@@ -197,10 +218,6 @@ async function runAgent(
     system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person — "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.`,
     messages: [{ role: 'user', content: userMessage }],
   }, `Agent ${agent.id}`);
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error(`Agent ${agent.id} returned no JSON`);
-
-  const parsed = JSON.parse(jsonMatch[0]);
   return {
     agentId: agent.id,
     displayName: agent.displayName,
@@ -225,14 +242,11 @@ async function runMerge(
   maxTokens: number,
 ) {
   const mergePrompt = buildMergePrompt(house, agentOutputs, userInput, mode);
-  const text = await anthropicMessage({
+  return anthropicJson({
     model: 'claude-sonnet-4-6',
     max_tokens: maxTokens,
     messages: [{ role: 'user', content: mergePrompt }],
   }, `Merge (${mode})`);
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error(`Merge (${mode}) returned no JSON`);
-  return JSON.parse(jsonMatch[0]);
 }
 
 export async function POST(
