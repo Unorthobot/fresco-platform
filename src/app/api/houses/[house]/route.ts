@@ -164,11 +164,13 @@ async function anthropicJson(
   for (let attempt = 0; attempt < 2; attempt++) {
     const text = await anthropicMessage(payload, label);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) { lastErr = `${label} returned no JSON`; continue; }
+    if (!jsonMatch) { lastErr = `${label} returned no JSON (len ${text.length})`; continue; }
     try {
       return JSON.parse(jsonMatch[0]);
     } catch {
-      lastErr = `${label} returned invalid JSON`;
+      // Length + tail make truncation visible in logs/probes: a reply cut by
+      // max_tokens ends mid-token instead of at a closing brace.
+      lastErr = `${label} returned invalid JSON (len ${text.length}, tail …${text.slice(-40).replace(/\s+/g, ' ')})`;
     }
   }
   throw new Error(lastErr);
@@ -505,7 +507,10 @@ export async function POST(
         if (hasOutput) {
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
-              const sys = await runMerge(house, agentOutputs, userInput.trim(), 'systems', 6000);
+              // 12000-token cap: the systems object is the largest thing the
+              // engine emits (iceberg + archetype + charts + loops + IPO +
+              // sensitivity); at 6000 it truncated into invalid JSON.
+              const sys = await runMerge(house, agentOutputs, userInput.trim(), 'systems', 12000);
               if (sys && sys.systemsOutput) {
                 send({ type: 'systems', systemsOutput: sys.systemsOutput });
               }
@@ -517,6 +522,9 @@ export async function POST(
                   await new Promise(r => setTimeout(r, 20_000));
                   send({ type: 'ping' });
                 }
+              } else {
+                // Diagnosable trace for probes/devtools; UI ignores it.
+                send({ type: 'systemsError', detail: sysErr instanceof Error ? sysErr.message : String(sysErr) });
               }
             }
           }
