@@ -113,7 +113,14 @@ async function fetchPageContent(url: string): Promise<{ content: string; title: 
 // backoffs never cleared them — waits are seconds-scale (Retry-After when
 // given, else 4s/8s/16s). maxDuration is 300s, so there's room to outwait a
 // bad window rather than fail the run. Returns the message text.
-async function anthropicMessage(payload: object, label: string, retries = 3): Promise<string> {
+async function anthropicMessage(payload: { messages: Array<{ role: string; content: string }> } & Record<string, unknown>, label: string, retries = 3): Promise<string> {
+  // Assistant prefill: start the reply at "{" so the model can't write a
+  // prose preamble before (or instead of) the JSON. Every caller here parses
+  // JSON; "returned no JSON" was the top silent failure mode.
+  const prefilled = {
+    ...payload,
+    messages: [...payload.messages, { role: 'assistant', content: '{' }],
+  };
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -124,11 +131,11 @@ async function anthropicMessage(payload: object, label: string, retries = 3): Pr
           'x-api-key': ANTHROPIC_API_KEY!,
           'anthropic-version': '2023-06-01',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(prefilled),
       });
       if (res.ok) {
         const data = await res.json();
-        return data.content?.[0]?.text || '';
+        return '{' + (data.content?.[0]?.text || '');
       }
       const transient = res.status === 429 || res.status === 529 || (res.status >= 500 && res.status < 600);
       if (!transient || attempt === retries) throw new Error(`${label} error: ${res.status}`);
@@ -184,7 +191,9 @@ async function runAgent(
   // user-facing reasoning is still Sonnet-quality.
   const text = await anthropicMessage({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1200,
+    // Roomy cap: in journey/comparison mode with fetched page content the
+    // agent JSON regularly outgrew 1200 and truncated into "no JSON".
+    max_tokens: 2500,
     system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person — "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.`,
     messages: [{ role: 'user', content: userMessage }],
   }, `Agent ${agent.id}`);
@@ -449,7 +458,9 @@ export async function POST(
 
         let verdictData;
         try {
-          const mergeResponse = await runMerge(house, agentOutputs, userInput.trim(), 'verdict', 2000);
+          // 3000 gives the verdict JSON (now incl. theBet + whatsWorking)
+          // real headroom — 2000 was the original truncation lesson.
+          const mergeResponse = await runMerge(house, agentOutputs, userInput.trim(), 'verdict', 3000);
           verdictData = buildHouseResult(house, mergeResponse);
         } catch (mergeErr) {
           // Agents succeeded but synthesis failed — local merge still carries
