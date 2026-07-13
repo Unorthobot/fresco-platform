@@ -496,16 +496,29 @@ export async function POST(
 
         // ── Deferred systems pass (Analysis tab) ─────────────────────────────
         // Runs AFTER the verdict has already streamed, so the large
-        // systemsOutput block never delays the verdict. Best-effort: if it
-        // fails or times out, the Decision tab still stands.
+        // systemsOutput block never delays the verdict — which also means it
+        // can afford to be patient: if the first attempt fails (usually a
+        // per-minute rate window already spent by the verdict merge), cool
+        // down a full window and try once more instead of leaving the
+        // Analysis tab permanently incomplete. Pings keep the SSE stream
+        // alive through the wait (the client ignores unknown event types).
         if (hasOutput) {
-          try {
-            const sys = await runMerge(house, agentOutputs, userInput.trim(), 'systems', 6000);
-            if (sys && sys.systemsOutput) {
-              send({ type: 'systems', systemsOutput: sys.systemsOutput });
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              const sys = await runMerge(house, agentOutputs, userInput.trim(), 'systems', 6000);
+              if (sys && sys.systemsOutput) {
+                send({ type: 'systems', systemsOutput: sys.systemsOutput });
+              }
+              break;
+            } catch (sysErr) {
+              console.error(`Systems pass failed (attempt ${attempt + 1}):`, sysErr);
+              if (attempt === 0) {
+                for (let i = 0; i < 3; i++) {
+                  await new Promise(r => setTimeout(r, 20_000));
+                  send({ type: 'ping' });
+                }
+              }
             }
-          } catch (sysErr) {
-            console.error('Systems pass failed (non-fatal):', sysErr);
           }
         }
 
