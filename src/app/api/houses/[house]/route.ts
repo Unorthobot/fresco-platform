@@ -138,7 +138,12 @@ async function anthropicMessage(payload: { messages: Array<{ role: string; conte
         return '{' + (data.content?.[0]?.text || '');
       }
       const transient = res.status === 429 || res.status === 529 || (res.status >= 500 && res.status < 600);
-      if (!transient || attempt === retries) throw new Error(`${label} error: ${res.status}`);
+      if (!transient || attempt === retries) {
+        // Include the API's own error body — a bare status hides the actual
+        // reason (e.g. which request field a 400 rejects).
+        const body = await res.text().catch(() => '');
+        throw new Error(`${label} error: ${res.status} ${body.slice(0, 200)}`);
+      }
       const retryAfter = parseInt(res.headers.get('retry-after') || '', 10);
       const wait = Number.isFinite(retryAfter)
         ? Math.min(retryAfter * 1000, 30_000)
