@@ -12,7 +12,9 @@ type FunnelEvent =
   | 'first_input_focused'
   | 'first_submit'
   | 'routing_complete'
-  | 'verdict_rendered'
+  | 'verdict_rendered'      // meta.degraded distinguishes a real verdict from the local fallback
+  | 'analysis_complete'     // the deep systems pass landed — Analysis tab is whole
+  | 'upgrade_clicked'       // intent to pay; not derivable from any table
   | 'second_session_14d';
 
 export function track(name: FunnelEvent, opts?: { sessionId?: string; meta?: Record<string, unknown> }) {

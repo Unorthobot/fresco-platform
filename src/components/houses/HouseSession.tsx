@@ -2673,15 +2673,21 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 // The systems analysis streams next; flag the Analysis tab as
                 // still loading until the 'systems' event lands.
                 setSystemsPending(true);
-                // WP0 funnel: verdict rendered + time-to-verdict for this run.
+                // Quality flags ride on the event for instrumentation only —
+                // destructured out so they never reach the persisted result.
+                const { type: _, degraded, agentsOk, ...vd } = ev;
+                // Funnel: verdict rendered, with the quality of THIS run.
+                // Without `degraded` a local-fallback verdict logs exactly
+                // like a real one and the success rate overstates itself.
                 track('verdict_rendered', {
                   sessionId,
                   meta: {
                     house: houseId,
                     ttvMs: runStartedAtRef.current ? Date.now() - runStartedAtRef.current : null,
+                    degraded: !!degraded,
+                    agentsOk: typeof agentsOk === 'number' ? agentsOk : null,
                   },
                 });
-                const { type: _, ...vd } = ev;
                 setResult(vd as HouseResult);
                 await persistResult(vd as HouseResult);
                 // Increment the right counter for the right user type. Anonymous
@@ -2705,6 +2711,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 // Deferred deep analysis — merge into the result so the
                 // Analysis tab's archetype/causal/sensitivity sections fill in.
                 setSystemsPending(false);
+                // Funnel: the Analysis tab actually filled in. Compared
+                // against verdict_rendered this gives the share of runs that
+                // delivered the full product, not just the Decision tab.
+                track('analysis_complete', { sessionId, meta: { house: houseId } });
                 setResult(prev => {
                   if (!prev) return prev;
                   const merged = { ...prev, systemsOutput: ev.systemsOutput } as HouseResult;

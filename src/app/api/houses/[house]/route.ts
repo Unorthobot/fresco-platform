@@ -481,6 +481,12 @@ export async function POST(
           return;
         }
 
+        // Run quality, reported to the client so instrumentation can tell a
+        // real verdict from a degraded one. Without this a local-fallback
+        // verdict logs identically to a good one and the funnel lies.
+        const agentsOk = agentOutputs.filter(a => a.signal || a.key_findings.length > 0).length;
+        let degraded = false;
+
         let verdictData;
         try {
           // 3000 gives the verdict JSON (now incl. theBet + whatsWorking)
@@ -492,11 +498,13 @@ export async function POST(
           // the real agent findings, so it's an acceptable degradation here.
           console.error('Verdict merge failed, using local:', mergeErr);
           verdictData = mergeAgentOutputsLocally(house, agentOutputs);
+          degraded = true;
         }
 
         // Verdict streams now — the Decision tab renders without waiting on the
-        // heavy systems analysis below.
-        send({ type: 'verdict', ...verdictData });
+        // heavy systems analysis below. `degraded`/`agentsOk` ride along for
+        // instrumentation (the UI ignores them).
+        send({ type: 'verdict', ...verdictData, degraded, agentsOk });
 
         // Meter the verdict against the user's monthly quota — only after a
         // real verdict reaches the client, so a failed run never costs a

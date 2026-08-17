@@ -26,8 +26,30 @@ type Tester = {
 };
 type DailyActivity = { date: string; sessions: number };
 
+type Activation = {
+  signedUp: number;
+  started: number;
+  startedRate: number;
+  firstVerdict: number;
+  firstVerdictRate: number;
+  activated: number;
+  activationRate: number;
+  definition: string;
+};
+
+type EngineHealth = {
+  runsInstrumented: number;
+  degradedRuns: number;
+  degradedRate: number;
+  analysisComplete: number;
+  analysisCompletionRate: number;
+  upgradeClicks: number;
+};
+
 type UsageData = {
   summary: Summary;
+  activation?: Activation;
+  engineHealth?: EngineHealth;
   houseBreakdown: HouseRow[];
   verdictBreakdown: VerdictRow[];
   userDecisions: DecisionRow[];
@@ -147,11 +169,11 @@ export default function AdminUsagePage() {
           <div className="bg-fresco-black text-white p-8 flex items-end justify-between">
             <div>
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/50 mb-2">
-                Activation rate · signed up → started ≥1 session
+                Activation rate · came back for a second verdict
               </div>
               <div className="text-[56px] leading-none font-light">{summary.activationRate}%</div>
               <div className="font-mono text-[10px] text-white/40 mt-2">
-                {summary.activatedUsers} of {summary.totalUsers} testers
+                {summary.activatedUsers} of {summary.totalUsers} users
               </div>
             </div>
             <div className="text-right">
@@ -171,6 +193,83 @@ export default function AdminUsagePage() {
             </div>
           </div>
         </section>
+
+        {/* ACTIVATION FUNNEL — where people fall out, step by step */}
+        {data.activation && (
+          <section className="mb-8">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-3">
+              Activation funnel
+            </h2>
+            <div className="grid grid-cols-4 gap-px bg-fresco-border border border-fresco-border">
+              {[
+                { label: 'Signed up', value: data.activation.signedUp, rate: null as number | null },
+                { label: 'Started a decision', value: data.activation.started, rate: data.activation.startedRate },
+                { label: 'Got a verdict', value: data.activation.firstVerdict, rate: data.activation.firstVerdictRate },
+                { label: 'Came back (activated)', value: data.activation.activated, rate: data.activation.activationRate },
+              ].map(step => (
+                <div key={step.label} className="bg-white p-6">
+                  <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-fresco-graphite-light mb-2">
+                    {step.label}
+                  </div>
+                  <div className="text-fresco-4xl font-light">{step.value}</div>
+                  {step.rate !== null && (
+                    <div className="font-mono text-[10px] text-fresco-graphite-light mt-1">{step.rate}% of signups</div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-fresco-xs text-fresco-graphite-light mt-2">{data.activation.definition}</p>
+          </section>
+        )}
+
+        {/* ENGINE HEALTH — is the product actually delivering on each run? */}
+        {data.engineHealth && (
+          <section className="mb-8">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-3">
+              Engine health
+            </h2>
+            <div className="grid grid-cols-4 gap-px bg-fresco-border border border-fresco-border">
+              <div className="bg-white p-6">
+                <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-fresco-graphite-light mb-2">
+                  Runs measured
+                </div>
+                <div className="text-fresco-4xl font-light">{data.engineHealth.runsInstrumented}</div>
+              </div>
+              <div className="bg-white p-6">
+                <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-fresco-graphite-light mb-2">
+                  Degraded verdicts
+                </div>
+                <div className={`text-fresco-4xl font-light ${data.engineHealth.degradedRate > 10 ? 'text-red-600' : ''}`}>
+                  {data.engineHealth.degradedRate}%
+                </div>
+                <div className="font-mono text-[10px] text-fresco-graphite-light mt-1">
+                  {data.engineHealth.degradedRuns} fell back to the generic verdict
+                </div>
+              </div>
+              <div className="bg-white p-6">
+                <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-fresco-graphite-light mb-2">
+                  Analysis delivered
+                </div>
+                <div className={`text-fresco-4xl font-light ${data.engineHealth.analysisCompletionRate < 90 ? 'text-red-600' : ''}`}>
+                  {data.engineHealth.analysisCompletionRate}%
+                </div>
+                <div className="font-mono text-[10px] text-fresco-graphite-light mt-1">
+                  {data.engineHealth.analysisComplete} runs filled the Analysis tab
+                </div>
+              </div>
+              <div className="bg-white p-6">
+                <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-fresco-graphite-light mb-2">
+                  Upgrade clicks
+                </div>
+                <div className="text-fresco-4xl font-light">{data.engineHealth.upgradeClicks}</div>
+                <div className="font-mono text-[10px] text-fresco-graphite-light mt-1">reached checkout</div>
+              </div>
+            </div>
+            <p className="text-fresco-xs text-fresco-graphite-light mt-2">
+              Degraded runs still show the user a verdict, so they count as completed everywhere else — this is the only place they&rsquo;re visible.
+            </p>
+          </section>
+        )}
 
         {/* SUMMARY — four big numbers */}
         <section className="mb-16">

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Zap } from 'lucide-react';
 import { useFrescoStore } from '@/lib/store';
 import { checkoutUrlFor } from '@/lib/checkout';
+import { track } from '@/lib/analytics';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -46,6 +47,9 @@ export function PricingModal({ isOpen, onClose, triggerHouse }: PricingModalProp
   };
 
   const handleUpgrade = (plan: 'pro' | 'studio') => {
+    // Intent to pay — the only funnel step no table can reconstruct, since
+    // checkout happens off-site and only completed purchases come back.
+    track('upgrade_clicked', { meta: { plan, triggerHouse: triggerHouse || null } });
     window.open(checkoutUrlFor(CHECKOUT_URLS[plan], user), '_blank', 'noopener');
   };
 

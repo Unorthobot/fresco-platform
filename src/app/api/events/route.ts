@@ -13,6 +13,8 @@ const ALLOWED_EVENTS = new Set([
   'first_submit',
   'routing_complete',
   'verdict_rendered',
+  'analysis_complete',
+  'upgrade_clicked',
   'second_session_14d',
 ]);
 

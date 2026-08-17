@@ -26,7 +26,7 @@ export async function GET() {
   }
 
   // Fetch everything we need in parallel — small enough dataset that this is fine.
-  const [users, allSessions, ttvEvents] = await Promise.all([
+  const [users, allSessions, ttvEvents, analysisCompleteCount, upgradeClicks] = await Promise.all([
     prisma.user.findMany({
       select: {
         id: true,
@@ -63,11 +63,15 @@ export async function GET() {
         createdAt: true,
       },
     }),
-    // WP0: time-to-verdict samples (meta.ttvMs on verdict_rendered events)
+    // Run instrumentation: ttvMs + run quality (meta.degraded) live here.
     prisma.event.findMany({
       where: { name: 'verdict_rendered' },
       select: { meta: true },
     }),
+    // Runs where the deep systems pass landed (Analysis tab whole).
+    prisma.event.count({ where: { name: 'analysis_complete' } }),
+    // Intent to pay — checkout is off-site, so only the click is ours.
+    prisma.event.count({ where: { name: 'upgrade_clicked' } }),
   ]);
 
   // A session counts as completed when it produced a verdict. The old
@@ -109,17 +113,48 @@ export async function GET() {
     ? Math.round((completedSessions / totalSessions) * 100)
     : 0;
 
-  // WP0: activation — signed up AND started at least one session. This is
-  // the headline number for the rebuild baseline.
-  const activatedUsers = typedUsers.filter(
+  // ── Activation funnel ──────────────────────────────────────────────────
+  // Three honest steps instead of one loose one. The old "activation"
+  // counted anyone who merely STARTED a session — it couldn't distinguish
+  // a founder who got a verdict and came back from one who opened the app
+  // and bounced. Activation is now the return: a second verdict is the only
+  // evidence they trusted the first one enough to use Fresco again.
+  const verdictCountFor = (u: UserWithSessions) =>
+    u.workspaces.flatMap(w => w.sessions).filter(s => isCompleted(s)).length;
+
+  const startedUsers = typedUsers.filter(
     (u: UserWithSessions) => u.workspaces.some(w => w.sessions.length > 0)
   ).length;
-  const activationRate = totalUsers > 0
-    ? Math.round((activatedUsers / totalUsers) * 100)
-    : 0;
+  const firstVerdictUsers = typedUsers.filter((u: UserWithSessions) => verdictCountFor(u) >= 1).length;
+  const activatedUsers = typedUsers.filter((u: UserWithSessions) => verdictCountFor(u) >= 2).length;
 
-  // WP0: median time-to-verdict from instrumentation events.
-  const ttvSamples = (ttvEvents as Array<{ meta: unknown }>)
+  const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
+  const startedRate = pct(startedUsers, totalUsers);
+  const firstVerdictRate = pct(firstVerdictUsers, totalUsers);
+  const activationRate = pct(activatedUsers, totalUsers);
+
+  // ── Engine health ──────────────────────────────────────────────────────
+  // A local-fallback verdict (generic rationale, no bet, no deep analysis)
+  // reaches the user looking like a success. Without this split every
+  // quality number above is inflated by runs that quietly degraded.
+  // Only runs that actually carry the quality flag are measurable. Verdicts
+  // recorded before this instrumentation shipped have no `degraded` field —
+  // counting them would silently dilute both rates toward zero.
+  const verdictEvents = ttvEvents as Array<{ meta: unknown }>;
+  const qualityRuns = verdictEvents.filter(
+    e => typeof (e.meta as { degraded?: unknown } | null)?.degraded === 'boolean'
+  );
+  const runsInstrumented = qualityRuns.length;
+  const degradedRuns = qualityRuns.filter(
+    e => (e.meta as { degraded?: unknown } | null)?.degraded === true
+  ).length;
+  const degradedRate = pct(degradedRuns, runsInstrumented);
+  // Analysis completion is only meaningful against instrumented runs too,
+  // so it's capped at 100 rather than compared to the full historical set.
+  const analysisCompletionRate = Math.min(pct(analysisCompleteCount as number, runsInstrumented), 100);
+
+  // Median time-to-verdict from instrumentation events.
+  const ttvSamples = verdictEvents
     .map(e => (e.meta as { ttvMs?: unknown } | null)?.ttvMs)
     .filter((n): n is number => typeof n === 'number' && n > 0)
     .sort((a, b) => a - b);
@@ -232,6 +267,25 @@ export async function GET() {
       activatedUsers,
       activationRate,
       medianTtvMs,
+    },
+    // Signed up → started → got a verdict → came back for a second one.
+    activation: {
+      signedUp: totalUsers,
+      started: startedUsers,
+      startedRate,
+      firstVerdict: firstVerdictUsers,
+      firstVerdictRate,
+      activated: activatedUsers,
+      activationRate,
+      definition: 'Activated = reached a second verdict (came back and used it again)',
+    },
+    engineHealth: {
+      runsInstrumented,
+      degradedRuns,
+      degradedRate,
+      analysisComplete: analysisCompleteCount,
+      analysisCompletionRate,
+      upgradeClicks,
     },
     houseBreakdown,
     verdictBreakdown,
