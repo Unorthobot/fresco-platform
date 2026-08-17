@@ -113,14 +113,16 @@ async function fetchPageContent(url: string): Promise<{ content: string; title: 
 // backoffs never cleared them — waits are seconds-scale (Retry-After when
 // given, else 4s/8s/16s). maxDuration is 300s, so there's room to outwait a
 // bad window rather than fail the run. Returns the message text.
-async function anthropicMessage(payload: { messages: Array<{ role: string; content: string }> } & Record<string, unknown>, label: string, retries = 3): Promise<string> {
+async function anthropicMessage(payload: { messages: Array<{ role: string; content: string }> } & Record<string, unknown>, label: string, retries = 3, prefill = true): Promise<string> {
   // Assistant prefill: start the reply at "{" so the model can't write a
-  // prose preamble before (or instead of) the JSON. Every caller here parses
-  // JSON; "returned no JSON" was the top silent failure mode.
-  const prefilled = {
-    ...payload,
-    messages: [...payload.messages, { role: 'assistant', content: '{' }],
-  };
+  // prose preamble before (or instead of) the JSON ("returned no JSON" was
+  // the top silent failure mode for the Haiku agents). ONLY for models that
+  // support it: 4.6-generation models (Sonnet 4.6) reject prefill with a 400
+  // "This model does not support assistant message prefill" — the merges
+  // must call with prefill=false.
+  const prefilled = prefill
+    ? { ...payload, messages: [...payload.messages, { role: 'assistant', content: '{' }] }
+    : payload;
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -135,7 +137,7 @@ async function anthropicMessage(payload: { messages: Array<{ role: string; conte
       });
       if (res.ok) {
         const data = await res.json();
-        return '{' + (data.content?.[0]?.text || '');
+        return (prefill ? '{' : '') + (data.content?.[0]?.text || '');
       }
       const transient = res.status === 429 || res.status === 529 || (res.status >= 500 && res.status < 600);
       if (!transient || attempt === retries) {
@@ -164,10 +166,11 @@ async function anthropicMessage(payload: { messages: Array<{ role: string; conte
 async function anthropicJson(
   payload: { messages: Array<{ role: string; content: string }> } & Record<string, unknown>,
   label: string,
+  prefill = true,
 ): Promise<any> {
   let lastErr = `${label} returned no JSON`;
   for (let attempt = 0; attempt < 2; attempt++) {
-    const text = await anthropicMessage(payload, label);
+    const text = await anthropicMessage(payload, label, 3, prefill);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) { lastErr = `${label} returned no JSON (len ${text.length})`; continue; }
     try {
@@ -249,11 +252,12 @@ async function runMerge(
   maxTokens: number,
 ) {
   const mergePrompt = buildMergePrompt(house, agentOutputs, userInput, mode);
+  // prefill=false: Sonnet 4.6 rejects assistant prefill (400).
   return anthropicJson({
     model: 'claude-sonnet-4-6',
     max_tokens: maxTokens,
     messages: [{ role: 'user', content: mergePrompt }],
-  }, `Merge (${mode})`);
+  }, `Merge (${mode})`, false);
 }
 
 export async function POST(
