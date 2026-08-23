@@ -2324,14 +2324,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const runStartedAtRef = useRef<number | null>(null);
   // Desktop gets the animated split-pane; mobile stacks panels and lets the
   // document scroll. Tracked live so rotation/resize behaves.
-  const [isDesktop, setIsDesktop] = useState(true);
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)');
-    const update = () => setIsDesktop(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
+  // (No isDesktop state any more — the split-pane geometry is pure CSS via
+  // Tailwind's md: prefix. JS-measured breakpoints were the root cause of the
+  // zero-width mobile rail: the default `true` painted desktop geometry on
+  // phones, and framer-motion then couldn't animate back out of it.)
   const abortRef = useRef<AbortController | null>(null);
   const outputScrollRef = useRef<HTMLDivElement>(null);
   const inputScrollRef = useRef<HTMLDivElement>(null);
@@ -3097,37 +3093,57 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           fixed-height boxes inside h-screen — the layout beta testers
           called unusable below 700px. On mobile the panels stack and the
           document scrolls naturally. */}
-      <motion.div
-        // Collapsed → slim 300px rail. Otherwise full width — including when
-        // inputs are expanded to edit/re-run post-verdict, so the run button
-        // matches the original "Run the analysis" exactly (the 440px middle
-        // state made "Run again" a different, narrower button).
-        // Explicit values both ways — framer-motion ignores animating to
-        // undefined, which left the column stuck at 300px when un-collapsing.
-        animate={isDesktop ? {
-          flexBasis: collapseInputs ? '300px' : 'auto',
-          maxWidth: collapseInputs ? '300px' : '100%',
-        } : {}}
-        transition={{ duration: 0.35, ease: 'easeInOut' }}
-        className={cn("md:flex-1 flex flex-col md:overflow-hidden", (result || collapseInputs) && "md:border-r border-fresco-border-light md:flex-shrink-0")}
-        style={{ minWidth: isDesktop && collapseInputs ? 280 : undefined }}
+      {/* Collapsed → slim 300px rail on desktop; full width otherwise (including
+          when inputs are expanded to edit/re-run, so "Run again" matches the
+          original button). Geometry is pure CSS: framer-motion was asked to
+          animate between 'auto', '100%' and '300px' — units it cannot
+          interpolate — so max-width kept resolving to 0px. On mobile that made
+          the rail zero-width and every word wrapped onto its own line; on
+          desktop it was masked by the min-width floor. Tailwind's md: prefix
+          scopes this correctly at every breakpoint with no JS. */}
+      <div
+        className={cn(
+          "flex flex-col md:overflow-hidden transition-[flex-basis,max-width] duration-300 ease-in-out",
+          collapseInputs
+            ? "md:flex-none md:basis-[300px] md:max-w-[300px] md:min-w-[280px]"
+            : "md:flex-1 md:basis-auto md:max-w-full",
+          (result || collapseInputs) && "md:border-r border-fresco-border-light md:flex-shrink-0"
+        )}
       >
         {/* Scrollable content */}
         <div className="md:flex-1 md:overflow-y-auto" ref={inputScrollRef}>
           {/* Slim rail — question stack out of the way while the analysis
               runs and once the verdict is on screen */}
           {collapseInputs && (
-            <div className="px-4 md:px-5 py-6">
-              <button type="button" onClick={onBack}
-                className="flex items-center gap-1.5 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors mb-6">
-                <ChevronLeft className="w-3.5 h-3.5" /> Back
-              </button>
+            // Desktop: a full slim rail beside the output. Mobile: the panels
+            // stack, so this sits ABOVE the analysis — a full recap there
+            // buries the thing the user is waiting for. Clamp it to two lines
+            // and tighten the chrome so the verdict/progress leads.
+            <div className="px-4 md:px-5 py-3 md:py-6 border-b border-fresco-border-light md:border-b-0">
+              <div className="flex items-center justify-between gap-3 mb-2 md:mb-6">
+                <button type="button" onClick={onBack}
+                  className="flex items-center gap-1.5 text-fresco-xs text-fresco-graphite-light hover:text-fresco-black transition-colors">
+                  <ChevronLeft className="w-3.5 h-3.5" /> Back
+                </button>
+                {/* Edit sits inline on mobile so the rail stays one compact block */}
+                <button
+                  type="button"
+                  onClick={() => setInputsExpanded(true)}
+                  className="md:hidden text-fresco-xs text-fresco-graphite-mid hover:text-fresco-black underline underline-offset-4 transition-colors"
+                >
+                  Edit inputs
+                </button>
+              </div>
               <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-1.5">Your decision</p>
-              <p className="text-fresco-sm text-fresco-black leading-relaxed mb-5 whitespace-pre-wrap">{railPrompt}</p>
+              {/* Clamped on mobile (this sits above the analysis), full on
+                  desktop (it's a side rail with room to breathe). */}
+              <p className="text-fresco-sm text-fresco-black leading-relaxed md:mb-5 whitespace-pre-wrap line-clamp-2 md:line-clamp-none">
+                {railPrompt}
+              </p>
               <button
                 type="button"
                 onClick={() => setInputsExpanded(true)}
-                className="text-fresco-xs text-fresco-graphite-mid hover:text-fresco-black underline underline-offset-4 transition-colors"
+                className="hidden md:inline text-fresco-xs text-fresco-graphite-mid hover:text-fresco-black underline underline-offset-4 transition-colors"
               >
                 View &amp; edit inputs
               </button>
@@ -3349,21 +3365,27 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           </div>
         </div>
         )}
-      </motion.div>
+      </div>
 
       {/* ── RIGHT: Output ──────────────────────────────────────────────────── */}
-      <motion.div
-        // The output owns the width as soon as the input rail collapses
-        // (run start), not only once the verdict lands — otherwise the run
-        // plays out in a 360px strip beside dead space.
-        animate={isDesktop ? { flex: (result || collapseInputs) ? '1 1 0%' : '0 0 360px', minWidth: 320 } : {}}
-        transition={{ duration: 0.35, ease: 'easeInOut' }}
-        // Hidden while editing inputs — the input screen takes the full width
-        // so re-running is the same experience as the first run.
-        className={cn("flex flex-col border-t border-fresco-border-light bg-fresco-off-white md:overflow-hidden md:border-t-0 md:border-l", editing && "hidden")}
+      {/* The output owns the width as soon as the input rail collapses (run
+          start), not only once the verdict lands — otherwise the run plays out
+          in a 360px strip beside dead space. CSS-only for the same reason as
+          the input panel. Hidden while editing inputs so re-running is the
+          same full-width experience as the first run. */}
+      <div
+        className={cn(
+          "flex flex-col border-t border-fresco-border-light bg-fresco-off-white md:overflow-hidden md:border-t-0 md:border-l transition-[flex-basis] duration-300 ease-in-out",
+          (result || collapseInputs)
+            ? "md:flex-1 md:basis-0 md:min-w-[320px]"
+            : "md:flex-none md:basis-[360px] md:min-w-[320px]",
+          editing && "hidden"
+        )}
       >
         <div className="md:flex-1 md:overflow-y-auto" ref={outputScrollRef}>
-        <div className="px-6 pt-6 pb-6">
+        {/* pb-24 on mobile keeps the last card clear of the fixed hamburger,
+            which was sitting on top of the final section. */}
+        <div className="px-6 pt-6 pb-24 md:pb-6">
           <div className="sticky top-0 z-30 -mx-6 px-6 pt-2 pb-3 mb-4 bg-fresco-off-white border-b border-fresco-border-light flex items-center justify-between">
             <div className="flex-1">
               {result ? (
@@ -4459,7 +4481,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
           </motion.div>
         )}
       </AnimatePresence>
-      </motion.div>
+      </div>
     </div>
     <PricingModal isOpen={showPricingModal} onClose={() => setShowPricingModal(false)} triggerHouse={meta.name} />
     </>
