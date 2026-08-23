@@ -3332,7 +3332,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 <button
                   disabled
                   className="fresco-btn flex-1 min-w-0 opacity-60 cursor-default">
-                  <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" /><span className="truncate">Working through it…</span>
+                  <span className="truncate">Working through it…</span>
                 </button>
                 <button
                   type="button"
@@ -3455,11 +3455,9 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 </motion.div>
               )}
             </div>
-            {isRunning && (
-              <div className="flex items-center gap-2 text-fresco-xs text-fresco-graphite-light">
-                <Loader2 className="w-3 h-3 animate-spin" /><span>Working…</span>
-              </div>
-            )}
+            {/* No spinner here — the stage stepper below is the single
+                progress indicator. Four simultaneous spinners all said the
+                same thing. */}
           </div>
 
           {(result as any)?._error && (
@@ -3586,11 +3584,12 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     </motion.div>
                   );
                 })()}
+                {/* Plain caption, no spinner — it explains the wait while the
+                    first agent is still thinking; the stepper shows progress. */}
                 {isRunning && agentEvents.length === 0 && (
-                  <div className="flex items-center gap-2.5 p-3 text-fresco-xs text-fresco-graphite-light">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
-                    <span>Analysing your decision from several angles at once…</span>
-                  </div>
+                  <p className="p-3 text-fresco-xs text-fresco-graphite-light">
+                    Analysing your decision from several angles at once…
+                  </p>
                 )}
               </motion.div>
             )}
