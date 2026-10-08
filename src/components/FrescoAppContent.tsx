@@ -429,9 +429,28 @@ export default function FrescoAppContent() {
       // source session id in sessionStorage keyed on the new session id so
       // HouseSession can pick it up on mount. sessionStorage (not state) so it
       // survives the navigation state transitions.
-      if (fromSessionId) {
+      //
+      // When no explicit source is given, inherit the workspace's own context:
+      // the most recent session here that actually produced a verdict. Every
+      // workspace-level entry point (New Session menu, the house grid, "Run
+      // this next", the journey map) passed only a houseId, so starting a
+      // second analysis inside a workspace dropped everything the first one
+      // established and made the user retype it. Only sessions with a verdict
+      // qualify — an abandoned draft has nothing to carry forward.
+      const inheritedSourceId = fromSessionId || (() => {
+        const ao = (s: any) => s.aiOutputs || {};
+        return sessions
+          .filter((s: any) =>
+            s.workspaceId === workspaceId &&
+            s.id !== session.id &&
+            (ao(s).houseResult || ao(s).verdict))
+          .sort((a: any, b: any) =>
+            new Date(b.updatedAt || b.createdAt).getTime() -
+            new Date(a.updatedAt || a.createdAt).getTime())[0]?.id;
+      })();
+      if (inheritedSourceId) {
         try {
-          sessionStorage.setItem(`fresco-handoff-${session.id}`, fromSessionId);
+          sessionStorage.setItem(`fresco-handoff-${session.id}`, inheritedSourceId);
         } catch { /* storage unavailable — continue anyway */ }
       }
       // If the user typed a diagnostic sentence on the home screen, carry it
