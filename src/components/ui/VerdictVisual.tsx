@@ -3,11 +3,21 @@
 // Verdict spectrum visualisation — Option A
 // A horizontal axis showing where this verdict lands between STOP and GO,
 // with fit strength shown as the confidence of the position.
+//
+// `searching` renders the same axis while the analysis is still running, with
+// the marker sweeping instead of resting. Deliberately NOT a live readout:
+// the engine has no provisional verdict mid-run, so the marker must never
+// dwell anywhere long enough to be read as one. It crosses the full range
+// continuously, carries no verdict label and draws no filled track — it reads
+// as an instrument taking a reading, not as "currently leaning GO". Sharing
+// this component (rather than a lookalike) means the marker lands on exactly
+// the same geometry when the real verdict replaces it.
 
 interface VerdictVisualProps {
-  verdict: string;
+  verdict?: string;
   fitStrength?: string;
   fitLabel?: string;
+  searching?: boolean;
 }
 
 // Map verdict to position on axis (0 = STOP, 1 = GO)
@@ -33,8 +43,8 @@ const FIT_OPACITY: Record<string, number> = {
   'Weak':   0.55,
 };
 
-export function VerdictVisual({ verdict, fitStrength, fitLabel }: VerdictVisualProps) {
-  const position = VERDICT_POSITION[verdict] ?? 0.5;
+export function VerdictVisual({ verdict, fitStrength, fitLabel, searching }: VerdictVisualProps) {
+  const position = VERDICT_POSITION[verdict || ''] ?? 0.5;
   const radius = fitStrength ? (FIT_RADIUS[fitStrength] ?? 6) : 6;
   const opacity = fitStrength ? (FIT_OPACITY[fitStrength] ?? 0.8) : 0.8;
 
@@ -55,7 +65,7 @@ export function VerdictVisual({ verdict, fitStrength, fitLabel }: VerdictVisualP
     { label: 'GO',            x: AXIS_X1 + 0.92 * AXIS_W },
   ];
 
-  const displayVerdict = verdict === 'INVESTIGATE FURTHER' ? 'Needs more signal' : verdict;
+  const displayVerdict = verdict === 'INVESTIGATE FURTHER' ? 'Needs more signal' : (verdict || '');
   const displayFit = fitStrength === 'Undecided' ? 'Mixed' : fitStrength;
 
   return (
@@ -65,7 +75,9 @@ export function VerdictVisual({ verdict, fitStrength, fitLabel }: VerdictVisualP
         viewBox={`0 0 ${W} ${H}`}
         width="100%"
         height={H}
-        aria-label={`Verdict: ${displayVerdict}${displayFit ? `, fit strength: ${displayFit}` : ''}`}
+        aria-label={searching
+          ? 'Weighing the decision between stop and go'
+          : `Verdict: ${displayVerdict}${displayFit ? `, fit strength: ${displayFit}` : ''}`}
       >
         {/* Axis line */}
         <line
@@ -86,17 +98,33 @@ export function VerdictVisual({ verdict, fitStrength, fitLabel }: VerdictVisualP
           />
         ))}
 
-        {/* Filled track from left to marker */}
-        <line
-          x1={AXIS_X1} y1={AXIS_Y}
-          x2={markerX} y2={AXIS_Y}
-          stroke="#000000"
-          strokeWidth="1.5"
-          opacity={0.25}
-        />
+        {/* Filled track from left to marker — a measured value, so it is
+            omitted while searching. */}
+        {!searching && (
+          <line
+            x1={AXIS_X1} y1={AXIS_Y}
+            x2={markerX} y2={AXIS_Y}
+            stroke="#000000"
+            strokeWidth="1.5"
+            opacity={0.25}
+          />
+        )}
+
+        {/* Sweeping marker — irregular keyframes that always cross the full
+            range, so no position is ever held long enough to look like a
+            provisional verdict. */}
+        {searching && (
+          <circle
+            className="fresco-needle-sweep"
+            cx={AXIS_X1 + 0.5 * AXIS_W}
+            cy={AXIS_Y}
+            r={5}
+            fill="#000000"
+          />
+        )}
 
         {/* Marker — outer ring (fit confidence) */}
-        {fitStrength && fitStrength !== 'Strong' && (
+        {!searching && fitStrength && fitStrength !== 'Strong' && (
           <circle
             cx={markerX}
             cy={AXIS_Y}
@@ -110,15 +138,18 @@ export function VerdictVisual({ verdict, fitStrength, fitLabel }: VerdictVisualP
         )}
 
         {/* Marker — solid dot */}
-        <circle
-          cx={markerX}
-          cy={AXIS_Y}
-          r={radius}
-          fill="#000000"
-          opacity={opacity}
-        />
+        {!searching && (
+          <circle
+            cx={markerX}
+            cy={AXIS_Y}
+            r={radius}
+            fill="#000000"
+            opacity={opacity}
+          />
+        )}
 
-        {/* Verdict label above marker */}
+        {/* Verdict label above marker — nothing to name while searching */}
+        {!searching && (
         <text
           x={markerX}
           y={AXIS_Y - radius - 6}
@@ -131,6 +162,7 @@ export function VerdictVisual({ verdict, fitStrength, fitLabel }: VerdictVisualP
         >
           {displayVerdict.toUpperCase()}
         </text>
+        )}
 
         {/* Axis end labels */}
         <text
@@ -158,7 +190,7 @@ export function VerdictVisual({ verdict, fitStrength, fitLabel }: VerdictVisualP
       </svg>
 
       {/* Fit strength label */}
-      {displayFit && fitLabel && (
+      {!searching && displayFit && fitLabel && (
         <p className="text-fresco-xs text-fresco-graphite-light">
           <span className="font-medium text-fresco-graphite-mid">{displayFit} fit</span>
           {' · '}

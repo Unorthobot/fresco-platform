@@ -1306,3 +1306,26 @@ a:focus:not(:focus-visible) {
 .pulse-loading {
   animation: pulse-subtle 1.5s ease-in-out infinite;
 }
+
+/* Verdict needle, mid-reading. Offsets are SVG user units relative to the
+   axis centre (viewBox 0 0 400 56, axis spans x=24..376), so the sweep is
+   identical at any rendered width. The marker always crosses the full range
+   and never rests — it must never look like a provisional verdict. */
+@keyframes fresco-needle-sweep {
+  0%   { transform: translateX(0);        opacity: 0.50; }
+  14%  { transform: translateX(-127px);   opacity: 0.30; }
+  32%  { transform: translateX(99px);     opacity: 0.50; }
+  50%  { transform: translateX(-70px);    opacity: 0.30; }
+  68%  { transform: translateX(134px);    opacity: 0.50; }
+  86%  { transform: translateX(-28px);    opacity: 0.30; }
+  100% { transform: translateX(0);        opacity: 0.50; }
+}
+
+.fresco-needle-sweep {
+  animation: fresco-needle-sweep 5.2s ease-in-out infinite;
+}
+
+/* Respect reduced-motion: hold the marker still rather than sweeping. */
+@media (prefers-reduced-motion: reduce) {
+  .fresco-needle-sweep { animation: none; opacity: 0.4; }
+}

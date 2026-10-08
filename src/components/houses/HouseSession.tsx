@@ -3546,6 +3546,14 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     })}
                   </div>
                 )}
+                {/* The instrument, mid-reading. Same axis the verdict will
+                    land on, so the marker settles onto the identical geometry
+                    rather than a new element appearing. */}
+                {isRunning && (
+                  <div className="mb-4 opacity-70">
+                    <VerdictVisual searching />
+                  </div>
+                )}
                 {pageFetchMessage && (
                   <div className="mb-3 flex items-center gap-2 text-fresco-xs text-fresco-graphite-mid p-2 bg-fresco-light-gray">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
