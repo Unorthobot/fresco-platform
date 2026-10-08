@@ -13,10 +13,7 @@ interface ExampleSessionModalProps {
   onClose: () => void;
 }
 
-// Exported so the arrival empty state can show the real verdict inline
-// instead of only linking to it — a first-time user should see what Fresco
-// produces before being asked to produce the input for one.
-export const EXAMPLE = {
+const EXAMPLE = {
   prompt:
     'We build project management software for construction firms — there are four of us. Customers keep asking for a mobile app, Gantt charts, and a QuickBooks integration. I want all three, but we can only ship one well this quarter. Which do we build, and how should I even decide?',
   house: 'INNOVATE',

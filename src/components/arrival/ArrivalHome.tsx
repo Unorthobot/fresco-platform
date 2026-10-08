@@ -13,7 +13,7 @@ import { cn, formatRelativeTime } from '@/lib/utils';
 import type { RouterResult } from '@/lib/houseQuestions';
 import { HOUSE_META, type HouseId } from '@/lib/agents';
 import { getRevisitCadence, isDueToRevisit, type RevisitCadence } from '@/lib/reminders';
-import { ExampleSessionModal, EXAMPLE } from './ExampleSessionModal';
+import { ExampleSessionModal } from './ExampleSessionModal';
 
 // Verdict accent tokens — the one chromatic note. Dot only; the label stays
 // monochrome so the log reads calm at a glance.
@@ -346,39 +346,9 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
 
           {/* How it works — empty state only. Once a verdict exists, the
               decision log below takes this slot. */}
-          {/* First-time users see a finished verdict BEFORE the explanation.
-              13 of the first 24 signups never started a decision — the arrival
-              screen asked them to produce something before it had shown what
-              they'd get back. This is the proof, in about fifteen seconds. */}
           {decisions.length === 0 && (
             <div className="mt-16">
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-4">
-                What you get back
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowExample(true)}
-                className="w-full text-left border border-fresco-border-light bg-fresco-white p-5 hover:border-fresco-graphite-light transition-colors group"
-                style={{ borderLeftWidth: 4, borderLeftColor: VERDICT_ACCENT[EXAMPLE.verdict] || VERDICT_ACCENT['PIVOT'] }}
-              >
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <p className="text-fresco-xs text-fresco-graphite-light leading-relaxed line-clamp-2">
-                    &ldquo;{EXAMPLE.prompt}&rdquo;
-                  </p>
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-fresco-black flex-shrink-0 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: VERDICT_ACCENT[EXAMPLE.verdict] }} />
-                    {EXAMPLE.verdict}
-                  </span>
-                </div>
-                <p className="text-fresco-sm italic text-fresco-black leading-relaxed mb-3">
-                  &ldquo;{EXAMPLE.sentenceOfTruth}&rdquo;
-                </p>
-                <span className="text-fresco-xs text-fresco-graphite-mid group-hover:text-fresco-black transition-colors underline underline-offset-4">
-                  See the full analysis
-                </span>
-              </button>
-
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-6 mt-12">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-6">
                 How it works
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
