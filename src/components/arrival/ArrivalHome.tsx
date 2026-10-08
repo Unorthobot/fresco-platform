@@ -13,7 +13,7 @@ import { cn, formatRelativeTime } from '@/lib/utils';
 import type { RouterResult } from '@/lib/houseQuestions';
 import { HOUSE_META, type HouseId } from '@/lib/agents';
 import { getRevisitCadence, isDueToRevisit, type RevisitCadence } from '@/lib/reminders';
-import { ExampleSessionModal } from './ExampleSessionModal';
+import { ExampleSessionModal, EXAMPLE } from './ExampleSessionModal';
 
 // Verdict accent tokens — the one chromatic note. Dot only; the label stays
 // monochrome so the log reads calm at a glance.
@@ -114,9 +114,17 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
 
   // Decision log (WP4) — past verdicts, most recent first. A session counts
   // once it has produced a verdict; in-progress sessions stay out of the log.
-  const decisions = getRecentSessions(20)
-    .filter(s => (s as any).aiOutputs?.verdict || (s as any).aiOutputs?.houseResult?.verdict)
-    .slice(0, 6);
+  const allVerdicts = getRecentSessions(500)
+    .filter(s => (s as any).aiOutputs?.verdict || (s as any).aiOutputs?.houseResult?.verdict);
+  const decisions = allVerdicts.slice(0, 6);
+
+  // Track record — the only evidence in the app that Fresco's calls hold up.
+  // Counted across every decision on record, not just the six listed below.
+  // Shown from the second recorded outcome: a single data point is a story,
+  // not a record, and "1 of 1 held" would overclaim.
+  const scored = allVerdicts.filter(s => (s as any).aiOutputs?.outcome);
+  const heldCount = scored.filter(s => (s as any).aiOutputs.outcome === 'held').length;
+  const showTrackRecord = scored.length >= 2;
 
   const startVoice = () => {
     const SpeechRecognition =
@@ -329,9 +337,39 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
 
           {/* How it works — empty state only. Once a verdict exists, the
               decision log below takes this slot. */}
+          {/* First-time users see a finished verdict BEFORE the explanation.
+              13 of the first 24 signups never started a decision — the arrival
+              screen asked them to produce something before it had shown what
+              they'd get back. This is the proof, in about fifteen seconds. */}
           {decisions.length === 0 && (
             <div className="mt-16">
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-4">
+                What you get back
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowExample(true)}
+                className="w-full text-left border border-fresco-border-light bg-fresco-white p-5 hover:border-fresco-graphite-light transition-colors group"
+                style={{ borderLeftWidth: 4, borderLeftColor: VERDICT_ACCENT[EXAMPLE.verdict] || VERDICT_ACCENT['PIVOT'] }}
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <p className="text-fresco-xs text-fresco-graphite-light leading-relaxed line-clamp-2">
+                    &ldquo;{EXAMPLE.prompt}&rdquo;
+                  </p>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-fresco-black flex-shrink-0 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: VERDICT_ACCENT[EXAMPLE.verdict] }} />
+                    {EXAMPLE.verdict}
+                  </span>
+                </div>
+                <p className="text-fresco-sm italic text-fresco-black leading-relaxed mb-3">
+                  &ldquo;{EXAMPLE.sentenceOfTruth}&rdquo;
+                </p>
+                <span className="text-fresco-xs text-fresco-graphite-mid group-hover:text-fresco-black transition-colors underline underline-offset-4">
+                  See the full analysis
+                </span>
+              </button>
+
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-6 mt-12">
                 How it works
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -355,9 +393,18 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
               structural thing a chat can't do. */}
           {decisions.length > 0 && (
             <div className="mt-12">
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-3">
-                Your decisions
-              </p>
+              <div className="flex items-baseline justify-between gap-4 mb-3">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light">
+                  Your decisions
+                </p>
+                {/* Stated plainly, no celebration — the point is that the
+                    record exists and is checkable, not that it's flattering. */}
+                {showTrackRecord && (
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-mid">
+                    {heldCount} of {scored.length} calls held
+                  </p>
+                )}
+              </div>
               <div className="border border-fresco-border-light bg-fresco-white divide-y divide-fresco-border-light">
                 {decisions.map(s => {
                   const verdict = (s as any).aiOutputs?.verdict || (s as any).aiOutputs?.houseResult?.verdict;

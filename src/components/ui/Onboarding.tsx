@@ -211,7 +211,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <div className="border border-fresco-border bg-white px-4 py-3 flex items-center gap-3">
                       <ThinkingDot />
                       <p className="text-fresco-sm text-fresco-graphite-soft">
-                        Working through it — three agents in sequence…
+                        Working through it — three passes over your decision…
                       </p>
                     </div>
                   </BeatFade>
@@ -222,8 +222,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   <BeatFade>
                     <div className="border border-fresco-border bg-white">
                       <div className="bg-fresco-black text-white px-4 py-2 flex items-center justify-between">
+                        {/* Named by what the pass DOES, not by its internal
+                            codename — matches AGENT_PHASES in the real run. */}
                         <p className="text-[9px] font-mono uppercase tracking-[0.14em]">
-                          AGENT · 01 · INSIGHT STACK
+                          FIRST PASS · EXPLORING REALITY
                         </p>
                         <span className="text-[8px] font-mono uppercase tracking-wide opacity-50">
                           DIVERGE
@@ -251,7 +253,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <div className="border border-fresco-border bg-white">
                       <div className="bg-fresco-black text-white px-4 py-2 flex items-center justify-between">
                         <p className="text-[9px] font-mono uppercase tracking-[0.14em]">
-                          AGENT · 02 · BELIEF MAPPER
+                          SECOND PASS · EXPOSING ASSUMPTIONS
                         </p>
                         <span className="text-[8px] font-mono uppercase tracking-wide opacity-50">
                           CONVERGE

@@ -3550,7 +3550,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       <div className="w-3 h-3 rounded-full bg-fresco-black flex items-center justify-center flex-shrink-0">
                         <svg width="7" height="5" viewBox="0 0 7 5" fill="none"><path d="M1 2.5L2.8 4L6 1" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       </div>
-                      <span>{ev.displayName}</span>
+                      <span>{phaseInfo?.label || ev.displayName}</span>
                       {phaseStyle && (
                         <span className="text-fresco-graphite-light/50" title={phaseStyle.label}>
                           <span className="mx-1">·</span>{phaseStyle.symbol} {phaseStyle.label}
@@ -3568,7 +3568,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <div className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-fresco-black animate-pulse" />
-                          <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">{ev.displayName}</span>
+                          {/* Lead with what the pass is doing, not its internal
+                              codename. "Insight Stack" means nothing to a
+                              founder; "Exploring reality" does. Falls back to
+                              the codename for any agent not yet mapped. */}
+                          <span className="text-fresco-xs font-medium text-fresco-graphite-mid uppercase tracking-wide">
+                            {AGENT_PHASES[ev.displayName]?.label || ev.displayName}
+                          </span>
                         </div>
                         {(() => {
                           const phaseInfo = AGENT_PHASES[ev.displayName];
