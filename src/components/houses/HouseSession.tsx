@@ -3282,9 +3282,20 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
             <div className="space-y-6">
               {questionsFor(houseId, evaluateMode).map(q => (
                 <div key={q.id}>
-                  <p className="text-fresco-base font-medium text-fresco-black mb-1">{q.question}</p>
+                  {/* Only the primary field gates the run (see canRun), but the
+                      form presented four equally-weighted boxes, so it read as
+                      four required essays. Saying which ones are optional makes
+                      the real cost of starting visible. */}
+                  <div className="flex items-baseline justify-between gap-3 mb-1">
+                    <p className="text-fresco-base font-medium text-fresco-black">{q.question}</p>
+                    {q.id !== primaryField && (
+                      <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-fresco-graphite-light flex-shrink-0">
+                        Optional
+                      </span>
+                    )}
+                  </div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-2">
-                    NEEDED FOR · {q.whyItMatters}
+                    {q.id === primaryField ? 'NEEDED FOR' : 'SHARPENS'} · {q.whyItMatters}
                   </p>
                   <textarea
                     value={values[q.id] || ''}

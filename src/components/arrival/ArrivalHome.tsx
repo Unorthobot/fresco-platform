@@ -114,9 +114,18 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
 
   // Decision log (WP4) — past verdicts, most recent first. A session counts
   // once it has produced a verdict; in-progress sessions stay out of the log.
-  const allVerdicts = getRecentSessions(500)
-    .filter(s => (s as any).aiOutputs?.verdict || (s as any).aiOutputs?.houseResult?.verdict);
+  const allSessions = getRecentSessions(500);
+  const hasVerdict = (s: any) => !!(s.aiOutputs?.verdict || s.aiOutputs?.houseResult?.verdict);
+  const allVerdicts = allSessions.filter(hasVerdict);
   const decisions = allVerdicts.slice(0, 6);
+
+  // Decisions you described but never ran. Previously invisible — the log
+  // only listed verdicts — so anyone interrupted mid-flow lost the thread and
+  // had nothing pulling them back. Requires a stated prompt, so an abandoned
+  // empty session doesn't clutter the list.
+  const unfinished = allSessions
+    .filter(s => !hasVerdict(s) && ((s as any).routerOutput?.prompt || '').trim().length > 0)
+    .slice(0, 3);
 
   // Track record — the only evidence in the app that Fresco's calls hold up.
   // Counted across every decision on record, not just the six listed below.
@@ -384,6 +393,46 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
               <p className="font-mono text-[10px] tracking-wide text-fresco-graphite-light mt-8">
                 About fifteen minutes, end to end.
               </p>
+            </div>
+          )}
+
+          {/* Picked up where you left off — sits above the log because an
+              unresolved decision is more actionable than a settled one. */}
+          {unfinished.length > 0 && (
+            <div className="mt-12">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fresco-graphite-light mb-3">
+                Still open
+              </p>
+              <div className="border border-fresco-border-light bg-fresco-white divide-y divide-fresco-border-light">
+                {unfinished.map(s => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => onNavigateToSession?.(s.id, s.workspaceId)}
+                    className="group w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-fresco-light-gray transition-colors text-left"
+                  >
+                    <span className="min-w-0 flex items-start gap-3">
+                      <span className="w-2 h-2 rounded-full border border-fresco-border-light flex-shrink-0 mt-1.5" />
+                      <span className="min-w-0">
+                        <span className="block text-fresco-sm text-fresco-black truncate">
+                          {(s as any).routerOutput.prompt}
+                        </span>
+                        <span className="flex items-center gap-2 mt-0.5 text-[10px] text-fresco-graphite-light">
+                          <span className="font-mono uppercase tracking-wide">No verdict yet</span>
+                          <span className="opacity-40">·</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5" />
+                            {formatRelativeTime(new Date(s.updatedAt))}
+                          </span>
+                        </span>
+                      </span>
+                    </span>
+                    <span className="flex-shrink-0 ml-3 text-fresco-xs text-fresco-graphite-light opacity-0 group-hover:opacity-100 group-focus:opacity-100 hover:text-fresco-black transition-all flex items-center gap-1">
+                      Pick up <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
