@@ -3548,8 +3548,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 )}
                 {/* The instrument, mid-reading. Same axis the verdict will
                     land on, so the marker settles onto the identical geometry
-                    rather than a new element appearing. */}
-                {isRunning && (
+                    rather than a new element appearing.
+                    Gated on `!result`, not `isRunning` alone: the stream stays
+                    open well past the verdict for the deferred systems pass, so
+                    keying on isRunning left this drifting beside the Decision
+                    tab's already-parked marker — two needles disagreeing about
+                    a call that had in fact been made. */}
+                {isRunning && !result && (
                   <div className="mb-4 opacity-70">
                     <VerdictVisual searching />
                   </div>
