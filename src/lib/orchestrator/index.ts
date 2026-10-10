@@ -162,6 +162,15 @@ export const AGENT_SEQUENCE: Record<HouseId, string[]> = {
   evaluate:    ['PageScorecardAgent', 'VariantLensAgent', 'JourneyTraceAgent'],
 };
 
+// ─── House style ──────────────────────────────────────────────────────────────
+
+// The verdict IS the product, so if it reads as machine-written it gets
+// discounted. Em dashes are the clearest tell. Worth knowing: this prompt
+// file and the agent prompts were themselves full of em dashes, and the
+// example strings in the JSON shapes modelled them directly — the instruction
+// below only works because those examples were cleaned too.
+export const PUNCTUATION_RULE = "PUNCTUATION: never use an em dash or an en dash as a sentence break or an aside. Construct the sentence so it does not need one, using a full stop, comma, colon or semicolon instead. Hyphens inside compound words (hard-to-reverse, pressure-test) and numeric ranges (15-20) are correct and expected.";
+
 // ─── Cross-house routing logic ────────────────────────────────────────────────
 
 export interface RoutingDecision {
@@ -182,22 +191,22 @@ export function determineNextHouse(
 
   if (house === 'investigate') {
     return fitStrength === 'Strong'
-      ? { nextHouse: 'innovate', reason: 'Good. Now figure out the right solution — move to Innovate.' }
+      ? { nextHouse: 'innovate', reason: 'Good. Now figure out the right solution: move to Innovate.' }
       : { nextHouse: 'investigate', reason: 'The problem still isn\'t clear enough. Run Investigate again with sharper input.' };
   }
 
   if (house === 'innovate') {
     return fitStrength === 'Strong'
-      ? { nextHouse: 'validate', reason: 'You have a solid direction. Now test if it will actually work — move to Validate.' }
-      : { nextHouse: 'investigate', reason: 'The solution isn\'t clear yet. Go back to Investigate — the problem definition probably needs work.' };
+      ? { nextHouse: 'validate', reason: 'You have a solid direction. Now test if it will actually work: move to Validate.' }
+      : { nextHouse: 'investigate', reason: 'The solution isn\'t clear yet. Go back to Investigate: the problem definition probably needs work.' };
   }
 
   if (house === 'validate') {
     return fitStrength === 'Strong'
-      ? { nextHouse: 'evaluate', reason: 'It should sell. Now ship it and see how it actually performs — move to Evaluate.' }
+      ? { nextHouse: 'evaluate', reason: 'It should sell. Now ship it and see how it actually performs: move to Evaluate.' }
       : verdict === 'PIVOT'
       ? { nextHouse: 'innovate', reason: 'This direction isn\'t working. Go back to Innovate and explore other options.' }
-      : { nextHouse: 'investigate', reason: 'Something\'s off at a deeper level. Go back to Investigate — the original problem may be wrong.' };
+      : { nextHouse: 'investigate', reason: 'Something\'s off at a deeper level. Go back to Investigate: the original problem may be wrong.' };
   }
 
   if (house === 'evaluate') {
@@ -232,13 +241,13 @@ Recommendations: ${a.recommendations.join(' | ')}
 ${a.structured_artifact ? `Structured artifact: ${a.structured_artifact}` : ''}`).join('\n\n');
 
   const investigateExtra = house === 'investigate' ? `
-- POV_STATEMENT (Investigate only): A single polished sentence structured as: "[User] needs [what they actually need] because [the non-obvious insight that reframes the problem]." This is the Position Builder's UCNI framework collapsed into one sentence. It should feel like the user's own position, articulated precisely. Not a summary — a stance.
+- POV_STATEMENT (Investigate only): A single polished sentence structured as: "[User] needs [what they actually need] because [the non-obvious insight that reframes the problem]." This is the Position Builder's UCNI framework collapsed into one sentence. It should feel like the user's own position, articulated precisely. Not a summary: a stance.
 ` : '';
 
   const investigateJsonField = house === 'investigate' ? `,
   "povStatement": "For [specific user]: they need [real need], because [non-obvious insight]"` : '';
 
-  const ARCHETYPE_SHAPE = '"archetype": { "name": "Name of the system archetype (Fixes that Fail | Shifting the Burden | Limits to Growth | Eroding Goals | Escalation | Success to the Successful | Tragedy of the Commons | Accidental Adversaries — pick the best fit or null if none clearly applies)", "description": "1-2 sentences: why this archetype applies to THIS specific situation", "loop": "The specific loop in plain English — e.g. the quick fix creates a side effect that makes the original problem worse", "escape": "How to break out of this archetype — one concrete action" }';
+  const ARCHETYPE_SHAPE = '"archetype": { "name": "Name of the system archetype (Fixes that Fail | Shifting the Burden | Limits to Growth | Eroding Goals | Escalation | Success to the Successful | Tragedy of the Commons | Accidental Adversaries: pick the best fit or null if none clearly applies)", "description": "1-2 sentences: why this archetype applies to THIS specific situation", "loop": "The specific loop in plain English , e.g. the quick fix creates a side effect that makes the original problem worse", "escape": "How to break out of this archetype , one concrete action" }';
 
   const BOTG_SHAPE = '"behaviorOverTime": [{ "variable": "Name of key variable", "unit": "unit of measurement", "dataPoints": [{ "label": "time label e.g. Month 1", "value": number }], "trend": "rising|falling|oscillating|plateauing|accelerating", "projection": [{ "label": "projected label", "value": number }] }]';
 
@@ -253,7 +262,7 @@ ${a.structured_artifact ? `Structured artifact: ${a.structured_artifact}` : ''}`
   const IPO_SHAPE = '"ipoMap": { "inputs": [{ "label": "input name", "note": "what it contributes" }], "processes": [{ "label": "process name", "note": "what it transforms" }], "outputs": [{ "label": "output name", "note": "what is produced" }], "bottleneck": "Where the system loses most value" }';
 
   const SYSTEMS_OUTPUT_SHAPES: Record<string, string> = {
-    investigate: '"icebergLevels": { "event": "visible symptom in 1 sentence", "pattern": "recurring trend in 1 sentence", "structure": "system element producing the pattern", "mentalModel": "belief keeping the system this way" }, "currentStateSimulation": "If nothing changes — one sentence", "systemTruth": "The uncomfortable truth — one sentence", ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE + ', ' + CAUSAL_LOOP_SHAPE + ', ' + IPO_SHAPE + ', ' + SENSITIVITY_SHAPE,
+    investigate: '"icebergLevels": { "event": "visible symptom in 1 sentence", "pattern": "recurring trend in 1 sentence", "structure": "system element producing the pattern", "mentalModel": "belief keeping the system this way" }, "currentStateSimulation": "If nothing changes: one sentence", "systemTruth": "The uncomfortable truth , one sentence", ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE + ', ' + CAUSAL_LOOP_SHAPE + ', ' + IPO_SHAPE + ', ' + SENSITIVITY_SHAPE,
     innovate: '"leverageMap": [{ "option": "Option name", "leverageLevel": "parameters|feedback|information|rules|goals|paradigms", "impact": "what shifts" }], "interventionForecast": { "immediate": "what changes within weeks", "delayed": "what changes over months", "risk": "unintended consequence to watch for" }, ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE + ', ' + STOCK_FLOW_SHAPE + ', ' + CAUSAL_LOOP_SHAPE + ', ' + SCENARIO_SHAPE + ', ' + IPO_SHAPE,
     validate: '"funnelSimulation": { "expected": "X% conversion", "bestCase": "Y% if top fix", "worstCase": "Z% if barriers stronger" }, "influenceMap": { "barrier": "the real barrier", "lever": "what overcomes it", "proofRequired": "what proof specifically" }, ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE + ', ' + SCENARIO_SHAPE + ', ' + SENSITIVITY_SHAPE + ', ' + STOCK_FLOW_SHAPE + ', ' + IPO_SHAPE,
     evaluate: '"evolutionProjection": "If current trends continue, in 3 months: one sentence", "doublLoopLearning": "Are we solving the right problem? one sentence", "kpiSystemMap": "What actually drives the outcome metric", ' + ARCHETYPE_SHAPE + ', ' + BOTG_SHAPE + ', ' + SCENARIO_SHAPE + ', ' + SENSITIVITY_SHAPE + ', ' + CAUSAL_LOOP_SHAPE + ', ' + STOCK_FLOW_SHAPE + ', ' + IPO_SHAPE,
@@ -271,7 +280,9 @@ ${userInput}
 AGENT OUTPUTS:
 ${agentSummaries}
 
-Extract the systems-thinking outputs from the agent artifacts using real content from the analysis — never leave fields as "...". Any prose is written TO the founder in the second person ("you"/"your"), never the third person.
+Extract the systems-thinking outputs from the agent artifacts using real content from the analysis: never leave fields as "...". Any prose is written TO the founder in the second person ("you"/"your"), never the third person.
+
+${PUNCTUATION_RULE}
 
 Respond ONLY with valid JSON:
 {
@@ -295,26 +306,27 @@ AGENT OUTPUTS:
 ${agentSummaries}
 
 Produce the synthesis. Rules:
-- VOICE: Write directly TO the founder in the second person — "you", "your". Never refer to them in the third person ("the user", "the founder", "they", "the customer"). Their input was written in the first person; the output must answer in kind.
-- FIT_STRENGTH and VERDICT are linked — they must be consistent:
+- ${PUNCTUATION_RULE}
+- VOICE: Write directly TO the founder in the second person: "you", "your". Never refer to them in the third person ("the user", "the founder", "they", "the customer"). Their input was written in the first person; the output must answer in kind.
+- FIT_STRENGTH and VERDICT are linked: they must be consistent:
   - Strong → GO (clear signal, proceed with confidence)
   - Shaky → PIVOT or STOP (significant concerns; PIVOT if a better path exists, STOP if the direction is fundamentally wrong)
   - Mixed → INVESTIGATE FURTHER (mixed signals, more information needed)
   - Never combine Strong with STOP, PIVOT, or INVESTIGATE FURTHER
   - Never combine Shaky with GO
-- FRAME: "${fitLabel}" is this house's internal framing — a lens for you, not a template to impose on the founder. Judge the decision on its own terms, in their vocabulary. Plenty of real decisions are not problem-solution shaped: pricing, a hire, a co-founder split, a creative brief, whether to commit at all. Forcing the frame produces category errors ("what problem does this burger solve"). When the decision is not problem-shaped, ask the equivalent question that genuinely fits — what is this for, who is it for, and what would make it good? Demand exactly the same rigour; never demand it in startup vocabulary that does not apply.
-- THIN INPUT: if the input is too thin to tell what KIND of decision this is, say so plainly and name what is missing on the decision's own terms. Never assert that the founder "has no problem to solve" — the absence of a stated problem is not evidence that one is required. Ask what they are deciding between and what a good outcome looks like, before anything else.
-- SENTENCE OF TRUTH: ONE sharp statement — the thing you sensed but hadn't articulated. Not a summary. An insight.
-- WHAT'S WORKING: Name the genuine asset this decision should protect — the real thing you'd be foolish to lose — framed as what to keep, not praise. e.g. "Your distribution is real; don't lose it in the pivot." One sentence. If nothing is genuinely working yet, return null — never manufacture a strength to flatter.
+- FRAME: "${fitLabel}" is this house's internal framing: a lens for you, not a template to impose on the founder. Judge the decision on its own terms, in their vocabulary. Plenty of real decisions are not problem-solution shaped: pricing, a hire, a co-founder split, a creative brief, whether to commit at all. Forcing the frame produces category errors ("what problem does this burger solve"). When the decision is not problem-shaped, ask the equivalent question that genuinely fits, what is this for, who is it for, and what would make it good? Demand exactly the same rigour; never demand it in startup vocabulary that does not apply.
+- THIN INPUT: if the input is too thin to tell what KIND of decision this is, say so plainly and name what is missing on the decision's own terms. Never assert that the founder "has no problem to solve": the absence of a stated problem is not evidence that one is required. Ask what they are deciding between and what a good outcome looks like, before anything else.
+- SENTENCE OF TRUTH: ONE sharp statement: the thing you sensed but hadn't articulated. Not a summary. An insight.
+- WHAT'S WORKING: Name the genuine asset this decision should protect: the real thing you'd be foolish to lose, framed as what to keep, not praise. e.g. "Your distribution is real; don't lose it in the pivot." One sentence. If nothing is genuinely working yet, return null, never manufacture a strength to flatter.
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to your situation.
 - NECESSARY MOVES: 3–5 concrete prioritised actions. Not generic.
 - VERDICT RATIONALE: 1–2 sentences. Reference your specific situation.
-- TONE: The verdict and rationale are decisive — state the call plainly. But the reasoning is contextual, not absolute: write "some of your audience may read this as…" rather than "your X reads as…". Decisiveness lives in the verdict; humility lives in the reasoning.
-- CONFIDENCE: "high" | "medium" | "low" — how sure the evidence makes you of this verdict. Low when the input is thin or signals conflict.
-- FLIP CONDITION: one concrete, checkable sentence naming what would change the verdict — the specific evidence or outcome that would move it. e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms." Name a real threshold from your situation, not a generic "more data".
-- THE BET: Frame the decision as a bet. reversibility — is acting a one-way door or recoverable? reversibilityNote — one sentence. costIfWrong / costIfYouWait — the asymmetry between acting on a wrong verdict and waiting. asymmetry — one line naming which way the odds lean. Use concrete figures ONLY if the founder stated real numbers; never invent costs, revenue, runway, or probabilities. If the input is too thin to assess a field honestly, return null for that field — do not pad. When confidence is "low", keep this conservative or return null for every field.${investigateExtra}
+- TONE: The verdict and rationale are decisive: state the call plainly. But the reasoning is contextual, not absolute: write "some of your audience may read this as…" rather than "your X reads as…". Decisiveness lives in the verdict; humility lives in the reasoning.
+- CONFIDENCE: "high" | "medium" | "low": how sure the evidence makes you of this verdict. Low when the input is thin or signals conflict.
+- FLIP CONDITION: one concrete, checkable sentence naming what would change the verdict: the specific evidence or outcome that would move it. e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms." Name a real threshold from your situation, not a generic "more data".
+- THE BET: Frame the decision as a bet. reversibility: is acting a one-way door or recoverable? reversibilityNote is one sentence. costIfWrong and costIfYouWait give the asymmetry between acting on a wrong verdict and waiting. asymmetry is one line naming which way the odds lean. Use concrete figures ONLY if the founder stated real numbers; never invent costs, revenue, runway, or probabilities. If the input is too thin to assess a field honestly, return null for that field, do not pad. When confidence is "low", keep this conservative or return null for every field.${investigateExtra}
 
-- NEXT STEP: name the single question worth answering next, and why, in THIS founder's terms. The reason must refer to their actual situation — the specific gap, evidence, or move that makes this the next question — and must follow from the verdict and your first necessary move. Never write a generic routing line like "the problem definition needs work". Choose the house whose question that is: investigate (is the problem real?), innovate (will people want this?), validate (will it sell?), evaluate (how is it actually doing?). Re-running the SAME house is a real answer when the input genuinely needs sharpening — but only say so when you can name what specifically is missing. If the call is settled and no further analysis would change it, return null for house and say what to do instead of running another analysis.
+- NEXT STEP: name the single question worth answering next, and why, in THIS founder's terms. The reason must refer to their actual situation: the specific gap, evidence, or move that makes this the next question, and must follow from the verdict and your first necessary move. Never write a generic routing line like "the problem definition needs work". Choose the house whose question that is: investigate (is the problem real?), innovate (will people want this?), validate (will it sell?), evaluate (how is it actually doing?). Re-running the SAME house is a real answer when the input genuinely needs sharpening, but only say so when you can name what specifically is missing. If the call is settled and no further analysis would change it, return null for house and say what to do instead of running another analysis.
 
 Respond ONLY with valid JSON:
 {
@@ -323,8 +335,8 @@ Respond ONLY with valid JSON:
   "verdictRationale": "1-2 sentences directly answering whether ${houseName} fit exists",
   "confidence": "high | medium | low",
   "flipCondition": "One concrete sentence: the specific evidence or outcome that would change this verdict",
-  "sentenceOfTruth": "The thing you sensed but hadn't articulated — the uncomfortable truth",
-  "whatsWorking": "the genuine asset to protect, framed as what not to lose — or null if nothing genuine yet",
+  "sentenceOfTruth": "The thing you sensed but hadn't articulated: the uncomfortable truth",
+  "whatsWorking": "the genuine asset to protect, framed as what not to lose: or null if nothing genuine yet",
   "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
   "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
   "theBet": { "reversibility": "reversible | hard-to-reverse | null", "reversibilityNote": "one sentence, or null", "costIfWrong": "what acting on a wrong verdict costs you, or null", "costIfYouWait": "what delay costs you, or null", "asymmetry": "one-line read of which way the odds lean, or null" },
@@ -459,7 +471,7 @@ export function mergeAgentOutputsLocally(house: HouseId, agentOutputs: AgentOutp
     verdict: 'INVESTIGATE FURTHER',
     verdictRationale: 'Multiple perspectives analysed. Review key issues and necessary moves before committing.',
     confidence: 'low',
-    flipCondition: 'Add specific evidence — real numbers, quotes, or outcomes — and run again for a firmer verdict.',
+    flipCondition: 'Add specific evidence: real numbers, quotes, or outcomes , and run again for a firmer verdict.',
     sentenceOfTruth: allSignals[0] || 'The real insight lies in the tension between what you know and what you\'re assuming.',
     keyIssues: dedup(allIssues, 5),
     necessaryMoves: dedup(allMoves, 5),

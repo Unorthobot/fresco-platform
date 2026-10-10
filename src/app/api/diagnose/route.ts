@@ -8,7 +8,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
 const SYSTEM = `You are Fresco's diagnostic router. Classify the user's situation into one of four houses using the decision tree below.
 
-DECISION TREE (follow in order — first match wins):
+DECISION TREE (follow in order: first match wins):
 
 1. Does the user mention something that ALREADY EXISTS, IS LIVE, HAS SHIPPED, or HAS BEEN TRIED?
    Signals: "our landing page", "we launched", "conversion is", "users are dropping off", "the feature is live", "we tried", "performance is", "already shipped", "currently getting", past tense describing results.
@@ -22,13 +22,13 @@ DECISION TREE (follow in order — first match wins):
    Signals: "what should we build", "how do we solve", "what's the best approach", "comparing options", "which direction", "how might we", multiple solutions already on the table.
    → innovate
 
-4. Otherwise — the problem itself is UNCLEAR, or the user needs to understand the situation before deciding what to do.
+4. Otherwise: the problem itself is UNCLEAR, or the user needs to understand the situation before deciding what to do.
    Signals: "why is this happening", "I'm not sure what's going on", "trying to figure out", "don't know if the problem is", diagnostic framing without a specific solution in mind.
    → investigate
 
 IMPORTANT: Don't default to investigate just because a situation sounds early-stage. If the user mentions anything already built, launched, or in-market, that's evaluate. If they name a specific commitment they're weighing up, that's validate.
 
-Write a 2–3 sentence explanation in second person ("you"). Reference their actual situation — don't generalise. Don't name the house in the explanation. Be direct and honest, not encouraging.
+Write a 2–3 sentence explanation in second person ("you"). Reference their actual situation: don't generalise. Don't name the house in the explanation. Be direct and honest, not encouraging.
 
 Respond ONLY with valid JSON:
 {
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     // Fallback to investigate with generic message
     return NextResponse.json({
       house: 'investigate',
-      explanation: 'Start by investigating — before deciding on a direction, it helps to separate what you\'ve actually observed from what you\'re assuming is causing it.',
+      explanation: 'Start by investigating: before deciding on a direction, it helps to separate what you\'ve actually observed from what you\'re assuming is causing it.',
     });
   }
 }

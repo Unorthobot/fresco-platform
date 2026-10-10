@@ -210,9 +210,9 @@ They have provided:
 - VERDICT: Their tally and whether the winner feels right
 
 Your job is to:
-1. Generate "Scored Options" — 2-4 analytical observations about the scoring pattern. Identify where scores might be biased, where the gap between options is decisive vs. marginal, and what the scores reveal about hidden priorities.
-2. Generate a "Recommended Decision" — ONE clear, direct statement naming the winning option and the most important reason to choose it. Not "consider option A" — say "Choose option A because..."
-3. Generate "Conditions to Monitor" — 2-4 specific signals that should cause the decision-maker to reconsider. Make these concrete and time-bound where possible.
+1. Generate "Scored Options": 2-4 analytical observations about the scoring pattern. Identify where scores might be biased, where the gap between options is decisive vs. marginal, and what the scores reveal about hidden priorities.
+2. Generate a "Recommended Decision" (ONE clear, direct statement naming the winning option and the most important reason to choose it. Not "consider option A") say "Choose option A because..."
+3. Generate "Conditions to Monitor": 2-4 specific signals that should cause the decision-maker to reconsider. Make these concrete and time-bound where possible.
 
 If the user's instinct conflicts with the matrix score, name that tension directly.`,
 
@@ -225,9 +225,9 @@ They have provided:
 - MITIGATION PLAN: Actions and trip-wires for critical risks
 
 Your job is to:
-1. Generate a "Risk Register" — 2-4 analytical observations about the risk landscape. Flag any critical risks that appear underscored, identify cascading risk chains (where one risk materialising triggers others), and note any blind spots.
-2. Generate a "Critical Risk Summary" — ONE statement that names the single most important risk and what happens if it materialises unmitigated.
-3. Generate a "Mitigation Plan" — 2-4 specific, prioritised mitigation actions. For each, state: what to do, by when, and what the success signal is.
+1. Generate a "Risk Register": 2-4 analytical observations about the risk landscape. Flag any critical risks that appear underscored, identify cascading risk chains (where one risk materialising triggers others), and note any blind spots.
+2. Generate a "Critical Risk Summary": ONE statement that names the single most important risk and what happens if it materialises unmitigated.
+3. Generate a "Mitigation Plan": 2-4 specific, prioritised mitigation actions. For each, state: what to do, by when, and what the success signal is.
 
 Be direct about risks the user may be rationalising away. The purpose of this tool is to surface uncomfortable truths.`,
 
@@ -240,9 +240,9 @@ They have provided:
 - FALSIFICATION CONDITIONS: What would make them change their mind
 
 Your job is to:
-1. Generate an "Evidence Audit" — 2-4 analytical observations about the evidence quality. Identify the weakest A-grade claims, the strongest actual evidence, and any classic validation traps (people saying yes vs. paying, small samples, biased sources). Be sceptical.
-2. Generate a "Hypothesis Verdict" — ONE clear statement: Confirmed (strong A-grade evidence), Promising (mixed evidence, proceed with caution), Weak (mostly B/C evidence, test before committing), or Unconfirmed (insufficient evidence to proceed). State the verdict directly.
-3. Generate "Next Validation Tests" — 2-4 specific tests that would upgrade the evidence grade. Each test should be faster and cheaper than the commitment they're considering.
+1. Generate an "Evidence Audit": 2-4 analytical observations about the evidence quality. Identify the weakest A-grade claims, the strongest actual evidence, and any classic validation traps (people saying yes vs. paying, small samples, biased sources). Be sceptical.
+2. Generate a "Hypothesis Verdict": ONE clear statement: Confirmed (strong A-grade evidence), Promising (mixed evidence, proceed with caution), Weak (mostly B/C evidence, test before committing), or Unconfirmed (insufficient evidence to proceed). State the verdict directly.
+3. Generate "Next Validation Tests": 2-4 specific tests that would upgrade the evidence grade. Each test should be faster and cheaper than the commitment they're considering.
 
 Your job is to be the honest voice in the room. If the evidence is weak, say so clearly.`,
 

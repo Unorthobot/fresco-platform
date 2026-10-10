@@ -18,16 +18,16 @@ Look specifically for these failure patterns:
 - They've described what they're seeing but haven't said why they think it's happening ("60% drop-off" without a theory of why)
 - They've stated what they think is true but haven't considered where they might be wrong
 - They've listed assumptions but haven't said how these connect or affect each other
-- Their answer reads more like a guess stated confidently — the evidence doesn't fully support it
+- Their answer reads more like a guess stated confidently: the evidence doesn't fully support it
 - They're describing what they observe about others without examining their own assumptions
 - The contradiction they named doesn't actually challenge their central belief
 
 Rules for your questions:
 1. Maximum 2 questions. If only 1 gap is critical, ask 1.
-2. Every question MUST reference something specific they actually wrote — quote their words or reference their specific claim
-3. Questions should be things they can answer in 2-3 sentences — not open-ended essay prompts
-4. Never ask generic questions like "have you considered alternatives?" — be specific
-5. If their inputs are thorough and honest, return 0 questions — don't manufacture gaps
+2. Every question MUST reference something specific they actually wrote: quote their words or reference their specific claim
+3. Questions should be things they can answer in 2-3 sentences: not open-ended essay prompts
+4. Never ask generic questions like "have you considered alternatives?": be specific
+5. If their inputs are thorough and honest, return 0 questions: don't manufacture gaps
 
 Return JSON only:
 {
@@ -49,13 +49,13 @@ Look specifically for these failure patterns:
 - Their measure of success doesn't seem possible to track in the time they've described
 - They've named where the flow breaks down but not why users behave that way at that point
 - The experiment they've described would tell them if something worked, but not why
-- They're optimising the wrong step — the real bottleneck is upstream of where they're looking
+- They're optimising the wrong step: the real bottleneck is upstream of where they're looking
 
 Rules for your questions:
 1. Maximum 2 questions. If only 1 gap is critical, ask 1.
 2. Every question MUST reference something specific they actually wrote
 3. Questions should be answerable in 2-3 sentences
-4. Never ask generic questions — be specific to their situation
+4. Never ask generic questions: be specific to their situation
 5. If their inputs are solid, return 0 questions
 
 Return JSON only:
@@ -73,7 +73,7 @@ Return JSON only:
 Your job: read what they've written and identify the 1-2 most important gaps.
 
 Look specifically for these failure patterns:
-- Their scores aren't backed by anything — no data, quotes, or observations
+- Their scores aren't backed by anything: no data, quotes, or observations
 - Their audience description is too vague to be useful ("SMB companies" not "CFOs at Series B SaaS companies")
 - They've listed barriers but haven't said which one is the actual blocker vs. noise
 - Their targets look like wishes rather than numbers grounded in evidence
@@ -84,7 +84,7 @@ Rules for your questions:
 1. Maximum 2 questions. If only 1 gap is critical, ask 1.
 2. Every question MUST reference something specific they actually wrote
 3. Questions should be answerable in 2-3 sentences
-4. Never generic — specific to their situation
+4. Never generic: specific to their situation
 5. If inputs are thorough, return 0 questions
 
 Return JSON only:
@@ -103,9 +103,9 @@ Your job: read what they've written and identify the 1-2 most important gaps.
 
 Look specifically for these failure patterns:
 - They've diagnosed what's wrong with the page but have no theory of why users behave that way
-- In a comparison, both versions have the same fundamental structure — the changes are cosmetic, not strategic
+- In a comparison, both versions have the same fundamental structure: the changes are cosmetic, not strategic
 - They've described the journey at page level but not at the decision or emotional level of the user
-- Their hypothesis about what's failing is the most obvious explanation — they haven't considered the counterintuitive one
+- Their hypothesis about what's failing is the most obvious explanation: they haven't considered the counterintuitive one
 - They've described performance data but not the user's mental state or intent at that step
 - The "goal" they've stated for the page doesn't match the behaviour they're seeing
 
@@ -113,7 +113,7 @@ Rules for your questions:
 1. Maximum 2 questions. If only 1 gap is critical, ask 1.
 2. Every question MUST reference something specific they actually wrote
 3. Questions should be answerable in 2-3 sentences
-4. Never generic — specific to their situation
+4. Never generic: specific to their situation
 5. If inputs are solid, return 0 questions
 
 Return JSON only:
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001', // Fast — this is a pre-flight call
+        model: 'claude-haiku-4-5-20251001', // Fast: this is a pre-flight call
         max_tokens: 400,
         system: systemPrompt,
         messages: [{ role: 'user', content: `Here are the user's inputs:\n\n${userInput}\n\nReturn your JSON.` }],

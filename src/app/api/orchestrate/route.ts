@@ -82,7 +82,7 @@ function rulesBasedOrchestration(
   // All houses done — suggest re-running Investigate with new insight
   return {
     nextHouse: 'investigate',
-    recommendation: 'Re-test whether the problem is real — your latest findings may reveal it was framed incorrectly.',
+    recommendation: 'Re-test whether the problem is real: your latest findings may reveal it was framed incorrectly.',
     reasoning: 'You\'ve completed all four houses. The most valuable next move is to loop back to Investigate with the perspective you\'ve now gained.',
     urgency: 'low',
     houseProgress,
@@ -117,7 +117,7 @@ The four houses:
 - Validate → Commercial Viability
 - Evaluate → Performance Readiness
 
-This is a loop, not a line. Your job is to look at what the sessions REVEAL and recommend the highest-leverage next house — which may not be the next one in sequence.
+This is a loop, not a line. Your job is to look at what the sessions REVEAL and recommend the highest-leverage next house: which may not be the next one in sequence.
 
 Rules:
 - Recommend a HOUSE, not a toolkit or agent. Agents are invisible to the user.
@@ -128,14 +128,14 @@ Rules:
 - If Evaluate reveals commercial issues → route to Validate
 - Be specific: reference what the sessions actually revealed
 
-nextHouse is internal routing — the user never sees it. The recommendation
+nextHouse is internal routing: the user never sees it. The recommendation
 the user reads must lead with the QUESTION to answer next, never the house
-name ("Find out whether people actually want this" — not "Run Innovate").
+name ("Find out whether people actually want this": not "Run Innovate").
 
 Respond ONLY with valid JSON:
 {
   "nextHouse": "investigate|innovate|validate|evaluate",
-  "recommendation": "One direct sentence framing the next question to answer — no house names",
+  "recommendation": "One direct sentence framing the next question to answer: no house names",
   "reasoning": "2-3 sentences: what the sessions reveal that makes this the right move",
   "urgency": "high|medium|low"
 }`;

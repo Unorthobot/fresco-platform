@@ -11,7 +11,7 @@
 import { NextRequest } from 'next/server';
 import { HOUSE_AGENTS, type HouseId } from '@/lib/agents';
 import type { AgentOutput } from '@/lib/orchestrator';
-import { buildMergePrompt, buildHouseResult, mergeAgentOutputsLocally } from '@/lib/orchestrator';
+import { buildMergePrompt, buildHouseResult, mergeAgentOutputsLocally, PUNCTUATION_RULE } from '@/lib/orchestrator';
 import { auth } from '@/lib/auth';
 import { checkVerdictQuota, consumeVerdict } from '@/lib/entitlements';
 
@@ -195,21 +195,21 @@ async function runAgent(
 ): Promise<AgentOutput> {
   // Flag uploaded files in the user input so agents know to use them as reference
   const uploadedFilesNote = userInput.includes('[Uploaded file:') || userInput.includes('[Uploaded image:')
-    ? `\n\nNOTE: The user has uploaded reference files. Their content appears inline prefixed with [Uploaded file:] or [Uploaded image:]. Use this material as evidence to inform your analysis — it is context the user provided, not their direct answer.`
+    ? `\n\nNOTE: The user has uploaded reference files. Their content appears inline prefixed with [Uploaded file:] or [Uploaded image:]. Use this material as evidence to inform your analysis: it is context the user provided, not their direct answer.`
     : '';
 
   const contextSection = context
     ? `\n\nWORKSPACE CONTEXT (from prior sessions):\n${context}`
     : '';
   const pageSection = pageContent
-    ? `\n\n━━━ LIVE PAGE CONTENT (fetched directly from the URL) ━━━\n${pageContent}\n━━━ END PAGE CONTENT ━━━\n\nIMPORTANT: The content above is the actual live page. Base your entire analysis on what is written there — the real headlines, copy, CTAs, structure, and messaging. Do not substitute generic assumptions. Quote specific text from the page in your findings where relevant.`
+    ? `\n\n━━━ LIVE PAGE CONTENT (fetched directly from the URL) ━━━\n${pageContent}\n━━━ END PAGE CONTENT ━━━\n\nIMPORTANT: The content above is the actual live page. Base your entire analysis on what is written there: the real headlines, copy, CTAs, structure, and messaging. Do not substitute generic assumptions. Quote specific text from the page in your findings where relevant.`
     : pageFetchStatus === 'failed'
-    ? `\n\nNOTE: The URL ${originalUrl || '(provided)'} could not be fetched — the page is likely JavaScript-rendered, behind authentication, or bot-protected.\n\nDo NOT say you cannot analyse it. Instead:\n1. If you recognise this domain/product, use your knowledge of it directly\n2. Reason analytically from the user's description of the page\n3. State specifically what you verified vs what you're inferring\n4. Name what you would need to see to be more confident\nA specific partial analysis beats a generic refusal every time.`
+    ? `\n\nNOTE: The URL ${originalUrl || '(provided)'} could not be fetched: the page is likely JavaScript-rendered, behind authentication, or bot-protected.\n\nDo NOT say you cannot analyse it. Instead:\n1. If you recognise this domain/product, use your knowledge of it directly\n2. Reason analytically from the user's description of the page\n3. State specifically what you verified vs what you're inferring\n4. Name what you would need to see to be more confident\nA specific partial analysis beats a generic refusal every time.`
     : '';
 
   // Sequential context: each agent sees what prior agents found
   const priorSection = priorOutputs.length > 0
-    ? `\n\nPRIOR AGENT OUTPUTS (build on these — don't repeat them):\n` +
+    ? `\n\nPRIOR AGENT OUTPUTS (build on these: don't repeat them):\n` +
       priorOutputs.map(p =>
         `${p.displayName}:\n- Summary: ${p.summary}\n- Key findings: ${p.key_findings.join(' | ')}\n- Signal: ${p.signal}`
       ).join('\n\n')
@@ -230,7 +230,7 @@ async function runAgent(
     // language, which they were applying literally to decisions that are not
     // problem-shaped — telling a founder their burger recipe needed "a problem
     // to solve". The analysis is right; only the vocabulary has to translate.
-    system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person — "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.\n\nFRAME: Your framing above is a lens for you, not vocabulary to impose. Not every decision is problem-solution shaped — pricing, a hire, a creative brief, whether to commit at all. Where that framing does not fit the decision in front of you, apply the equivalent question that does (what is this for, who is it for, what would make it good) with exactly the same rigour. Never tell a founder they lack a problem to solve when the decision does not call for one.`,
+    system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person: "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.\n\nFRAME: Your framing above is a lens for you, not vocabulary to impose. Not every decision is problem-solution shaped: pricing, a hire, a creative brief, whether to commit at all. Where that framing does not fit the decision in front of you, apply the equivalent question that does (what is this for, who is it for, what would make it good) with exactly the same rigour. Never tell a founder they lack a problem to solve when the decision does not call for one.\n\n${PUNCTUATION_RULE}`,
     messages: [{ role: 'user', content: userMessage }],
   }, `Agent ${agent.id}`);
   return {
@@ -367,7 +367,7 @@ export async function POST(
       verdict: 'INVESTIGATE FURTHER',
       verdictRationale: 'Add your Anthropic API key in Settings to enable AI-powered house analysis.',
       sentenceOfTruth: 'Configure ANTHROPIC_API_KEY to unlock full orchestration.',
-      keyIssues: ['API key not configured — go to Settings to add your Anthropic key.'],
+      keyIssues: ['API key not configured: go to Settings to add your Anthropic key.'],
       necessaryMoves: ['Add ANTHROPIC_API_KEY to your environment variables.'],
       suggestedNextHouse: null,
       suggestedNextHouseReason: '',
@@ -417,9 +417,9 @@ export async function POST(
             type: 'pageFetch',
             status: pageFetchStatus,
             message: pageFetchStatus === 'fetched'
-              ? 'Page fetched — agents are analysing the live content.'
+              ? 'Page fetched: agents are analysing the live content.'
               : pageFetchStatus === 'failed'
-              ? 'Page couldn\'t be fetched directly (JS-rendered or bot-protected). Agents will use your description and any prior knowledge of this URL — add more detail in your answers if results feel generic.'
+              ? 'Page couldn\'t be fetched directly (JS-rendered or bot-protected). Agents will use your description and any prior knowledge of this URL: add more detail in your answers if results feel generic.'
               : null,
           });
         }
@@ -435,8 +435,8 @@ export async function POST(
         // prior outputs, and streams to the client as it lands.
         const modeContext = house === 'evaluate' && evaluateMode !== 'single'
           ? `\n\nEVALUATION MODE: ${evaluateMode === 'comparison'
-              ? 'COMPARISON — the user is comparing two versions or approaches. The Variant Lens perspective is primary.'
-              : 'JOURNEY — the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
+              ? 'COMPARISON: the user is comparing two versions or approaches. The Variant Lens perspective is primary.'
+              : 'JOURNEY: the user is describing a multi-step flow. The Journey Trace perspective is primary.'}`
           : '';
 
         let lastAgentError = '';

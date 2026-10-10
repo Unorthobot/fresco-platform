@@ -19,7 +19,7 @@ const LENS_INSTRUCTIONS: Record<string, string> = {
   critical: `Apply a CRITICAL THINKING lens. Prioritise truth-testing and assumption recognition. The Sentence of Truth should name the most important unexamined assumption. Key Issues should surface where reasoning is fragile. At least one Necessary Move should be "validate this assumption before proceeding."`,
   systems: `Apply a SYSTEMS THINKING lens. Prioritise interconnections, feedback loops, and structural causes. The Sentence of Truth should name the system dynamic driving the situation. Key Issues should trace symptoms to structural roots. Necessary Moves should target the leverage point in the system.`,
   design: `Apply a DESIGN THINKING lens. Prioritise human context, unmet needs, and experience quality. The Sentence of Truth should name the human truth the evidence points to. Key Issues should surface where the experience breaks down for the person. Necessary Moves should improve the human experience.`,
-  product: `Apply a PRODUCT THINKING lens. Prioritise feasibility, viability, and build decisions. The Sentence of Truth should be a product decision framing — what to build, cut, or change. Key Issues should be product decisions with trade-offs. Necessary Moves should be sequenced product actions.`,
+  product: `Apply a PRODUCT THINKING lens. Prioritise feasibility, viability, and build decisions. The Sentence of Truth should be a product decision framing: what to build, cut, or change. Key Issues should be product decisions with trade-offs. Necessary Moves should be sequenced product actions.`,
   strategic: `Apply a STRATEGIC THINKING lens. Prioritise competitive positioning and long-term direction. The Sentence of Truth should name the non-obvious strategic insight. Key Issues should be framed as strategic risk or competitive exposure. Necessary Moves should create durable advantage.`,
   analytical: `Apply an ANALYTICAL THINKING lens. Prioritise data patterns and measurable gaps. The Sentence of Truth should be the single most evidence-backed finding. Key Issues should be ranked by severity with data signals. Necessary Moves should include explicit success criteria.`,
   futures: `Apply a FUTURES THINKING lens. Prioritise trajectory and second-order consequences. The Sentence of Truth should name where the current pattern leads if nothing changes. Key Issues should include early-warning signals. At least one Necessary Move should shape the future, not just respond to the present.`,
@@ -69,12 +69,12 @@ export async function POST(request: NextRequest) {
     return `Agent ${i + 1} (${name})\n  Summary: ${summary}\n  Signal: ${signal}\n  Risks: ${risksLine}${findings ? `\n  Key findings: ${findings}` : ''}`;
   }).join('\n\n');
 
-  const systemPrompt = `You are FRESCO's synthesis engine. You re-synthesise three agent outputs through a specific intellectual lens. The lens shapes WHICH facts get foregrounded and HOW they connect — it does not invent new evidence.
+  const systemPrompt = `You are FRESCO's synthesis engine. You re-synthesise three agent outputs through a specific intellectual lens. The lens shapes WHICH facts get foregrounded and HOW they connect: it does not invent new evidence.
 
 Rules:
 - Strong → GO. Weak → PIVOT or STOP. Undecided → INVESTIGATE FURTHER.
 - Never combine Strong with STOP. Never combine Weak with GO.
-- Output is consumed by a UI — return ONLY valid JSON, nothing before or after, no markdown fences, no prose preamble.`;
+- Output is consumed by a UI: return ONLY valid JSON, nothing before or after, no markdown fences, no prose preamble.`;
 
   const userMessage = `USER INPUT
 ${userInput || '(none provided)'}
@@ -97,8 +97,8 @@ Return ONLY this JSON shape (no other text):
       headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1200,           // Was 800 — could truncate JSON mid-array on long lens outputs
-        system: systemPrompt,        // Was inlined into the user message — moving it to system improves compliance
+        max_tokens: 1200,           // Was 800: could truncate JSON mid-array on long lens outputs
+        system: systemPrompt,        // Was inlined into the user message: moving it to system improves compliance
         messages: [{ role: 'user', content: userMessage }],
       }),
     });

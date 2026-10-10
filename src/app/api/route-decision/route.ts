@@ -27,11 +27,11 @@ function buildRegistryBlock(): string {
   const lines: string[] = [];
   for (const house of ['investigate', 'innovate', 'validate'] as const) {
     lines.push(`${house}:`);
-    for (const q of HOUSE_QUESTIONS[house]) lines.push(`  ${q.id} — ${q.question}`);
+    for (const q of HOUSE_QUESTIONS[house]) lines.push(`  ${q.id}: ${q.question}`);
   }
   for (const mode of VALID_MODES) {
     lines.push(`evaluate (${mode}):`);
-    for (const q of HOUSE_QUESTIONS.evaluate[mode]) lines.push(`  ${q.id} — ${q.question}`);
+    for (const q of HOUSE_QUESTIONS.evaluate[mode]) lines.push(`  ${q.id}: ${q.question}`);
   }
   return lines.join('\n');
 }
@@ -40,13 +40,13 @@ const SYSTEM_PROMPT = `You are Fresco's routing engine. A founder describes a de
 You do three things in one pass.
 
 1. CLASSIFY which analysis applies:
-- investigate — "is the problem real?" Unclear cause, conflicting signals,
+- investigate: "is the problem real?" Unclear cause, conflicting signals,
   deciding what is actually happening.
-- innovate — "what should we build or change?" Solution design, options on
+- innovate: "what should we build or change?" Solution design, options on
   the table, how to fix a known problem.
-- validate — "will it work, should we commit?" A specific commitment is
+- validate: "will it work, should we commit?" A specific commitment is
   pending and the evidence needs pressure-testing.
-- evaluate — "how is it performing?" An existing page, flow, or feature with
+- evaluate: "how is it performing?" An existing page, flow, or feature with
   numbers, diagnosing a gap. If evaluate, also pick a mode: single (one
   page), journey (multi-step flow), comparison (two versions).
 
@@ -58,11 +58,11 @@ founder's text. Compress their own words; never invent facts they did not
 state. Rate each extraction 0-1 for how completely their text answers the
 question. Omit questions their text does not touch.
 
-3. IDENTIFY GAPS — canonical questions with no meaningful answer in the
+3. IDENTIFY GAPS: canonical questions with no meaningful answer in the
 text. For each, write a one-line reason this question matters for THIS
 specific decision: second person, concrete, no framework vocabulary. Order
 by importance to the verdict. Mark at most ${MAX_FOLLOWUPS} as followups. A rich
-prompt yields zero followups — do not manufacture questions.
+prompt yields zero followups: do not manufacture questions.
 
 Return ONLY JSON, no markdown fences:
 {"house":"investigate|innovate|validate|evaluate",

@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────────────────────────────────
-   Extension prompts — system prompts and Anthropic client for the three
+   Extension prompts: system prompts and Anthropic client for the three
    extension modes (Evaluate, Compare, Journey). Moved server-side as part
    of Path A so the user never needs an Anthropic key.
 
@@ -51,7 +51,7 @@ export function formatPageContent(pageData: PageData): string {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Anthropic call — mirrors the pattern used by deep-dive/challenge/etc.
+   Anthropic call: mirrors the pattern used by deep-dive/challenge/etc.
    Returns parsed JSON; throws if Anthropic errors or output isn't valid JSON.
    ────────────────────────────────────────────────────────────────────────── */
 async function callClaude(systemPrompt: string, userMessage: string): Promise<unknown> {
@@ -96,9 +96,9 @@ async function callClaude(systemPrompt: string, userMessage: string): Promise<un
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Evaluate — page scorecard
+   Evaluate: page scorecard
    ────────────────────────────────────────────────────────────────────────── */
-const EVALUATE_SYSTEM = `You are the Fresco Page Scorecard agent — a ruthless, specific page performance analyst.
+const EVALUATE_SYSTEM = `You are the Fresco Page Scorecard agent: a ruthless, specific page performance analyst.
 
 Your job: diagnose why this page is or isn't achieving its goal. Be specific. Quote actual copy. Name actual elements.
 
@@ -112,8 +112,8 @@ Analyse across:
 Return ONLY valid JSON:
 {
   "verdict": "GO | PIVOT | STOP | NEEDS MORE SIGNAL",
-  "verdictLabel": "plain English headline — e.g. 'Strong conversion mechanics, one critical trust gap'",
-  "sentenceOfTruth": "The sharpest insight about this page — the thing the team probably hasn't named yet",
+  "verdictLabel": "plain English headline: e.g. 'Strong conversion mechanics, one critical trust gap'",
+  "sentenceOfTruth": "The sharpest insight about this page: the thing the team probably hasn't named yet",
   "scores": {
     "clarity": { "score": 0-10, "note": "specific observation" },
     "trust": { "score": 0-10, "note": "specific observation" },
@@ -121,8 +121,8 @@ Return ONLY valid JSON:
     "cta": { "score": 0-10, "note": "specific observation" },
     "messaging": { "score": 0-10, "note": "specific observation" }
   },
-  "keyIssues": ["specific issue 1 — quote copy or name element", "issue 2", "issue 3"],
-  "suggestedFixes": ["highest-leverage fix 1 — specific and actionable", "fix 2", "fix 3"],
+  "keyIssues": ["specific issue 1: quote copy or name element", "issue 2", "issue 3"],
+  "suggestedFixes": ["highest-leverage fix 1: specific and actionable", "fix 2", "fix 3"],
   "archetype": "Name of system archetype if applicable (Fixes that Fail / Shifting the Burden / Eroding Goals / etc.) or null"
 }`;
 
@@ -136,7 +136,7 @@ ${pageContent}
 
 ${args.userContext ? `ADDITIONAL CONTEXT FROM USER:\n${args.userContext}` : ''}
 
-Analyse this page. Be specific — quote actual text, name actual elements.`;
+Analyse this page. Be specific: quote actual text, name actual elements.`;
 
   const result = await callClaude(EVALUATE_SYSTEM, userMsg) as Record<string, unknown>;
   return {
@@ -148,21 +148,21 @@ Analyse this page. Be specific — quote actual text, name actual elements.`;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Compare — variant lens
+   Compare: variant lens
    ────────────────────────────────────────────────────────────────────────── */
-const COMPARE_SYSTEM = `You are the Fresco Variant Lens agent — a conversion and UX comparison specialist.
+const COMPARE_SYSTEM = `You are the Fresco Variant Lens agent: a conversion and UX comparison specialist.
 
-Your job: determine which version performs better and WHY — so the principle transfers beyond this specific comparison.
+Your job: determine which version performs better and WHY: so the principle transfers beyond this specific comparison.
 
 Evaluate across: messaging clarity, trust building, friction levels, CTA effectiveness, cognitive load.
 
-Identify the transferable principle — what does the better version understand about the user's decision-making that the weaker version misses?
+Identify the transferable principle: what does the better version understand about the user's decision-making that the weaker version misses?
 
 Return ONLY valid JSON:
 {
   "winner": "A | B | tie",
-  "winnerLabel": "plain English — e.g. 'Version B wins on trust, loses on clarity'",
-  "sentenceOfTruth": "The principle this comparison proves — beyond these two versions",
+  "winnerLabel": "plain English: e.g. 'Version B wins on trust, loses on clarity'",
+  "sentenceOfTruth": "The principle this comparison proves: beyond these two versions",
   "comparison": {
     "messaging": { "winner": "A|B|tie", "reasoning": "specific" },
     "trust": { "winner": "A|B|tie", "reasoning": "specific" },
@@ -172,7 +172,7 @@ Return ONLY valid JSON:
   "versionA": { "strengths": ["strength 1", "strength 2"], "weaknesses": ["weakness 1"] },
   "versionB": { "strengths": ["strength 1", "strength 2"], "weaknesses": ["weakness 1"] },
   "transferablePrinciple": "The rule that applies beyond these two versions",
-  "recommendation": "What to do next — specific action"
+  "recommendation": "What to do next: specific action"
 }`;
 
 export async function runComparePages(args: {
@@ -194,11 +194,11 @@ Compare these two versions. Be specific about what each does well or poorly.`;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Journey — trace
+   Journey: trace
    ────────────────────────────────────────────────────────────────────────── */
-const JOURNEY_SYSTEM = `You are the Fresco Journey Trace agent — a user journey systems analyst.
+const JOURNEY_SYSTEM = `You are the Fresco Journey Trace agent: a user journey systems analyst.
 
-Your job: find what only appears when you look at the whole sequence — the patterns invisible in single-page analysis.
+Your job: find what only appears when you look at the whole sequence: the patterns invisible in single-page analysis.
 
 Apply Double-Loop Learning: are the interventions working (single loop)? Are we optimising the right thing (double loop)?
 
@@ -207,7 +207,7 @@ For each transition between pages: what question does the user arrive with? Does
 Return ONLY valid JSON:
 {
   "verdictLabel": "plain English journey verdict",
-  "sentenceOfTruth": "The system-level insight — what no single page analysis caught",
+  "sentenceOfTruth": "The system-level insight: what no single page analysis caught",
   "steps": [
     {
       "url": "url",
