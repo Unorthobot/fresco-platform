@@ -4071,6 +4071,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   </details>
                 )}
 
+                {/* The engine can also conclude that no further analysis would
+                    change the call. That used to render as nothing at all,
+                    silently dropping its reasoning; say it instead. */}
+                {!result.suggestedNextHouse && result.suggestedNextHouseReason && (
+                  <div className="p-4 bg-fresco-light-gray">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-0.5">Nothing left to analyse</p>
+                    <p className="text-fresco-xs text-fresco-graphite-mid mt-0.5">{result.suggestedNextHouseReason}</p>
+                  </div>
+                )}
+
                 {/* Next analysis suggestion — led by the question it answers,
                     not the house that runs it. Houses are engine internals;
                     the user thinks in questions. */}

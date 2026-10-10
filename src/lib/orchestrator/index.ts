@@ -312,6 +312,8 @@ Produce the synthesis. Rules:
 - FLIP CONDITION: one concrete, checkable sentence naming what would change the verdict — the specific evidence or outcome that would move it. e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms." Name a real threshold from your situation, not a generic "more data".
 - THE BET: Frame the decision as a bet. reversibility — is acting a one-way door or recoverable? reversibilityNote — one sentence. costIfWrong / costIfYouWait — the asymmetry between acting on a wrong verdict and waiting. asymmetry — one line naming which way the odds lean. Use concrete figures ONLY if the founder stated real numbers; never invent costs, revenue, runway, or probabilities. If the input is too thin to assess a field honestly, return null for that field — do not pad. When confidence is "low", keep this conservative or return null for every field.${investigateExtra}
 
+- NEXT STEP: name the single question worth answering next, and why, in THIS founder's terms. The reason must refer to their actual situation — the specific gap, evidence, or move that makes this the next question — and must follow from the verdict and your first necessary move. Never write a generic routing line like "the problem definition needs work". Choose the house whose question that is: investigate (is the problem real?), innovate (will people want this?), validate (will it sell?), evaluate (how is it actually doing?). Re-running the SAME house is a real answer when the input genuinely needs sharpening — but only say so when you can name what specifically is missing. If the call is settled and no further analysis would change it, return null for house and say what to do instead of running another analysis.
+
 Respond ONLY with valid JSON:
 {
   "fitStrength": "Strong | Shaky | Mixed",
@@ -323,7 +325,8 @@ Respond ONLY with valid JSON:
   "whatsWorking": "the genuine asset to protect, framed as what not to lose — or null if nothing genuine yet",
   "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
   "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
-  "theBet": { "reversibility": "reversible | hard-to-reverse | null", "reversibilityNote": "one sentence, or null", "costIfWrong": "what acting on a wrong verdict costs you, or null", "costIfYouWait": "what delay costs you, or null", "asymmetry": "one-line read of which way the odds lean, or null" }${investigateJsonField}
+  "theBet": { "reversibility": "reversible | hard-to-reverse | null", "reversibilityNote": "one sentence, or null", "costIfWrong": "what acting on a wrong verdict costs you, or null", "costIfYouWait": "what delay costs you, or null", "asymmetry": "one-line read of which way the odds lean, or null" },
+  "nextStep": { "house": "investigate | innovate | validate | evaluate | null", "reason": "why THAT question is the one worth answering next, in their situation's own terms" }${investigateJsonField}
 }`;
 }
 
@@ -344,6 +347,7 @@ export function buildHouseResult(
     povStatement?: string;
     systemsOutput?: Record<string, any>;
     theBet?: Record<string, any>;
+    nextStep?: { house?: string | null; reason?: string | null };
   }
 ): HouseResult {
   // Coerce the model's "null"/empty string to absent — no manufactured strength.
@@ -381,7 +385,28 @@ export function buildHouseResult(
     return rawVerdict;
   })();
 
-  const routing = determineNextHouse(house, fitStrength, verdict, mergeResponse.keyIssues || []);
+  // Prefer the engine's own call on what to answer next. determineNextHouse is
+  // a static table in which Strong fit is the only path forward, so every
+  // Shaky/Mixed verdict — most of them, by design — collapsed to the same
+  // canned "go back to Investigate" line regardless of what the analysis
+  // actually found. The merge has the verdict, the issues and the moves in
+  // front of it and can say why THIS decision needs THAT question next.
+  // The table stays as the fallback for a merge that omits the field and for
+  // the local fallback path below.
+  const VALID_HOUSES: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
+  const routing = (() => {
+    const table = determineNextHouse(house, fitStrength, verdict, mergeResponse.keyIssues || []);
+    const raw = mergeResponse.nextStep;
+    if (!raw) return table;
+    const reason = typeof raw.reason === 'string' ? raw.reason.trim() : '';
+    if (!reason || reason.toLowerCase() === 'null') return table;
+    const rawHouse = typeof raw.house === 'string' ? raw.house.trim().toLowerCase() : '';
+    // An explicit null house means "the call is settled" — a legitimate answer,
+    // so keep the model's reason and surface no further analysis.
+    if (!rawHouse || rawHouse === 'null') return { nextHouse: null, reason };
+    const picked = VALID_HOUSES.find(h => h === rawHouse);
+    return picked ? { nextHouse: picked, reason } : table;
+  })();
 
   return {
     house,
