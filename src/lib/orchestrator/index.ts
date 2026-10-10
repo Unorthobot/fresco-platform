@@ -302,6 +302,8 @@ Produce the synthesis. Rules:
   - Mixed → INVESTIGATE FURTHER (mixed signals, more information needed)
   - Never combine Strong with STOP, PIVOT, or INVESTIGATE FURTHER
   - Never combine Shaky with GO
+- FRAME: "${fitLabel}" is this house's internal framing — a lens for you, not a template to impose on the founder. Judge the decision on its own terms, in their vocabulary. Plenty of real decisions are not problem-solution shaped: pricing, a hire, a co-founder split, a creative brief, whether to commit at all. Forcing the frame produces category errors ("what problem does this burger solve"). When the decision is not problem-shaped, ask the equivalent question that genuinely fits — what is this for, who is it for, and what would make it good? Demand exactly the same rigour; never demand it in startup vocabulary that does not apply.
+- THIN INPUT: if the input is too thin to tell what KIND of decision this is, say so plainly and name what is missing on the decision's own terms. Never assert that the founder "has no problem to solve" — the absence of a stated problem is not evidence that one is required. Ask what they are deciding between and what a good outcome looks like, before anything else.
 - SENTENCE OF TRUTH: ONE sharp statement — the thing you sensed but hadn't articulated. Not a summary. An insight.
 - WHAT'S WORKING: Name the genuine asset this decision should protect — the real thing you'd be foolish to lose — framed as what to keep, not praise. e.g. "Your distribution is real; don't lose it in the pivot." One sentence. If nothing is genuinely working yet, return null — never manufacture a strength to flatter.
 - KEY ISSUES: 3–5 consolidated issues. No duplication. Specific to your situation.

@@ -225,7 +225,12 @@ async function runAgent(
     // Roomy cap: in journey/comparison mode with fetched page content the
     // agent JSON regularly outgrew 1200 and truncated into "no JSON".
     max_tokens: 2500,
-    system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person — "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.`,
+    // FRAME rides alongside VOICE on every agent in every house. Several agent
+    // prompts (Position Builder most of all) are written in problem-solution
+    // language, which they were applying literally to decisions that are not
+    // problem-shaped — telling a founder their burger recipe needed "a problem
+    // to solve". The analysis is right; only the vocabulary has to translate.
+    system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person — "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.\n\nFRAME: Your framing above is a lens for you, not vocabulary to impose. Not every decision is problem-solution shaped — pricing, a hire, a creative brief, whether to commit at all. Where that framing does not fit the decision in front of you, apply the equivalent question that does (what is this for, who is it for, what would make it good) with exactly the same rigour. Never tell a founder they lack a problem to solve when the decision does not call for one.`,
     messages: [{ role: 'user', content: userMessage }],
   }, `Agent ${agent.id}`);
   return {
