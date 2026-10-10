@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 // the token can read it. The payload was frozen at share time.
 
 export const metadata: Metadata = {
-  title: 'Shared verdict — Fresco',
+  title: 'Shared verdict · Fresco',
   robots: { index: false },
 };
 
@@ -100,7 +100,7 @@ export default async function SharedResultPage({ params }: { params: { token: st
 
         <footer className="border-t border-gray-100 pt-6 mt-12">
           <p className="text-xs text-gray-400">
-            Generated with Fresco — a decision engine for startup founders.{' '}
+            Generated with Fresco, a decision engine for startup founders.{' '}
             <Link href="/" className="text-gray-600 underline underline-offset-2">Try it free</Link>
           </p>
         </footer>

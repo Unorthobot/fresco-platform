@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Fresco',
+  title: 'Privacy Policy · Fresco',
   description: 'How Fresco collects, uses, and protects your personal information.',
 };
 

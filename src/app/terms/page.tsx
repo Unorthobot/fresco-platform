@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — Fresco',
+  title: 'Terms of Service · Fresco',
   description: 'The terms and conditions governing your use of the Fresco platform.',
 };
 

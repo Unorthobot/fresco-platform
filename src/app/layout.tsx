@@ -7,9 +7,9 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-const TITLE = 'Fresco — A decision engine for startup founders';
+const TITLE = 'Fresco · A decision engine for startup founders';
 const DESCRIPTION =
-  'Run the decision you\'re facing through structured analysis and get a clear verdict — GO, PIVOT, STOP, or NEEDS MORE SIGNAL — with the reasoning that produced it.';
+  'Run the decision you\'re facing through structured analysis and get a clear verdict: GO, PIVOT, STOP, or NEEDS MORE SIGNAL, with the reasoning that produced it.';
 
 export const metadata: Metadata = {
   // Absolute base so the file-based opengraph-image/twitter-image routes
