@@ -2331,6 +2331,42 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const abortRef = useRef<AbortController | null>(null);
   const outputScrollRef = useRef<HTMLDivElement>(null);
   const inputScrollRef = useRef<HTMLDivElement>(null);
+
+  // Set when a verdict arrives; consumed once by the verdict element's
+  // callback ref below.
+  const pendingVerdictScrollRef = useRef(false);
+  const scrollVerdictIntoView = () => { pendingVerdictScrollRef.current = true; };
+
+  // Bring the verdict into view the moment it lands. Driven by a CALLBACK REF
+  // rather than a timer: the result block sits inside AnimatePresence
+  // mode="wait", so the element does not exist until the previous child has
+  // finished exiting — any rAF or timeout fired from the verdict handler ran
+  // against a null ref and scrolled nothing. This fires exactly when the
+  // verdict enters the DOM.
+  // Desktop: the panels are their own scroll containers, so resetting them puts
+  // the verdict at the top of the output. Mobile: the panels stack and the
+  // DOCUMENT scrolls, so scroll to the verdict ITSELF — the output panel's top
+  // is the tab bar and tooltip, which left the verdict ~500px lower.
+  const verdictRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node || !pendingVerdictScrollRef.current) return;
+    pendingVerdictScrollRef.current = false;
+    inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      if (!window.matchMedia('(min-width: 768px)').matches) {
+        // setTimeout, not requestAnimationFrame: rAF is paused while the tab is
+        // backgrounded, so an rAF-scheduled scroll can silently never run. The
+        // short delay also lets the streaming block finish unmounting, since
+        // the document shrinks by its height and scrolling before that lands
+        // in the wrong place. 'auto' because a smooth scroll started across
+        // that same layout shift gets cancelled — and a snap is what the
+        // moment wants anyway.
+        setTimeout(() => {
+          node.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }, 60);
+      }
+    } catch { /* matchMedia unavailable — panel scroll above still applies */ }
+  }, []);
   const [showStartOver, setShowStartOver] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentStreamEvent[]>([]);
   // WP3 — server-driven generation stage: reading → analysing → forming.
@@ -2684,6 +2720,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     agentsOk: typeof agentsOk === 'number' ? agentsOk : null,
                   },
                 });
+                // Arm BEFORE setResult: the await below yields, React commits,
+                // and the verdict element's callback ref runs during it. Arming
+                // afterwards set a flag nothing was left to consume.
+                scrollVerdictIntoView();
                 setResult(vd as HouseResult);
                 await persistResult(vd as HouseResult);
                 // Increment the right counter for the right user type. Anonymous
@@ -2694,8 +2734,6 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 } else {
                   incrementGuestRunCount();
                 }
-                inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-                outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                 // Show tab tooltip on first ever result
                 const hasSeenTooltip = localStorage.getItem('fresco-tab-tooltip-seen');
                 if (!hasSeenTooltip) {
@@ -2736,7 +2774,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         setSystemsPending(false);
       } else {
         const data = await response.json();
-        if (data.verdict) { setResult(data); await persistResult(data); inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }
+        if (data.verdict) { scrollVerdictIntoView(); setResult(data); await persistResult(data); }
       }
     } catch (err) {
       // Don't treat a deliberate user abort as an error — Stop was clicked.
@@ -2855,16 +2893,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         ...data,
         systemsOutput: (result as any).systemsOutput,
       };
-      setResult(merged as HouseResult);
-      await persistResult(merged as HouseResult);
-      // Scroll the output panel to the top so the user sees the new verdict.
       // Lens picker now lives on the Decision tab; force-set it as the active
       // tab in case the user happened to switch to Analysis mid-reframe.
+      // Armed before setResult for the same reason as the streaming path.
       setOutputTab('decision');
-      requestAnimationFrame(() => {
-        outputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        inputScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      scrollVerdictIntoView();
+      setResult(merged as HouseResult);
+      await persistResult(merged as HouseResult);
     } catch (err) {
       console.error('Reframe failed:', err);
       const msg = err instanceof Error ? err.message : 'Reframe failed';
@@ -3508,8 +3543,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               first agent event arrived, pushing everything below it down with
               an abrupt layout shift. Now the skeleton placeholder fills the
               space until the real content arrives. */}
+          {/* Gated OUTSIDE AnimatePresence. With the check inside, the exit
+              animation ran to opacity:0 but framer left the node mounted, so a
+              219px invisible block kept sitting above the verdict and pushed it
+              below the fold. Unmounting the subtree reclaims the space at once. */}
+          {!result && (
           <AnimatePresence>
-            {(isRunning || (!result && agentEvents.length > 0)) && (
+            {(isRunning || agentEvents.length > 0) && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -3624,6 +3664,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               </motion.div>
             )}
           </AnimatePresence>
+          )}
 
           {/* ── Lens primer — surfaces while the run is in progress to pre-frame
                 what's about to land. Pre-teaches the lens feature so it doesn't
@@ -3677,7 +3718,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                   <>
                 {/* VERDICT — leads the output (WP2 spec Moment 4). Sentence of
                     truth, confidence, and the supporting detail follow it. */}
-                <div>
+                <div ref={verdictRef} style={{ scrollMarginTop: 12 }}>
                   <div className="flex items-center justify-between mb-3">
                     <span className="fresco-label">Verdict</span>
                     {!showVerdictOverride && (
