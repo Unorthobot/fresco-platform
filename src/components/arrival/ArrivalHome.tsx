@@ -30,6 +30,12 @@ const fmtVerdict = (v?: string) => (v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' 
 // asks "did it hold?" — one tap closes the loop and builds outcome history.
 const OUTCOME_ASK_DAYS = 30;
 
+// Watched triggers are checked sooner than outcomes. A flip condition is
+// near-term by construction ("15 of 20 mechanics within 2 weeks"), so asking
+// at 30 days would be asking after it mattered. "Not yet" snoozes for another
+// week rather than nagging on every visit.
+const TRIGGER_ASK_DAYS = 7;
+
 const PLACEHOLDER =
   "e.g. We've spent six weeks redesigning onboarding, but drop-off happens before step 3 even loads. Do we keep going or stop?";
 
@@ -193,6 +199,24 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
 
   // One-tap outcome record. Store first (log updates immediately); the DB
   // write is best-effort — guest sessions have no DB row and 404 harmlessly.
+  // Record whether a pre-committed trigger fired. Firing is the interesting
+  // case: the condition the verdict named has been met, so the verdict is
+  // now stale and worth re-running.
+  const recordTrigger = async (s: any, fired: boolean) => {
+    const now = new Date().toISOString();
+    const ao = fired
+      ? { ...(s.aiOutputs || {}), triggerFired: true, triggerCheckedAt: now }
+      : { ...(s.aiOutputs || {}), triggerCheckedAt: now };
+    useFrescoStore.getState().updateSession(s.id, { aiOutputs: ao } as any);
+    try {
+      await fetch(`/api/sessions/${s.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiOutputs: ao }),
+      });
+    } catch { /* best-effort */ }
+  };
+
   const recordOutcome = async (s: any, outcome: 'held' | 'didnt') => {
     const ao = { ...(s.aiOutputs || {}), outcome, outcomeAt: new Date().toISOString() };
     useFrescoStore.getState().updateSession(s.id, { aiOutputs: ao } as any);
@@ -442,7 +466,17 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                   const flippedFrom = ao.previousVerdict && ao.previousVerdict !== verdict ? ao.previousVerdict : null;
                   const outcome = ao.outcome as 'held' | 'didnt' | undefined;
                   const ageDays = (Date.now() - new Date(s.updatedAt).getTime()) / 86_400_000;
-                  const askOutcome = !outcome && ageDays >= OUTCOME_ASK_DAYS;
+                  // A live trigger takes precedence over the outcome ask: it is
+                  // the nearer-term question, and answering it may make the
+                  // outcome question moot by prompting a re-run.
+                  const trig = ao.watchedTrigger as { text: string; at: string } | undefined;
+                  const trigAnswered = !!ao.triggerFired;
+                  const lastTrigCheck = ao.triggerCheckedAt || trig?.at;
+                  const trigAgeDays = lastTrigCheck
+                    ? (Date.now() - new Date(lastTrigCheck).getTime()) / 86_400_000
+                    : 0;
+                  const askTrigger = !!trig && !trigAnswered && trigAgeDays >= TRIGGER_ASK_DAYS;
+                  const askOutcome = !askTrigger && !outcome && ageDays >= OUTCOME_ASK_DAYS;
                   return (
                     <div
                       key={s.id}
@@ -475,6 +509,12 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                               <Clock className="w-2.5 h-2.5" />
                               {formatRelativeTime(new Date(s.updatedAt))}
                             </span>
+                            {ao.triggerFired && !outcome && (
+                              <>
+                                <span className="text-fresco-graphite-light/40 text-[10px]">·</span>
+                                <span className="font-mono text-[10px] uppercase tracking-wide text-fresco-black">trigger fired</span>
+                              </>
+                            )}
                             {outcome && (
                               <>
                                 <span className="text-fresco-graphite-light/40 text-[10px]">·</span>
@@ -500,6 +540,40 @@ export function ArrivalHome({ onRouted, onNavigateToSession }: ArrivalHomeProps)
                         Open <ArrowRight className="w-3 h-3" />
                       </button>
                       </div>
+                      {/* Trigger check-in. This is the part a pros-and-cons
+                          list cannot do: the condition the verdict named was
+                          pre-committed, and now it gets asked about. Quoting
+                          the trigger back matters, since the point is that the
+                          founder is being held to their own words. */}
+                      {askTrigger && (
+                        <div className="mt-1.5 pl-5">
+                          <p className="text-[10px] text-fresco-graphite-light leading-relaxed">
+                            <span className="font-mono uppercase tracking-wide">Your trigger</span>
+                            {' · '}&ldquo;{trig!.text}&rdquo;
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-fresco-graphite-light">Has it fired?</span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await recordTrigger(s, true);
+                                onNavigateToSession?.(s.id, s.workspaceId);
+                              }}
+                              className="px-2 py-0.5 text-[10px] border border-fresco-black text-fresco-black hover:bg-fresco-black hover:text-white transition-colors"
+                            >
+                              Yes, re-run it
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => recordTrigger(s, false)}
+                              className="px-2 py-0.5 text-[10px] border border-fresco-border text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
+                            >
+                              Not yet
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Outcome check-in — closes the loop on an old call.
                           Sits outside the nav button (no nested interactives). */}
                       {askOutcome && (

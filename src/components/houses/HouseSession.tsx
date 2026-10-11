@@ -2412,6 +2412,33 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
   const [revealVerdict, setRevealVerdict] = useState(false);
   const [runStamp, setRunStamp] = useState(0);
   const [firstVerdictNote, setFirstVerdictNote] = useState(false);
+
+  // A watched trigger: the flip condition, pre-committed. Stating a condition
+  // is what a pros-and-cons list already does; holding the founder to it later
+  // is the part that is not a list. Stored on the session so the decision log
+  // can ask, weeks later, whether it fired.
+  const [watchedTrigger, setWatchedTrigger] = useState<{ text: string; at: string } | null>(() => {
+    try {
+      const ao = (useFrescoStore.getState().sessions.find(x => x.id === sessionId) as any)?.aiOutputs;
+      return ao?.watchedTrigger ?? null;
+    } catch { return null; }
+  });
+
+  const watchTrigger = async (text: string) => {
+    const entry = { text, at: new Date().toISOString() };
+    setWatchedTrigger(entry);
+    const store = useFrescoStore.getState();
+    const prev = (store.sessions.find(x => x.id === sessionId) as any)?.aiOutputs || {};
+    const ao = { ...prev, watchedTrigger: entry };
+    store.updateSession(sessionId, { aiOutputs: ao } as any);
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiOutputs: ao }),
+      });
+    } catch { /* guest sessions have no DB row; local state already updated */ }
+  };
   const [outputTab, setOutputTab] = useState<'decision' | 'analysis'>('decision');
   const [showTabTooltip, setShowTabTooltip] = useState(false);
   // Feature 5: first session detection — drives progressive question guidance
@@ -3878,6 +3905,22 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                       <div>
                         <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-1">What would change it</p>
                         <p className="text-fresco-sm text-fresco-graphite-soft leading-relaxed">{(result as any).flipCondition}</p>
+                        {/* Commit to it. Until this exists the condition is a
+                            sentence you read and close the tab on; once watched,
+                            the decision log asks whether it fired. */}
+                        {watchedTrigger ? (
+                          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-mid mt-3">
+                            Watching · committed {new Date(watchedTrigger.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          </p>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => watchTrigger((result as any).flipCondition)}
+                            className="mt-3 px-2.5 py-1 border border-fresco-border text-fresco-xs text-fresco-graphite-mid hover:border-fresco-black hover:text-fresco-black transition-colors"
+                          >
+                            Watch this trigger
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
