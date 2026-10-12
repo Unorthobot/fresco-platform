@@ -26,7 +26,11 @@ export const HOUSE_QUESTIONS: Record<Exclude<HouseId, 'evaluate'>, CanonicalQues
     { id: 'situation', question: 'What are you trying to figure out?', whyItMatters: 'names the decision the verdict has to answer' },
     { id: 'observations', question: 'What have you actually observed?', whyItMatters: 'separates what is actually happening from what you suspect' },
     { id: 'assumptions', question: 'What do you believe is causing it — and what are you assuming?', whyItMatters: 'the analysis pressure-tests your theory — it needs to know what it is' },
-    { id: 'position_synthesis', question: 'What would change your mind?', whyItMatters: 'a verdict you can act on names the evidence that would flip it' },
+    // Pre-mortem framing. "What would change your mind?" asks for a threshold,
+    // and founders are bad at thresholds and fluent at stories. The failure
+    // narrative contains the same falsifier and is far easier to write, which
+    // matters because this was the field people most often left blank.
+    { id: 'position_synthesis', question: "It's six months on and this was the wrong call. What happened?", whyItMatters: 'the way this fails is the evidence that would flip the verdict' },
   ],
   innovate: [
     { id: 'start', question: 'What are you trying to build or improve — and who is it for?', whyItMatters: 'anchors who this is for and what they do today instead' },
@@ -82,6 +86,9 @@ export interface RouterFollowup {
   questionId: string;
   question: string; // canonical text, substituted server-side
   reason: string;
+  // Candidate answers the founder can start from, when the router could
+  // derive concrete ones from their input. Usually empty by design.
+  options?: string[];
 }
 
 export interface RouterResult {

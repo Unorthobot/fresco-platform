@@ -16,6 +16,7 @@ import {
   type AnswerSource,
   type EvaluateMode,
   type RouterResult,
+  type RouterFollowup,
 } from '@/lib/houseQuestions';
 
 export interface ClarifiedAnswer {
@@ -85,12 +86,16 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
   const extractedIds = canonical.filter(q => router.extracted[q.id]).map(q => q.id);
   // House override invalidates extractions that don't map to the new house.
   const visibleExtracted = extractedIds.filter(id => answers[id]);
-  const followups = house === router.house && evaluateMode === router.evaluateMode
+  // Typed explicitly: the house-override branch builds plain literals, and
+  // without the annotation TypeScript infers the narrower of the two shapes
+  // and loses `options`. That branch has no router candidates by definition,
+  // since the router analysed a different house.
+  const followups: RouterFollowup[] = house === router.house && evaluateMode === router.evaluateMode
     ? router.followups
     : canonical
         .filter(q => !answers[q.id]?.answer)
         .slice(0, 3)
-        .map(q => ({ questionId: q.id, question: q.question, reason: q.whyItMatters }));
+        .map(q => ({ questionId: q.id, question: q.question, reason: q.whyItMatters, options: [] }));
 
   const questionTextOf = (id: string) => canonical.find(q => q.id === id)?.question || id;
 
@@ -348,6 +353,30 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                   <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-2">
                     NEEDED FOR · {f.reason}
                   </p>
+                  {/* Candidate answers, when the router had something concrete
+                      to offer. Tapping one FILLS the box rather than selecting
+                      it: recognising a plausible answer is far easier than
+                      composing one from nothing, but it has to stay the
+                      founder's sentence, editable and theirs to overwrite.
+                      Hidden once they have written anything, so it never
+                      competes with their own words. */}
+                  {!!f.options?.length && !(answers[f.questionId]?.answer || '').trim() && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {f.options.map((opt, oi) => (
+                        <button
+                          key={oi}
+                          type="button"
+                          onClick={() => setAnswer(f.questionId, opt, 'user')}
+                          className="text-left text-fresco-xs text-fresco-graphite-mid bg-fresco-white border border-fresco-border px-2.5 py-1.5 hover:border-fresco-black hover:text-fresco-black transition-colors"
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                      <span className="self-center text-[10px] text-fresco-graphite-light ml-0.5">
+                        or write your own
+                      </span>
+                    </div>
+                  )}
                   <textarea
                     value={answers[f.questionId]?.answer || ''}
                     onChange={e => setAnswer(f.questionId, e.target.value, 'user')}

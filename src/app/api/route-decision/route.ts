@@ -64,13 +64,24 @@ specific decision: second person, concrete, no framework vocabulary. Order
 by importance to the verdict. Mark at most ${MAX_FOLLOWUPS} as followups. A rich
 prompt yields zero followups: do not manufacture questions.
 
+4. OPTIONS (only where you genuinely can): for a followup, you may add 2 or 3
+candidate answers the founder can start from, drawn from THEIR situation and
+phrased in their voice, first person, one short sentence each. These exist
+because a blank box is the thing people abandon, and recognising a plausible
+answer is far easier than composing one. Give options ONLY when their input
+supports concrete, specific candidates that differ meaningfully from each
+other. Never pad with generic filler, never offer options that merely restate
+the question, and return an empty array whenever you would be guessing. A
+wrong-sounding option is worse than no option, because it tells the founder
+you were not listening.
+
 Return ONLY JSON, no markdown fences:
 {"house":"investigate|innovate|validate|evaluate",
  "evaluateMode":"single|journey|comparison or null",
  "confidence":0.0,
  "extracted":{"<questionId>":{"answer":"...","confidence":0.0}},
  "gaps":["<questionId>"],
- "followups":[{"questionId":"...","reason":"..."}]}
+ "followups":[{"questionId":"...","reason":"...","options":["candidate the founder can start from","another, meaningfully different"]}]}
 
 Canonical questions:
 ${buildRegistryBlock()}`;
@@ -166,6 +177,18 @@ function normalise(raw: unknown, input: string): RouterResult {
       reason: typeof f.reason === 'string' && f.reason.trim()
         ? f.reason.trim()
         : whyOf.get(f.questionId as string) || 'sharpens the verdict',
+      // Candidate answers to start from. Capped, de-duplicated and length
+      // bounded: a one-word option is noise and a paragraph is not a starting
+      // point. Absent whenever the model had nothing concrete, which is the
+      // intended common case.
+      options: Array.isArray(f.options)
+        ? Array.from(new Set(
+            (f.options as unknown[])
+              .filter((o): o is string => typeof o === 'string')
+              .map(o => o.trim())
+              .filter(o => o.length >= 12 && o.length <= 160)
+          )).slice(0, 3)
+        : [],
     }))
     .slice(0, MAX_FOLLOWUPS);
 
@@ -177,7 +200,7 @@ function normalise(raw: unknown, input: string): RouterResult {
     followups = canonical
       .filter(q => gaps.includes(q.id))
       .slice(0, MAX_FOLLOWUPS)
-      .map(q => ({ questionId: q.id, question: q.question, reason: q.whyItMatters }));
+      .map(q => ({ questionId: q.id, question: q.question, reason: q.whyItMatters, options: [] as string[] }));
   }
 
   return { house, evaluateMode, confidence, extracted, gaps, followups };
