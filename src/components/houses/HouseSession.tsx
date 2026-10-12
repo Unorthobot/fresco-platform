@@ -2246,13 +2246,23 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     const sourceName = HOUSE_META[sourceHouse].name;
     const truth = sourceResult.sentenceOfTruth?.trim() || '';
     const nextMove = (sourceResult.necessaryMoves || [])[0]?.trim() || '';
+
+    // The engine already named the next question, specific to this founder
+    // ("pointed inward: not 'is there a gap in the market?' but 'what do I
+    // need to have created for this to have been worth two years?'"). Use it.
+    // The templates below are a fallback for results that predate the field,
+    // and they throw that specificity away in favour of boilerplate.
+    const opening = (sourceResult as { suggestedNextOpening?: string }).suggestedNextOpening?.trim();
+    if (opening && sourceResult.suggestedNextHouse === target) {
+      return truth ? `Following on from ${sourceName}, which concluded: "${truth}".\n\n${opening}` : opening;
+    }
     switch (target) {
       case 'investigate':
-        return truth ? `Following on from ${sourceName}, which concluded: "${truth}". I want to dig deeper into what's actually going on beneath that — what observations I actually have, what I'm assuming, and what would change my view.` : '';
+        return truth ? `Following on from ${sourceName}, which concluded: "${truth}". I want to dig deeper into what's actually going on beneath that: what observations I actually have, what I'm assuming, and what would change my view.` : '';
       case 'innovate':
         return nextMove ? `The direction from ${sourceName} was: ${nextMove}. I want to turn this into 2–3 concrete options worth building, and figure out what I'd test first.` : truth ? `Based on ${sourceName}'s finding: "${truth}". I want to work out what to build or change next, and what constraints I'm working within.` : '';
       case 'validate':
-        return nextMove ? `${sourceName} recommends: ${nextMove}. Before we commit, I want to pressure-test whether this will actually work — what evidence supports it, what's the strongest argument against, and what small test would change my mind.` : truth ? `Given the finding from ${sourceName}: "${truth}". I'm considering committing to a direction based on this. I want to check whether it will survive contact with reality before we spend time building.` : '';
+        return nextMove ? `${sourceName} recommends: ${nextMove}. Before we commit, I want to pressure-test whether this will actually work: what evidence supports it, what's the strongest argument against, and what small test would change my mind.` : truth ? `Given the finding from ${sourceName}: "${truth}". I'm considering committing to a direction based on this. I want to check whether it will survive contact with reality before we spend time building.` : '';
       case 'evaluate':
         return truth ? `Building on ${sourceName} which found: "${truth}". Now I want to look at how things are actually performing against this, what's working, what isn't, and where the highest-leverage intervention is.` : '';
       default:
@@ -3300,8 +3310,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     <>This session picks up from: <span className="text-fresco-black">"{handoff.sourceResult.sentenceOfTruth}"</span></>
                   )}
                 </p>
-                <p className="text-fresco-xs text-fresco-graphite-light mt-1.5">
-                  The first question below is pre-filled — edit or keep as-is, then carry on.
+                {/* Why this question is next. The engine's reasoning was only
+                    ever shown on the previous screen, so clicking through lost
+                    it exactly when it became the instruction to act on. */}
+                {handoff.sourceResult.suggestedNextHouseReason && (
+                  <p className="text-fresco-xs text-fresco-graphite-mid leading-relaxed mt-2">
+                    {handoff.sourceResult.suggestedNextHouseReason}
+                  </p>
+                )}
+                <p className="text-fresco-xs text-fresco-graphite-light mt-2">
+                  The first question below is pre-filled. Edit it or keep it as-is, then carry on.
                 </p>
               </div>
             )}

@@ -136,6 +136,10 @@ export interface HouseResult {
   // Routing
   suggestedNextHouse: HouseId | null;
   suggestedNextHouseReason: string;
+  // The next question phrased as the founder's own opening line. Seeds the
+  // handoff so the specific question the engine named survives into the next
+  // session, instead of being replaced by a generic continuation template.
+  suggestedNextOpening?: string;
   // Meta
   outputLabel: string;
 }
@@ -332,7 +336,7 @@ Produce the synthesis. Rules:
 - FLIP CONDITION: one concrete, checkable sentence naming what would change the verdict: the specific evidence or outcome that would move it. e.g. "Flips to GO if 15 of 20 mechanics accept the commission terms." Name a real threshold from your situation, not a generic "more data".
 - THE BET: Frame the decision as a bet. reversibility: is acting a one-way door or recoverable? reversibilityNote is one sentence. costIfWrong and costIfYouWait give the asymmetry between acting on a wrong verdict and waiting. asymmetry is one line naming which way the odds lean. Use concrete figures ONLY if the founder stated real numbers; never invent costs, revenue, runway, or probabilities. If the input is too thin to assess a field honestly, return null for that field, do not pad. When confidence is "low", keep this conservative or return null for every field.${investigateExtra}
 
-- NEXT STEP: name the single question worth answering next, and why, in THIS founder's terms. The reason must refer to their actual situation: the specific gap, evidence, or move that makes this the next question, and must follow from the verdict and your first necessary move. Never write a generic routing line like "the problem definition needs work". Choose the house whose question that is: investigate (is the problem real?), innovate (will people want this?), validate (will it sell?), evaluate (how is it actually doing?). Re-running the SAME house is a real answer when the input genuinely needs sharpening, but only say so when you can name what specifically is missing. If the call is settled and no further analysis would change it, return null for house and say what to do instead of running another analysis.
+- NEXT STEP: name the single question worth answering next, and why, in THIS founder's terms. The reason must refer to their actual situation: the specific gap, evidence, or move that makes this the next question, and must follow from the verdict and your first necessary move. Never write a generic routing line like "the problem definition needs work". Choose the house whose question that is: investigate (is the problem real?), innovate (will people want this?), validate (will it sell?), evaluate (how is it actually doing?). Re-running the SAME house is a real answer when the input genuinely needs sharpening, but only say so when you can name what specifically is missing. If the call is settled and no further analysis would change it, return null for house and say what to do instead of running another analysis. Also write "opening": the same next question phrased as the founder's own first-person opening line for that next analysis, specific to their situation and ready to run as written, one or two sentences. If house is null, return null for opening too.
 
 Respond ONLY with valid JSON:
 {
@@ -346,7 +350,7 @@ Respond ONLY with valid JSON:
   "keyIssues": ["specific issue 1", "issue 2", "issue 3"],
   "necessaryMoves": ["highest-impact action 1", "action 2", "action 3"],
   "theBet": { "reversibility": "reversible | hard-to-reverse | null", "reversibilityNote": "one sentence, or null", "costIfWrong": "what acting on a wrong verdict costs you, or null", "costIfYouWait": "what delay costs you, or null", "asymmetry": "one-line read of which way the odds lean, or null" },
-  "nextStep": { "house": "investigate | innovate | validate | evaluate | null", "reason": "why THAT question is the one worth answering next, in their situation's own terms" }${investigateJsonField}
+  "nextStep": { "house": "investigate | innovate | validate | evaluate | null", "reason": "why THAT question is the one worth answering next, in their situation's own terms", "opening": "first person, what they would type to start that next analysis, or null" }${investigateJsonField}
 }`;
 }
 
@@ -367,7 +371,7 @@ export function buildHouseResult(
     povStatement?: string;
     systemsOutput?: Record<string, any>;
     theBet?: Record<string, any>;
-    nextStep?: { house?: string | null; reason?: string | null };
+    nextStep?: { house?: string | null; reason?: string | null; opening?: string | null };
   }
 ): HouseResult {
   // Coerce the model's "null"/empty string to absent — no manufactured strength.
@@ -421,11 +425,13 @@ export function buildHouseResult(
     const reason = typeof raw.reason === 'string' ? raw.reason.trim() : '';
     if (!reason || reason.toLowerCase() === 'null') return table;
     const rawHouse = typeof raw.house === 'string' ? raw.house.trim().toLowerCase() : '';
+    const rawOpening = typeof raw.opening === 'string' ? raw.opening.trim() : '';
+    const opening = rawOpening && rawOpening.toLowerCase() !== 'null' ? rawOpening : undefined;
     // An explicit null house means "the call is settled" — a legitimate answer,
     // so keep the model's reason and surface no further analysis.
-    if (!rawHouse || rawHouse === 'null') return { nextHouse: null, reason };
+    if (!rawHouse || rawHouse === 'null') return { nextHouse: null, reason, opening: undefined };
     const picked = VALID_HOUSES.find(h => h === rawHouse);
-    return picked ? { nextHouse: picked, reason } : table;
+    return picked ? { nextHouse: picked, reason, opening } : table;
   })();
 
   return {
@@ -447,6 +453,7 @@ export function buildHouseResult(
     systemsOutput: (mergeResponse as any).systemsOutput || undefined,
     suggestedNextHouse: routing.nextHouse,
     suggestedNextHouseReason: routing.reason,
+    suggestedNextOpening: (routing as { opening?: string }).opening,
     outputLabel: HOUSE_OUTPUT_LABELS[house],
   };
 }
