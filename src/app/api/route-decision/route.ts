@@ -58,11 +58,14 @@ founder's text. Compress their own words; never invent facts they did not
 state. Rate each extraction 0-1 for how completely their text answers the
 question. Omit questions their text does not touch.
 
-Each extracted answer also carries "source": the span of THEIR text the
-answer was drawn from, copied verbatim, character for character. This is
-used to highlight their own words back to them, so an approximation is
-worse than nothing: return null whenever the answer was synthesised from
-the whole input rather than taken from one phrase.
+Each extracted answer also carries "source": the SHORTEST span of THEIR text
+that answers this question, copied verbatim, character for character. It is
+underlined inside their own paragraph to show what each part was read as, so
+it must be a specific phrase or clause, not the general area. Return null if
+the answer draws on the whole input rather than one identifiable stretch of
+it, and null rather than a span covering most of what they wrote: underlining
+everything tells them nothing. An approximation is worse than nothing, since
+it underlines words they did not write.
 
 3. IDENTIFY GAPS: canonical questions with no meaningful answer in the
 text. For each, write a one-line reason this question matters for THIS
@@ -156,7 +159,12 @@ function normalise(raw: unknown, input: string): RouterResult {
       // near-miss would highlight the wrong words and read as misreading
       // them. Verified here as well as client-side.
       const rawSource = typeof v.source === 'string' ? v.source.trim() : '';
-      const source = rawSource.length >= 6 && input.toLowerCase().includes(rawSource.toLowerCase())
+      // A span covering most of the input underlines the whole paragraph,
+      // which carries no information and reads as broken. Verbatim AND
+      // genuinely partial, or nothing.
+      const source = rawSource.length >= 6
+        && input.toLowerCase().includes(rawSource.toLowerCase())
+        && rawSource.length <= input.length * 0.7
         ? rawSource
         : undefined;
       extracted[id] = {

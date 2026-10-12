@@ -282,6 +282,10 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                 .map(id => ({ id, source: (router.extracted[id] as { source?: string } | undefined)?.source }))
                 .filter((x): x is { id: string; source: string } => {
                   if (!x.source || x.source.length < 6) return false;
+                  // Partial as well as verbatim. A span covering most of the
+                  // input underlines the whole paragraph, which looks broken
+                  // and says nothing about what was read as what.
+                  if (x.source.length > prompt.length * 0.7) return false;
                   return prompt.toLowerCase().includes(x.source.toLowerCase());
                 });
               if (!spans.length) return null;
@@ -298,6 +302,11 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                 ranges.push({ start: at, end, id: sp.id });
               });
               if (!ranges.length) return null;
+              // If the marks end up covering almost everything anyway, the
+              // block is noise. Fall back to the cards below, which already
+              // say the same thing without pretending to be precise.
+              const covered = ranges.reduce((n, r) => n + (r.end - r.start), 0);
+              if (covered > prompt.length * 0.85) return null;
               ranges.sort((a, b) => a.start - b.start);
 
               const parts: Array<{ text: string; id?: string }> = [];
@@ -313,15 +322,20 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                 <div className="mb-5 p-4 border border-fresco-border-light bg-fresco-white">
                   <p className="text-fresco-sm text-fresco-black leading-loose">
                     {parts.map((part, i) => part.id ? (
-                      <button
+                      // An inline span, not a button: a button is
+                      // inline-block and will not break across lines, so a
+                      // long mark inside a paragraph laid out as its own box.
+                      <span
                         key={i}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         title={`Answers: ${questionTextOf(part.id)}`}
                         onClick={() => setEditingId(part.id!)}
-                        className="text-left border-b-2 border-fresco-black/30 hover:border-fresco-black hover:bg-fresco-light-gray transition-colors"
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditingId(part.id!); } }}
+                        className="cursor-pointer bg-fresco-light-gray border-b border-fresco-graphite-light hover:border-fresco-black hover:bg-fresco-warm-gray transition-colors"
                       >
                         {part.text}
-                      </button>
+                      </span>
                     ) : (
                       <span key={i}>{part.text}</span>
                     ))}
