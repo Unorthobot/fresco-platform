@@ -307,24 +307,24 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
               const markable = spans.length > 0 && ranges.length > 0 && covered <= prompt.length * 0.85;
               ranges.sort((a, b) => a.start - b.start);
 
-              // Nothing differential to mark. This is the common case on a
-              // short description, where one question legitimately absorbs
-              // the whole thing. Saying so is more useful than vanishing: it
-              // tells the founder how much of the brief their text covered
-              // and hands them straight to the questions that follow.
+              // Nothing differential to mark. Reprinting the paragraph here
+              // would be its third appearance on this screen, after the
+              // decision card above and the answer card below, so only the
+              // coverage count survives: it is the one fact neither of those
+              // already states. Which questions were answered is visible in
+              // the cards themselves.
               if (!markable) {
                 const answered = visibleExtracted.length;
-                if (!answered) return null;
+                // With no follow-ups left, the line introducing the cards
+                // already says the brief was complete, so a count here is a
+                // third way of saying one thing.
+                if (!answered || followups.length === 0) return null;
                 return (
-                  <div className="mb-5 p-4 border border-fresco-border-light bg-fresco-white">
-                    <p className="text-fresco-sm text-fresco-black leading-loose">{prompt}</p>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mt-3">
-                      {answered === 1 ? 'All of this answered one question' : `This answered ${answered} of ${canonical.length} questions`}
-                      {answered === 1 && (
-                        <span className="normal-case tracking-normal text-fresco-graphite-mid"> · {questionTextOf(visibleExtracted[0])}</span>
-                      )}
-                    </p>
-                  </div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-4">
+                    {answered === 1
+                      ? 'All of this answered one question'
+                      : `This answered ${answered} of ${canonical.length} questions`}
+                  </p>
                 );
               }
 
@@ -520,11 +520,6 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
               <><span>Run the analysis</span><ArrowRight className="w-4 h-4" /></>
             )}
           </button>
-          {followups.length === 0 && visibleExtracted.length > 0 && (
-            <p className="text-center text-fresco-xs text-fresco-graphite-light mt-2">
-              Your description covered everything — confirm and run.
-            </p>
-          )}
         </div>
 
       </div>
