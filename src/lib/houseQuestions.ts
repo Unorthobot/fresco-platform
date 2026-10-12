@@ -80,6 +80,11 @@ export type AnswerSource = 'extracted' | 'user';
 export interface ExtractedAnswer {
   answer: string;
   confidence: number;
+  // The verbatim span of the founder's own text this answer came from, so
+  // the clarify screen can highlight it in place rather than only restating
+  // the extraction back at them. Absent when the answer was synthesised
+  // across the whole input rather than drawn from one phrase.
+  source?: string;
 }
 
 export interface RouterFollowup {

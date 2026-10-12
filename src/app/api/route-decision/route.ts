@@ -58,6 +58,12 @@ founder's text. Compress their own words; never invent facts they did not
 state. Rate each extraction 0-1 for how completely their text answers the
 question. Omit questions their text does not touch.
 
+Each extracted answer also carries "source": the span of THEIR text the
+answer was drawn from, copied verbatim, character for character. This is
+used to highlight their own words back to them, so an approximation is
+worse than nothing: return null whenever the answer was synthesised from
+the whole input rather than taken from one phrase.
+
 3. IDENTIFY GAPS: canonical questions with no meaningful answer in the
 text. For each, write a one-line reason this question matters for THIS
 specific decision: second person, concrete, no framework vocabulary. Order
@@ -79,7 +85,7 @@ Return ONLY JSON, no markdown fences:
 {"house":"investigate|innovate|validate|evaluate",
  "evaluateMode":"single|journey|comparison or null",
  "confidence":0.0,
- "extracted":{"<questionId>":{"answer":"...","confidence":0.0}},
+ "extracted":{"<questionId>":{"answer":"...","confidence":0.0,"source":"the exact span of their text this came from, copied character for character, or null"}},
  "gaps":["<questionId>"],
  "followups":[{"questionId":"...","reason":"...","options":["candidate the founder can start from","another, meaningfully different"]}]}
 
@@ -143,11 +149,20 @@ function normalise(raw: unknown, input: string): RouterResult {
   if (r.extracted && typeof r.extracted === 'object') {
     for (const [id, val] of Object.entries(r.extracted as Record<string, unknown>)) {
       if (!validIds.has(id)) continue;
-      const v = val as { answer?: unknown; confidence?: unknown };
+      const v = val as { answer?: unknown; confidence?: unknown; source?: unknown };
       if (typeof v?.answer !== 'string' || !v.answer.trim()) continue;
+      // Keep `source` only if it is genuinely present in what they wrote.
+      // The clarify screen highlights it inside their own paragraph, so a
+      // near-miss would highlight the wrong words and read as misreading
+      // them. Verified here as well as client-side.
+      const rawSource = typeof v.source === 'string' ? v.source.trim() : '';
+      const source = rawSource.length >= 6 && input.toLowerCase().includes(rawSource.toLowerCase())
+        ? rawSource
+        : undefined;
       extracted[id] = {
         answer: v.answer.trim(),
         confidence: typeof v.confidence === 'number' ? Math.max(0, Math.min(1, v.confidence)) : 0.5,
+        ...(source ? { source } : {}),
       };
     }
   }

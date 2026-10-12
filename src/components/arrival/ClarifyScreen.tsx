@@ -271,6 +271,67 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
             <h2 className="text-fresco-lg font-medium text-fresco-black mb-1">
               Here&rsquo;s what I took from your description
             </h2>
+            {/* Their own paragraph, with the parts the engine drew on marked
+                in place. Restating extractions as cards alone proves nothing;
+                showing WHERE each one came from is what answers "did it
+                actually read me". Spans are verified against the real text
+                both here and server-side, so a near-miss highlights nothing
+                rather than highlighting the wrong words. */}
+            {(() => {
+              const spans = visibleExtracted
+                .map(id => ({ id, source: (router.extracted[id] as { source?: string } | undefined)?.source }))
+                .filter((x): x is { id: string; source: string } => {
+                  if (!x.source || x.source.length < 6) return false;
+                  return prompt.toLowerCase().includes(x.source.toLowerCase());
+                });
+              if (!spans.length) return null;
+
+              // Resolve to non-overlapping ranges, longest first so a nested
+              // span cannot split a larger one mid-highlight.
+              type Range = { start: number; end: number; id: string };
+              const ranges: Range[] = [];
+              [...spans].sort((a, b) => b.source.length - a.source.length).forEach(sp => {
+                const at = prompt.toLowerCase().indexOf(sp.source.toLowerCase());
+                if (at === -1) return;
+                const end = at + sp.source.length;
+                if (ranges.some(r => at < r.end && end > r.start)) return;
+                ranges.push({ start: at, end, id: sp.id });
+              });
+              if (!ranges.length) return null;
+              ranges.sort((a, b) => a.start - b.start);
+
+              const parts: Array<{ text: string; id?: string }> = [];
+              let cursor = 0;
+              ranges.forEach(r => {
+                if (r.start > cursor) parts.push({ text: prompt.slice(cursor, r.start) });
+                parts.push({ text: prompt.slice(r.start, r.end), id: r.id });
+                cursor = r.end;
+              });
+              if (cursor < prompt.length) parts.push({ text: prompt.slice(cursor) });
+
+              return (
+                <div className="mb-5 p-4 border border-fresco-border-light bg-fresco-white">
+                  <p className="text-fresco-sm text-fresco-black leading-loose">
+                    {parts.map((part, i) => part.id ? (
+                      <button
+                        key={i}
+                        type="button"
+                        title={`Answers: ${questionTextOf(part.id)}`}
+                        onClick={() => setEditingId(part.id!)}
+                        className="text-left border-b-2 border-fresco-black/30 hover:border-fresco-black hover:bg-fresco-light-gray transition-colors"
+                      >
+                        {part.text}
+                      </button>
+                    ) : (
+                      <span key={i}>{part.text}</span>
+                    ))}
+                  </p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mt-3">
+                    Underlined · what the engine drew on. Tap any of it to correct.
+                  </p>
+                </div>
+              );
+            })()}
             {/* A complete brief is worth acknowledging — it rewards the
                 behaviour that produces the best verdicts. */}
             <p className="text-fresco-sm text-fresco-graphite-light mb-4">
