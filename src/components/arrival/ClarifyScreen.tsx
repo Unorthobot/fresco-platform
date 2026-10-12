@@ -288,7 +288,6 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                   if (x.source.length > prompt.length * 0.7) return false;
                   return prompt.toLowerCase().includes(x.source.toLowerCase());
                 });
-              if (!spans.length) return null;
 
               // Resolve to non-overlapping ranges, longest first so a nested
               // span cannot split a larger one mid-highlight.
@@ -301,13 +300,33 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                 if (ranges.some(r => at < r.end && end > r.start)) return;
                 ranges.push({ start: at, end, id: sp.id });
               });
-              if (!ranges.length) return null;
-              // If the marks end up covering almost everything anyway, the
-              // block is noise. Fall back to the cards below, which already
-              // say the same thing without pretending to be precise.
+              // Marks covering nearly everything say nothing about what was
+              // read as what, so they are discarded and the coverage summary
+              // below runs instead.
               const covered = ranges.reduce((n, r) => n + (r.end - r.start), 0);
-              if (covered > prompt.length * 0.85) return null;
+              const markable = spans.length > 0 && ranges.length > 0 && covered <= prompt.length * 0.85;
               ranges.sort((a, b) => a.start - b.start);
+
+              // Nothing differential to mark. This is the common case on a
+              // short description, where one question legitimately absorbs
+              // the whole thing. Saying so is more useful than vanishing: it
+              // tells the founder how much of the brief their text covered
+              // and hands them straight to the questions that follow.
+              if (!markable) {
+                const answered = visibleExtracted.length;
+                if (!answered) return null;
+                return (
+                  <div className="mb-5 p-4 border border-fresco-border-light bg-fresco-white">
+                    <p className="text-fresco-sm text-fresco-black leading-loose">{prompt}</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mt-3">
+                      {answered === 1 ? 'All of this answered one question' : `This answered ${answered} of ${canonical.length} questions`}
+                      {answered === 1 && (
+                        <span className="normal-case tracking-normal text-fresco-graphite-mid"> · {questionTextOf(visibleExtracted[0])}</span>
+                      )}
+                    </p>
+                  </div>
+                );
+              }
 
               const parts: Array<{ text: string; id?: string }> = [];
               let cursor = 0;
