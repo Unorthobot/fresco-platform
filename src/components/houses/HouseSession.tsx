@@ -2895,6 +2895,13 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     useFrescoStore.getState().updateSession(sessionId, {
       ...(autoTitle ? { title: autoTitle } : {}),
       aiOutputs: {
+        // Spread what was already here. This object used to be rebuilt from
+        // scratch, which silently destroyed every field the verdict does not
+        // own: recorded outcomes, watched triggers, whether a trigger fired.
+        // Re-running a decision therefore erased the history of it, and the
+        // tripwire ate its own evidence, since a firing trigger is precisely
+        // what prompts a re-run. Verdict fields below still overwrite.
+        ...(prevAo || {}),
         houseResult: data, verdict: data.verdict, fitLabel: (data as any).fitLabel, fitStrength: (data as any).fitStrength,
         verdictRationale: data.verdictRationale, keyIssues: data.keyIssues, necessaryMoves: data.necessaryMoves,
         sentenceOfTruth: data.sentenceOfTruth, suggestedNextHouse: data.suggestedNextHouse,
