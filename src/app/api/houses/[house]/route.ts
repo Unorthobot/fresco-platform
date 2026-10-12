@@ -230,7 +230,7 @@ async function runAgent(
     // language, which they were applying literally to decisions that are not
     // problem-shaped — telling a founder their burger recipe needed "a problem
     // to solve". The analysis is right; only the vocabulary has to translate.
-    system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person: "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.\n\nFRAME: Your framing above is a lens for you, not vocabulary to impose. Not every decision is problem-solution shaped: pricing, a hire, a creative brief, whether to commit at all. Where that framing does not fit the decision in front of you, apply the equivalent question that does (what is this for, who is it for, what would make it good) with exactly the same rigour. Never tell a founder they lack a problem to solve when the decision does not call for one.\n\n${PUNCTUATION_RULE}`,
+    system: `${agent.systemPrompt}\n\nVOICE: Write directly to the founder in the second person: "you"/"your". Never use the third person ("the user", "the founder", "they"). Their input is first person; mirror it.\n\nFRAME: Your framing above is a lens for you, not vocabulary to impose. Not every decision is problem-solution shaped: pricing, a hire, a creative brief, whether to commit at all. Where that framing does not fit the decision in front of you, apply the equivalent question that does (what is this for, who is it for, what would make it good) with exactly the same rigour. Never tell a founder they lack a problem to solve when the decision does not call for one.\n\n${PUNCTUATION_RULE}\n\nWEIGHED: add one more field to your JSON, "weighed": an array of 2 to 4 short fragments quoted VERBATIM from the founder's input that you actually used in this pass. Copy them exactly, character for character, including their wording and numbers. Never paraphrase, never invent, never quote the questions you were asked or your own analysis. If their input was too thin to quote anything meaningful, return an empty array.`,
     messages: [{ role: 'user', content: userMessage }],
   }, `Agent ${agent.id}`);
   return {
@@ -243,6 +243,7 @@ async function runAgent(
     risks: parsed.risks || [],
     recommendations: parsed.recommendations || [],
     structured_artifact: parsed.structured_artifact || undefined,
+    weighed: Array.isArray(parsed.weighed) ? parsed.weighed.filter((w: unknown) => typeof w === 'string') : undefined,
   };
 }
 
@@ -462,6 +463,7 @@ export async function POST(
               summary: output.summary,
               confidence: output.confidence,
               structured_artifact: output.structured_artifact || null,
+              weighed: output.weighed || [],
               key_findings: output.key_findings,
               risks: output.risks,
               recommendations: output.recommendations,

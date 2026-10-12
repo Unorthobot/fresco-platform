@@ -18,6 +18,12 @@ export interface AgentOutput {
   risks: string[];                  // Risks or flags this agent identified
   recommendations: string[];        // Agent-specific recommendations
   structured_artifact?: string;     // Optional: named model, framework, or structure
+  // Verbatim fragments of the founder's own input that this pass actually
+  // weighed. Shown live during the run so the analysis visibly works on their
+  // specifics rather than looking like generated boilerplate. Verified against
+  // the real input client-side before display: a fabricated quote would be
+  // worse than showing nothing.
+  weighed?: string[];
 }
 
 // ─── House result ─────────────────────────────────────────────────────────────

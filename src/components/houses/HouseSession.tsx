@@ -55,6 +55,7 @@ interface AgentStreamEvent {
   summary: string;
   confidence: 'high' | 'medium' | 'low';
   structured_artifact?: string;
+  weighed?: string[];
 }
 
 interface ConversationStep {
@@ -2489,6 +2490,27 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     : 'goal';
   const canRun = !isRunning && (values[primaryField] || '').trim().length >= 3;
 
+  // Only show a fragment the founder actually wrote. The agents are told to
+  // quote verbatim, but a quote Fresco invented and attributed to the user
+  // would be worse than showing nothing at all, so every fragment is checked
+  // against the real input before it reaches the screen.
+  const verifyWeighed = (fragments: string[] | undefined): string[] => {
+    if (!fragments?.length) return [];
+    const haystack = Object.values(values).join(' \n ').toLowerCase().replace(/\s+/g, ' ');
+    const seen = new Set<string>();
+    return fragments
+      .map(f => (typeof f === 'string' ? f.trim().replace(/^["'“”]|["'“”]$/g, '') : ''))
+      .filter(f => {
+        if (f.length < 4 || f.length > 90) return false;
+        const k = f.toLowerCase();
+        if (seen.has(k)) return false;
+        if (!haystack.includes(k.replace(/\s+/g, ' '))) return false;
+        seen.add(k);
+        return true;
+      })
+      .slice(0, 3);
+  };
+
   const buildUserInput = () => {
     // Evaluate uses only the fields relevant to the selected mode
     const evaluateModeFields: Record<string, string[]> = {
@@ -2695,7 +2717,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
               } else if (ev.type === 'agent') {
                 setAgentEvents(prev => {
                   const next = [...prev, {
-                    displayName: ev.displayName, signal: ev.signal,
+                    displayName: ev.displayName, signal: ev.signal, weighed: ev.weighed,
                     summary: ev.summary || '', confidence: ev.confidence || 'medium',
                     structured_artifact: ev.structured_artifact || undefined,
                   }];
@@ -3678,6 +3700,23 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                         })()}
                       </div>
                       <TypewriterText text={ev.signal} className="text-fresco-sm text-fresco-graphite-soft leading-relaxed" />
+                      {/* The founder's own words, quoted back as the pass
+                          weighs them. This is the moment the analysis stops
+                          looking like generated boilerplate. */}
+                      {(() => {
+                        const quoted = verifyWeighed(ev.weighed);
+                        if (!quoted.length) return null;
+                        return (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-fresco-graphite-light">Weighing</span>
+                            {quoted.map((q, qi) => (
+                              <span key={qi} className="text-[11px] text-fresco-graphite-mid bg-fresco-light-gray border border-fresco-border-light px-1.5 py-0.5">
+                                &ldquo;{q}&rdquo;
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </motion.div>
                   );
                 })()}
