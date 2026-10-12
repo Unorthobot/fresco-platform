@@ -2784,7 +2784,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                 // afterwards set a flag nothing was left to consume.
                 scrollVerdictIntoView();
                 setResult(vd as HouseResult);
-                await persistResult(vd as HouseResult);
+                await persistResult(vd as HouseResult, { newRun: true });
                 // Increment the right counter for the right user type. Anonymous
                 // → localStorage guest counter (since user-quota increment is a
                 // no-op without state.user). Authenticated → store quota.
@@ -2833,7 +2833,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         setSystemsPending(false);
       } else {
         const data = await response.json();
-        if (data.verdict) { scrollVerdictIntoView(); setResult(data); await persistResult(data); }
+        if (data.verdict) { scrollVerdictIntoView(); setResult(data); await persistResult(data, { newRun: true }); }
       }
     } catch (err) {
       // Don't treat a deliberate user abort as an error — Stop was clicked.
@@ -2876,7 +2876,10 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     handleRunRef.current();
   }, [canRun, isRunning, result, sessionId]);
 
-  const persistResult = async (data: HouseResult) => {
+  // `newRun` distinguishes a fresh verdict from the deferred systems pass
+  // re-persisting the same one moments later. Only a fresh verdict archives
+  // the previous one; without the flag the systems merge would duplicate it.
+  const persistResult = async (data: HouseResult, opts?: { newRun?: boolean }) => {
     if (!session) return;
     await db.saveAIOutputs(sessionId, {
       insights: data.keyIssues, sentenceOfTruth: data.sentenceOfTruth, necessaryMoves: data.necessaryMoves,
@@ -2892,6 +2895,25 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
     const prevAo = (useFrescoStore.getState().sessions.find(s => s.id === sessionId) as any)?.aiOutputs;
     const prevVerdict = prevAo?.houseResult?.verdict || prevAo?.verdict;
     const previousVerdict = prevVerdict && prevVerdict !== data.verdict ? prevVerdict : prevAo?.previousVerdict;
+
+    // Snapshot the outgoing verdict before it is overwritten. Capped so a
+    // heavily re-run decision cannot grow the record without bound; the
+    // oldest entries fall off first.
+    const archived = (() => {
+      if (!opts?.newRun || !prevAo || !prevVerdict) return null;
+      const snapshot = {
+        verdict: prevVerdict,
+        fitStrength: prevAo.fitStrength ?? prevAo.houseResult?.fitStrength ?? null,
+        confidence: prevAo.confidence ?? prevAo.houseResult?.confidence ?? null,
+        sentenceOfTruth: prevAo.sentenceOfTruth ?? prevAo.houseResult?.sentenceOfTruth ?? '',
+        verdictRationale: prevAo.verdictRationale ?? prevAo.houseResult?.verdictRationale ?? '',
+        watchedTrigger: prevAo.watchedTrigger ?? null,
+        triggerFired: prevAo.triggerFired ?? false,
+        outcome: prevAo.outcome ?? null,
+        at: prevAo.lastRunAt || new Date().toISOString(),
+      };
+      return [...(Array.isArray(prevAo.history) ? prevAo.history : []), snapshot].slice(-10);
+    })();
     useFrescoStore.getState().updateSession(sessionId, {
       ...(autoTitle ? { title: autoTitle } : {}),
       aiOutputs: {
@@ -2902,10 +2924,16 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
         // tripwire ate its own evidence, since a firing trigger is precisely
         // what prompts a re-run. Verdict fields below still overwrite.
         ...(prevAo || {}),
+        // A re-run appends rather than replaces. Each decision keeps its arc:
+        // what was called, when, what the founder committed to, and how it
+        // resolved. One mutable blob could only ever hold the latest answer,
+        // which is the least interesting part of a decision you revisited.
+        ...(archived ? { history: archived } : {}),
         houseResult: data, verdict: data.verdict, fitLabel: (data as any).fitLabel, fitStrength: (data as any).fitStrength,
         verdictRationale: data.verdictRationale, keyIssues: data.keyIssues, necessaryMoves: data.necessaryMoves,
         sentenceOfTruth: data.sentenceOfTruth, suggestedNextHouse: data.suggestedNextHouse,
         suggestedNextHouseReason: data.suggestedNextHouseReason, outputLabel: data.outputLabel,
+        ...(opts?.newRun ? { lastRunAt: new Date().toISOString() } : {}),
         ...(previousVerdict ? { previousVerdict } : {}),
       },
     } as any);
@@ -2965,7 +2993,7 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
       setOutputTab('decision');
       scrollVerdictIntoView();
       setResult(merged as HouseResult);
-      await persistResult(merged as HouseResult);
+      await persistResult(merged as HouseResult, { newRun: true });
     } catch (err) {
       console.error('Reframe failed:', err);
       const msg = err instanceof Error ? err.message : 'Reframe failed';
@@ -3934,6 +3962,48 @@ export function HouseSession({ houseId, workspaceId, sessionId, onBack, onNaviga
                     That&rsquo;s your first verdict on the record.
                   </motion.p>
                 )}
+
+                {/* The arc of this decision. Only shown once it has one:
+                    the point of decision memory is seeing that the call moved
+                    and what it moved from, which a single current verdict
+                    cannot express. */}
+                {(() => {
+                  const hist = ((useFrescoStore.getState().sessions.find(x => x.id === sessionId) as any)
+                    ?.aiOutputs?.history || []) as Array<{ verdict: string; sentenceOfTruth: string; at: string; outcome?: string | null }>;
+                  if (!hist.length) return null;
+                  const fmt = (v: string) => (v === 'INVESTIGATE FURTHER' ? 'MORE SIGNAL' : v);
+                  return (
+                    <details className="border border-fresco-border-light bg-white p-4 group">
+                      <summary className="cursor-pointer list-none flex items-center justify-between gap-3">
+                        <span className="min-w-0">
+                          <span className="fresco-label">This decision over time</span>
+                          <span className="block text-fresco-xs text-fresco-graphite-mid mt-0.5">
+                            Run {hist.length + 1}
+                            {' · '}
+                            {hist.map(h => fmt(h.verdict)).join(' → ')} → {fmt(result.verdict)}
+                          </span>
+                        </span>
+                        <ChevronDown className="w-3.5 h-3.5 text-fresco-graphite-light flex-shrink-0 group-open:rotate-180 transition-transform" />
+                      </summary>
+                      <div className="mt-3 space-y-3 border-t border-fresco-border-light pt-3">
+                        {hist.slice().reverse().map((h, i) => (
+                          <div key={i}>
+                            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light">
+                              {fmt(h.verdict)}
+                              {h.at ? ` · ${new Date(h.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}
+                              {h.outcome ? ` · ${h.outcome === 'held' ? 'held' : 'did not hold'}` : ''}
+                            </p>
+                            {h.sentenceOfTruth && (
+                              <p className="text-fresco-xs text-fresco-graphite-soft leading-relaxed mt-0.5 italic">
+                                &ldquo;{h.sentenceOfTruth}&rdquo;
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })()}
 
                 {/* SENTENCE OF TRUTH — the memorable line, right under the verdict */}
                 <motion.div
