@@ -43,6 +43,25 @@ interface ClarifyScreenProps {
 
 const HOUSE_OPTIONS: HouseId[] = ['investigate', 'innovate', 'validate', 'evaluate'];
 
+// True when an extracted answer is the founder's own sentence handed back
+// with cosmetic changes rather than a reading of it. Printing such an answer
+// puts their paragraph on screen a second time and proves nothing, so the
+// card shows only the question it answered. An answer that genuinely
+// reframes or condenses the input falls through and is printed in full,
+// which is precisely when it is worth checking.
+function isRestatement(answer: string, source: string): boolean {
+  const words = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+  const a = words(answer);
+  if (a.length < 8) return false;
+  // Length first: a condensation is not a restatement however much of its
+  // vocabulary it borrows.
+  const src = words(source);
+  if (a.length < src.length * 0.6) return false;
+  const pool = new Set(src);
+  const shared = a.filter(w => pool.has(w)).length;
+  return shared / a.length >= 0.8;
+}
+
 export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt, onBack }: ClarifyScreenProps) {
   const [house, setHouse] = useState<HouseId>(router.house);
   const [evaluateMode, setEvaluateMode] = useState<EvaluateMode | null>(router.evaluateMode);
@@ -376,6 +395,9 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
               {visibleExtracted.map(id => {
                 const a = answers[id];
                 const isEditing = editingId === id;
+                // Only collapse what the engine itself produced. Anything the
+                // founder has typed is always shown back to them.
+                const restated = a.source === 'extracted' && isRestatement(a.answer, prompt);
                 return (
                   <div
                     key={id}
@@ -384,8 +406,13 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                       a.confirmed ? 'border-fresco-black' : 'border-fresco-border'
                     )}
                   >
-                    <div className="px-4 pt-3">
-                      <p className="text-fresco-xs text-fresco-graphite-light">{questionTextOf(id)}</p>
+                    <div className={cn('px-4 pt-3', restated && 'pb-3')}>
+                      <p
+                        className={cn('text-fresco-xs text-fresco-graphite-light', restated && 'cursor-text')}
+                        onClick={restated ? () => setEditingId(id) : undefined}
+                      >
+                        {questionTextOf(id)}
+                      </p>
                     </div>
                     {isEditing ? (
                       <div className="px-4 pb-3 pt-1">
@@ -398,7 +425,7 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                           onBlur={() => setEditingId(null)}
                         />
                       </div>
-                    ) : (
+                    ) : restated ? null : (
                       <p
                         className="px-4 pb-3 pt-1 text-fresco-sm text-fresco-black leading-relaxed cursor-text"
                         onClick={() => setEditingId(id)}
@@ -408,7 +435,7 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                     )}
                     <div className="flex items-center justify-between border-t border-fresco-border-light px-4 py-2">
                       <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-fresco-graphite-light">
-                        {a.source === 'extracted' ? 'FROM YOUR DESCRIPTION' : 'EDITED BY YOU'}
+                        {a.source !== 'extracted' ? 'EDITED BY YOU' : restated ? 'ANSWERED IN YOUR OWN WORDS' : 'FROM YOUR DESCRIPTION'}
                       </span>
                       {a.confirmed ? (
                         <span className="flex items-center gap-1 text-fresco-xs text-fresco-black">
