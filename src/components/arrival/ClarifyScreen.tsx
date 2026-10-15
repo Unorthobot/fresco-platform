@@ -118,6 +118,45 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
 
   const questionTextOf = (id: string) => canonical.find(q => q.id === id)?.question || id;
 
+  // The founder's paragraph, split into the stretches the engine drew on.
+  // This is computed once and rendered in exactly one place, the decision
+  // card at the top. An earlier version printed a second marked copy below
+  // the heading, which put their own words on screen twice.
+  const markedPrompt = useMemo(() => {
+    const spans = visibleExtracted
+      .map(id => ({ id, source: (router.extracted[id] as { source?: string } | undefined)?.source }))
+      .filter((x): x is { id: string; source: string } => {
+        if (!x.source || x.source.length < 6) return false;
+        // A span covering nearly the whole input underlines everything and
+        // says nothing about what was read as what.
+        if (x.source.length > prompt.length * 0.7) return false;
+        return prompt.toLowerCase().includes(x.source.toLowerCase());
+      });
+
+    // Longest first, so a nested span cannot split a larger one mid-mark.
+    type Range = { start: number; end: number; id: string };
+    const ranges: Range[] = [];
+    [...spans].sort((a, b) => b.source.length - a.source.length).forEach(sp => {
+      const at = prompt.toLowerCase().indexOf(sp.source.toLowerCase());
+      if (at === -1) return;
+      const end = at + sp.source.length;
+      if (ranges.some(r => at < r.end && end > r.start)) return;
+      ranges.push({ start: at, end, id: sp.id });
+    });
+    if (!ranges.length) return null;
+    ranges.sort((a, b) => a.start - b.start);
+
+    const parts: Array<{ text: string; id?: string }> = [];
+    let cursor = 0;
+    ranges.forEach(r => {
+      if (r.start > cursor) parts.push({ text: prompt.slice(cursor, r.start) });
+      parts.push({ text: prompt.slice(r.start, r.end), id: r.id });
+      cursor = r.end;
+    });
+    if (cursor < prompt.length) parts.push({ text: prompt.slice(cursor) });
+    return parts;
+  }, [visibleExtracted, router.extracted, prompt]);
+
   const setAnswer = (id: string, answer: string, source: AnswerSource) =>
     setAnswers(prev => ({ ...prev, [id]: { answer, source, confirmed: source === 'user' ? true : prev[id]?.confirmed || false } }));
 
@@ -193,6 +232,50 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
                     </button>
                   </div>
                 </div>
+              ) : markedPrompt ? (
+                <>
+                  <p
+                    className={cn(
+                      'text-fresco-sm text-fresco-black leading-loose',
+                      !promptExpanded && 'line-clamp-3'
+                    )}
+                  >
+                    {markedPrompt.map((part, i) => part.id ? (
+                      // An inline span, not a button: a button is
+                      // inline-block and will not break across lines, so a
+                      // long mark would be laid out as its own box.
+                      <span
+                        key={i}
+                        role="button"
+                        tabIndex={0}
+                        title={`Answers: ${questionTextOf(part.id)}`}
+                        onClick={() => setEditingId(part.id!)}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditingId(part.id!); } }}
+                        className="cursor-pointer bg-fresco-light-gray border-b border-fresco-graphite-light hover:border-fresco-black hover:bg-fresco-warm-gray transition-colors"
+                      >
+                        {part.text}
+                      </span>
+                    ) : (
+                      <span key={i}>{part.text}</span>
+                    ))}
+                  </p>
+                  <div className="flex items-center justify-between gap-3 mt-2">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light">
+                      Underlined · what the engine drew on. Tap any of it to correct.
+                    </p>
+                    {/* Only when there is something clamped to reveal: three
+                        lines at this width is roughly 240 characters. */}
+                    {prompt.length > 240 && (
+                      <button
+                        type="button"
+                        onClick={() => setPromptExpanded(v => !v)}
+                        className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light hover:text-fresco-black transition-colors flex-shrink-0"
+                      >
+                        {promptExpanded ? 'Less' : 'More'}
+                      </button>
+                    )}
+                  </div>
+                </>
               ) : (
                 <p
                   className={cn(
@@ -290,100 +373,16 @@ export function ClarifyScreen({ prompt, router, isStarting, onRun, onEditPrompt,
             <h2 className="text-fresco-lg font-medium text-fresco-black mb-1">
               Here&rsquo;s what I took from your description
             </h2>
-            {/* Their own paragraph, with the parts the engine drew on marked
-                in place. Restating extractions as cards alone proves nothing;
-                showing WHERE each one came from is what answers "did it
-                actually read me". Spans are verified against the real text
-                both here and server-side, so a near-miss highlights nothing
-                rather than highlighting the wrong words. */}
-            {(() => {
-              const spans = visibleExtracted
-                .map(id => ({ id, source: (router.extracted[id] as { source?: string } | undefined)?.source }))
-                .filter((x): x is { id: string; source: string } => {
-                  if (!x.source || x.source.length < 6) return false;
-                  // Partial as well as verbatim. A span covering most of the
-                  // input underlines the whole paragraph, which looks broken
-                  // and says nothing about what was read as what.
-                  if (x.source.length > prompt.length * 0.7) return false;
-                  return prompt.toLowerCase().includes(x.source.toLowerCase());
-                });
-
-              // Resolve to non-overlapping ranges, longest first so a nested
-              // span cannot split a larger one mid-highlight.
-              type Range = { start: number; end: number; id: string };
-              const ranges: Range[] = [];
-              [...spans].sort((a, b) => b.source.length - a.source.length).forEach(sp => {
-                const at = prompt.toLowerCase().indexOf(sp.source.toLowerCase());
-                if (at === -1) return;
-                const end = at + sp.source.length;
-                if (ranges.some(r => at < r.end && end > r.start)) return;
-                ranges.push({ start: at, end, id: sp.id });
-              });
-              // Marks covering nearly everything say nothing about what was
-              // read as what, so they are discarded and the coverage summary
-              // below runs instead.
-              const covered = ranges.reduce((n, r) => n + (r.end - r.start), 0);
-              const markable = spans.length > 0 && ranges.length > 0 && covered <= prompt.length * 0.85;
-              ranges.sort((a, b) => a.start - b.start);
-
-              // Nothing differential to mark. Reprinting the paragraph here
-              // would be its third appearance on this screen, after the
-              // decision card above and the answer card below, so only the
-              // coverage count survives: it is the one fact neither of those
-              // already states. Which questions were answered is visible in
-              // the cards themselves.
-              if (!markable) {
-                const answered = visibleExtracted.length;
-                // With no follow-ups left, the line introducing the cards
-                // already says the brief was complete, so a count here is a
-                // third way of saying one thing.
-                if (!answered || followups.length === 0) return null;
-                return (
-                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-4">
-                    {answered === 1
-                      ? 'All of this answered one question'
-                      : `This answered ${answered} of ${canonical.length} questions`}
-                  </p>
-                );
-              }
-
-              const parts: Array<{ text: string; id?: string }> = [];
-              let cursor = 0;
-              ranges.forEach(r => {
-                if (r.start > cursor) parts.push({ text: prompt.slice(cursor, r.start) });
-                parts.push({ text: prompt.slice(r.start, r.end), id: r.id });
-                cursor = r.end;
-              });
-              if (cursor < prompt.length) parts.push({ text: prompt.slice(cursor) });
-
-              return (
-                <div className="mb-5 p-4 border border-fresco-border-light bg-fresco-white">
-                  <p className="text-fresco-sm text-fresco-black leading-loose">
-                    {parts.map((part, i) => part.id ? (
-                      // An inline span, not a button: a button is
-                      // inline-block and will not break across lines, so a
-                      // long mark inside a paragraph laid out as its own box.
-                      <span
-                        key={i}
-                        role="button"
-                        tabIndex={0}
-                        title={`Answers: ${questionTextOf(part.id)}`}
-                        onClick={() => setEditingId(part.id!)}
-                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditingId(part.id!); } }}
-                        className="cursor-pointer bg-fresco-light-gray border-b border-fresco-graphite-light hover:border-fresco-black hover:bg-fresco-warm-gray transition-colors"
-                      >
-                        {part.text}
-                      </span>
-                    ) : (
-                      <span key={i}>{part.text}</span>
-                    ))}
-                  </p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mt-3">
-                    Underlined · what the engine drew on. Tap any of it to correct.
-                  </p>
-                </div>
-              );
-            })()}
+            {/* How much of the brief their text covered. Which questions it
+                answered is visible in the cards below, and the marks live in
+                the decision card above, so only the count belongs here. */}
+            {!markedPrompt && visibleExtracted.length > 0 && followups.length > 0 && (
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fresco-graphite-light mb-4">
+                {visibleExtracted.length === 1
+                  ? 'All of this answered one question'
+                  : `This answered ${visibleExtracted.length} of ${canonical.length} questions`}
+              </p>
+            )}
             {/* A complete brief is worth acknowledging — it rewards the
                 behaviour that produces the best verdicts. */}
             <p className="text-fresco-sm text-fresco-graphite-light mb-4">
